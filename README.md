@@ -16,16 +16,18 @@
 
 ## 始め方
 
-1. **OVA をインポート** してVMを起動 (詳細は配布物の `SETUP.md` 参照)
-2. 攻撃用VM (Kali Linux など) を同じ Host-Only ネットワークに置く
+1. [Releases](https://github.com/skjshr/tgtsec/releases) から OVA をダウンロード
+2. [`SETUP.md`](SETUP.md) に従ってインポート + ネットワーク設定
 3. 攻撃用VMから `nmap` でターゲット発見 → CTF開始
 
 ## このリポジトリにあるもの
 
 - [`README.md`](README.md) — このファイル
+- [`SETUP.md`](SETUP.md) — **プレイヤー向け** VirtualBox インポート手順
 - [`PRIMER.md`](PRIMER.md) — **CTF初参加者はまずこれ**。基礎用語・心構え・ツール導入
 - [`WALKTHROUGH-BEGINNER.md`](WALKTHROUGH-BEGINNER.md) — 段階的ヒント集(完全ネタバレなし)
 - [`TOOLS-CHEATSHEET.md`](TOOLS-CHEATSHEET.md) — よく使うコマンド一覧
+- [`DISTRIBUTION.md`](DISTRIBUTION.md) — **出題者向け** OVA配布手順
 
 ## ルール
 
