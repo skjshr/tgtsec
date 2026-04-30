@@ -11,9 +11,22 @@
 [追加圧縮] → [配布]
 ```
 
+## ステップ0: VMクローン作成(強く推奨)
+
+cleanup スクリプトは Firefox 履歴や Documents なども消します。**自分のVMをそのまま配布用に潰すと自分のデータが失われる**ので、クローンを作ってから作業しましょう。
+
+VirtualBox GUI で対象VM を右クリック:
+1. **クローン作成**
+2. 名前: `yamamoto-mfg-ctf-distribution`
+3. クローンタイプ: **完全クローン**
+4. MAC ポリシー: **すべての MAC アドレスを再生成**
+5. 実行(数分)
+
+以降、**クローンの方** でステップ1〜進める。オリジナルは手を付けない。
+
 ## ステップ1: VM内クリーンアップ
 
-VM起動状態でターミナルから:
+クローンVMを起動して、ターミナルから:
 
 ```bash
 sudo bash /root/cleanup-before-distribution.sh
@@ -22,10 +35,11 @@ sudo bash /root/cleanup-before-distribution.sh
 これで以下が実行される:
 - 構築時に追加した`user`の sudo 権限を削除
 - `user`アカウントのパスワードロック
-- `/home/user/` の個人データ削除 (Claude, codex, npm 等)
+- `/home/user/` の個人データ削除 (Claude, codex, npm, **Firefox プロフィール**, **Documents/Downloads/Desktop の中身** 等)
 - `/root/` の構築用ツール削除
-- ログ削除
-- shell history クリア
+- `/tmp/` セットアップ痕跡削除
+- ブラウザキャッシュ全削除
+- ログ削除 / shell history クリア
 
 ## ステップ2: ディスクを圧縮できる状態にする
 
