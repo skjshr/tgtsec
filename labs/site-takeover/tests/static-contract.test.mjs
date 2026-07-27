@@ -158,6 +158,11 @@ test("company download mode verifies release assets without writing USB", async 
   assert.doesNotMatch(bootstrap, /Clear-Disk|Format-Volume|Write-Disk/);
   assert.match(companyGuide, /-DownloadRelease/);
   assert.match(companyGuide, /C:\\lab\\site-takeover-release/);
+  assert.match(companyGuide, /GitHub\.cli/);
+  assert.match(companyGuide, /HaraldBoegeholz\.h2testw/);
+  assert.match(companyGuide, /Rufus\.Rufus/);
+  assert.match(companyGuide, /--pattern USB\.md/);
+  assert.match(companyGuide, /--pattern DAY-OF\.md/);
 });
 
 test("root bonus reads the proof through the intentionally unsafe helper", async () => {

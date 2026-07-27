@@ -324,7 +324,12 @@ if ($null -eq $winget) {
 }
 
 Write-Section -Title 'Developer tools'
-$statuses = @($toolSpecs | ForEach-Object { Get-ToolStatus -Spec $_ })
+$specsToCheck = if ($DownloadRelease) {
+    @($toolSpecs | Where-Object Command -eq 'gh')
+} else {
+    $toolSpecs
+}
+$statuses = @($specsToCheck | ForEach-Object { Get-ToolStatus -Spec $_ })
 foreach ($status in $statuses) {
     if ($status.Installed) {
         Write-Check -State OK -Message "$($status.Spec.Name): $($status.Version)"
