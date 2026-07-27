@@ -51,6 +51,7 @@
 - Firefoxで参加者フローをE2E確認し、デスクトップと狭幅のスクリーンショットを残す。
 - 会社のWindowsだけでclone、Codex修正、Actionsビルド、ISO取得、USB作成を完了できる。
 - USB検査、Live起動、USB取り外し、終了後の再起動をoperator文書へ残す。
+- 構築、USB、起動、Kali、必須攻略、root、復旧、検証の全手法をprivate GitHub上の一つの索引から辿れ、運営用の必須攻略だけは完全解答として残す。
 - privateブランチ、draft PR、検証済みdraft prereleaseをGitHubへ作る。
 
 ## Surprise ledger
@@ -60,3 +61,4 @@
 - v2は既存リポジトリ内の独立した`labs/site-takeover`として追加し、旧教材を上書きしない。
 - 標的ノートのWindowsを会社での開発・USB作成環境として残す。
 - workflow_dispatchがdefault branchへ入る前は表示されないため、未mergeの初回だけ`feat/live-usb-b2r`へのpushでdraft prereleaseビルドを起動する。
+- 運営用の完全解答はGitHubへ置くが、参加者向けガイドには混ぜず、発見と因果説明の体験を維持する。

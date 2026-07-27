@@ -150,6 +150,7 @@ test("operator docs isolate both bare-metal and VirtualBox Kali", async () => {
 test("company download mode verifies release assets without writing USB", async () => {
   const bootstrap = await text("operator/company-bootstrap.ps1");
   const companyGuide = await text("operator/COMPANY-SETUP.md");
+  const workflow = await text("../../.github/workflows/build-live-iso.yml");
 
   assert.match(bootstrap, /\[switch\]\$DownloadRelease/);
   assert.match(bootstrap, /isDraft,isPrerelease,targetCommitish,assets/);
@@ -161,8 +162,72 @@ test("company download mode verifies release assets without writing USB", async 
   assert.match(companyGuide, /GitHub\.cli/);
   assert.match(companyGuide, /HaraldBoegeholz\.h2testw/);
   assert.match(companyGuide, /Rufus\.Rufus/);
-  assert.match(companyGuide, /--pattern USB\.md/);
-  assert.match(companyGuide, /--pattern DAY-OF\.md/);
+  assert.match(companyGuide, /--pattern site-takeover-operator-kit\.zip/);
+  assert.match(companyGuide, /site-takeover-operator-kit\.zip\.sha256/);
+  assert.match(companyGuide, /Get-FileHash[\s\S]*Expand-Archive/);
+  assert.match(companyGuide, /labs\\site-takeover\\operator\\company-bootstrap\.ps1/);
+  assert.match(workflow, /git archive[\s\S]*METHODS\.md/);
+  for (const methodPath of [
+    "labs/site-takeover/operator/COMPANY-SETUP.md",
+    "labs/site-takeover/operator/USB.md",
+    "labs/site-takeover/operator/DAY-OF.md",
+    "labs/site-takeover/operator/KALI-PREFLIGHT.md",
+    "labs/site-takeover/operator/ROOT-BONUS.md",
+    "labs/site-takeover/VERIFICATION.md",
+  ]) {
+    assert.match(workflow, new RegExp(methodPath.replaceAll(".", "\\.")));
+  }
+});
+
+test("canonical METHODS guide links the complete build, exercise, and recovery path", async () => {
+  const [methods, repositoryReadme, labReadme] = await Promise.all([
+    text("../../METHODS.md"),
+    text("../../README.md"),
+    text("README.md"),
+  ]);
+
+  assert.match(repositoryReadme, /\[[^\]]*METHODS[^\]]*\]\(METHODS\.md\)/i);
+  assert.match(labReadme, /\[[^\]]*METHODS[^\]]*\]\(\.\.\/\.\.\/METHODS\.md\)/i);
+
+  const requiredSections = [
+    ["scope", /^## .*(?:対象範囲|安全範囲|scope)/im],
+    ["company setup", /^## .*会社.*(?:準備|構築)|^## .*company setup/im],
+    ["USB", /^## .*USB/im],
+    ["target boot", /^## .*標的.*起動|^## .*target boot/im],
+    ["Kali", /^## .*Kali/im],
+    ["required exploit flow", /^## .*必須.*(?:攻略|侵入|フロー)|^## .*required exploit/im],
+    ["root bonus", /^## .*root.*(?:ボーナス|bonus)/im],
+    ["reset and recovery", /^## .*(?:リセット.*復旧|復旧.*リセット|reset.*recovery|recovery.*reset)/im],
+    [
+      "verification and troubleshooting",
+      /^## .*(?:検証.*トラブル|トラブル.*検証|verification.*troubleshooting|troubleshooting.*verification)/im,
+    ],
+  ];
+  for (const [label, pattern] of requiredSections) {
+    assert.match(methods, pattern, `METHODS.md must contain a ${label} section`);
+  }
+
+  for (const canonicalPath of [
+    "labs/site-takeover/operator/COMPANY-SETUP.md",
+    "labs/site-takeover/operator/USB.md",
+    "labs/site-takeover/operator/DAY-OF.md",
+    "labs/site-takeover/operator/KALI-PREFLIGHT.md",
+    "labs/site-takeover/operator/ROOT-BONUS.md",
+    "labs/site-takeover/VERIFICATION.md",
+  ]) {
+    assert.match(
+      methods,
+      new RegExp(`\\(${canonicalPath.replaceAll(".", "\\.")}\\)`),
+      `METHODS.md must link ${canonicalPath}`,
+    );
+  }
+
+  assert.match(methods, /10\.13\.37\.10/);
+  assert.match(methods, /toram nopersistence/);
+  assert.match(methods, /REMOVE USB[\s\S]*CONNECT LAN[\s\S]*EXERCISE READY/);
+  assert.match(methods, /robots\.txt[\s\S]*127\.0\.0\.1; whoami[\s\S]*announcement\.txt/);
+  assert.match(methods, /sudo -l[\s\S]*root-proof\.txt/);
+  assert.match(methods, /sudo poweroff/);
 });
 
 test("root bonus reads the proof through the intentionally unsafe helper", async () => {

@@ -147,6 +147,8 @@ jobs:
       ISO_PATH: labs/site-takeover/live/dist/site-takeover-live-amd64.iso
       SHA256_PATH: labs/site-takeover/live/dist/site-takeover-live-amd64.iso.sha256
       BOOT_REPORT_PATH: labs/site-takeover/live/dist/site-takeover-live-amd64.boot.txt
+      OPERATOR_KIT_PATH: labs/site-takeover/live/dist/site-takeover-operator-kit.zip
+      OPERATOR_KIT_SHA256_PATH: labs/site-takeover/live/dist/site-takeover-operator-kit.zip.sha256
 
     steps:
       - name: Check out selected source
@@ -161,6 +163,41 @@ jobs:
         with:
           name: site-takeover-live-release-assets
           path: labs/site-takeover/live/dist
+
+      - name: Package operator methods from selected source
+        env:
+          SELECTED_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          rm -f -- "${OPERATOR_KIT_PATH}" "${OPERATOR_KIT_SHA256_PATH}"
+          git archive \
+            --format=zip \
+            --output="${OPERATOR_KIT_PATH}" \
+            "${SELECTED_SHA}" \
+            -- \
+            METHODS.md \
+            README.md \
+            PROJECT_CONSTITUTION.md \
+            DESIGN.md \
+            TASK_CONTRACT.md \
+            labs/site-takeover/README.md \
+            labs/site-takeover/VERIFICATION.md \
+            labs/site-takeover/live/README.md \
+            labs/site-takeover/operator/company-bootstrap.ps1 \
+            labs/site-takeover/operator/COMPANY-SETUP.md \
+            labs/site-takeover/operator/USB.md \
+            labs/site-takeover/operator/DAY-OF.md \
+            labs/site-takeover/operator/KALI-PREFLIGHT.md \
+            labs/site-takeover/operator/ROOT-BONUS.md
+
+          (
+            cd "$(dirname "${OPERATOR_KIT_PATH}")"
+            sha256sum "$(basename "${OPERATOR_KIT_PATH}")" \
+              > "$(basename "${OPERATOR_KIT_SHA256_PATH}")"
+            sha256sum --check "$(basename "${OPERATOR_KIT_SHA256_PATH}")"
+          )
 
       - name: Revalidate tag and release assets
         env:
@@ -192,9 +229,12 @@ jobs:
           [[ -s "${ISO_PATH}" ]]
           [[ -s "${SHA256_PATH}" ]]
           [[ -s "${BOOT_REPORT_PATH}" ]]
+          [[ -s "${OPERATOR_KIT_PATH}" ]]
+          [[ -s "${OPERATOR_KIT_SHA256_PATH}" ]]
           (
             cd "$(dirname "${ISO_PATH}")"
             sha256sum --check "$(basename "${SHA256_PATH}")"
+            sha256sum --check "$(basename "${OPERATOR_KIT_SHA256_PATH}")"
           )
 
       - name: Create or update draft prerelease
@@ -213,6 +253,7 @@ jobs:
 
           - Source commit: \`${SELECTED_SHA}\`
           - Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          - Operator kit: source hierarchy archived from the same commit, with a separate SHA-256
           - Status: draft prerelease; operator validation is still required
           EOF
 
@@ -254,12 +295,30 @@ jobs:
               --notes-file "${notes_file}"
           fi
 
+          release_assets=(
+            "${ISO_PATH}"
+            "${SHA256_PATH}"
+            "${BOOT_REPORT_PATH}"
+            "${OPERATOR_KIT_PATH}"
+            "${OPERATOR_KIT_SHA256_PATH}"
+            "labs/site-takeover/operator/COMPANY-SETUP.md"
+          )
+
+          upload_state="$(
+            gh release view "${RELEASE_TAG}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --json isDraft \
+              --jq '.isDraft'
+          )"
+          [[ "${upload_state}" == "true" ]] || {
+            printf 'Refusing to upload to non-draft release %s.\n' "${RELEASE_TAG}" >&2
+            exit 1
+          }
+
           gh release upload "${RELEASE_TAG}" \
             --repo "${GITHUB_REPOSITORY}" \
             --clobber \
-            "${ISO_PATH}" \
-            "${SHA256_PATH}" \
-            "${BOOT_REPORT_PATH}"
+            "${release_assets[@]}"
 
           final_state="$(
             gh release view "${RELEASE_TAG}" \
@@ -278,10 +337,8 @@ jobs:
               --json assets \
               --jq '.assets[].name'
           )"
-          for required_asset in \
-            "$(basename "${ISO_PATH}")" \
-            "$(basename "${SHA256_PATH}")" \
-            "$(basename "${BOOT_REPORT_PATH}")"; do
+          for release_asset in "${release_assets[@]}"; do
+            required_asset="$(basename "${release_asset}")"
             grep -Fxq "${required_asset}" <<< "${released_assets}" || {
               printf 'Draft release is missing asset %s.\n' "${required_asset}" >&2
               exit 1

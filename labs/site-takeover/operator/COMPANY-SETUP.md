@@ -18,7 +18,8 @@ winget install --id Rufus.Rufus --exact --accept-package-agreements --accept-sou
 ```
 
 `winget`が見つからない場合は、Microsoft Storeの「アプリ インストーラー」を更新する。
-導入後はPowerShellを開き直し、本人がprivate GitHubへログインする。
+導入後はPowerShellを開き直し、本人がprivate GitHubへログインする。運営文書は
+相対リンクを壊さない `operator-kit.zip` として一括取得する。
 
 ```powershell
 gh auth login --hostname github.com --git-protocol https --web
@@ -27,16 +28,34 @@ New-Item -ItemType Directory -Force C:\lab\bootstrap
 Set-Location C:\lab\bootstrap
 gh release download site-takeover-live-v0.1.0-rc1 `
   --repo skjshr/tgtsec `
-  --pattern company-bootstrap.ps1
-gh release download site-takeover-live-v0.1.0-rc1 `
-  --repo skjshr/tgtsec `
-  --pattern USB.md
-gh release download site-takeover-live-v0.1.0-rc1 `
-  --repo skjshr/tgtsec `
-  --pattern DAY-OF.md
+  --pattern site-takeover-operator-kit.zip `
+  --pattern site-takeover-operator-kit.zip.sha256
 
-.\company-bootstrap.ps1 -SelfTest
-.\company-bootstrap.ps1 -DownloadRelease -ConfirmPersonalTether
+$kitName = 'site-takeover-operator-kit.zip'
+$checksumName = "$kitName.sha256"
+$line = @(Get-Content -LiteralPath ".\$checksumName" |
+  Where-Object { $_ -match '\s+\*?site-takeover-operator-kit\.zip$' })
+if ($line.Count -ne 1) {
+  throw 'operator kitのSHA-256行が一つではありません。'
+}
+$expected = (($line[0].Trim() -split '\s+')[0]).ToUpperInvariant()
+$actual = (Get-FileHash -LiteralPath ".\$kitName" -Algorithm SHA256).Hash.ToUpperInvariant()
+if ($expected -notmatch '^[0-9A-F]{64}$' -or $actual -cne $expected) {
+  throw "operator kitのSHA-256不一致: expected=$expected actual=$actual"
+}
+Write-Host "operator kit SHA-256 OK: $actual"
+
+$operatorRoot = 'C:\lab\site-takeover-operator-kit'
+if (Test-Path -LiteralPath $operatorRoot) {
+  throw "$operatorRoot は既に存在します。古い一式を別名へ移してから再実行してください。"
+}
+Expand-Archive -LiteralPath ".\$kitName" -DestinationPath $operatorRoot
+Set-Location $operatorRoot
+
+.\labs\site-takeover\operator\company-bootstrap.ps1 -SelfTest
+.\labs\site-takeover\operator\company-bootstrap.ps1 `
+  -DownloadRelease `
+  -ConfirmPersonalTether
 ```
 
 最後のコマンドはdraft/prerelease、対象commit、ISO、SHA-256、BIOS/UEFI記録を照合し、
@@ -51,15 +70,19 @@ C:\lab\site-takeover-release
 
 ## 2. USBを検査して書き込む
 
-`C:\lab\bootstrap\USB.md`を開き、接続したUSBの物理IDと容量を確認する。現在のBUFFALO
-USBは警告歴があるため、H2testwの`all available space`を`Write + Verify`してエラー0件
-の場合だけRufusへ進む。Rufusでは次のISOをDDイメージモードで書き込む。
+`C:\lab\site-takeover-operator-kit\labs\site-takeover\operator\USB.md`を開き、
+接続したUSBの物理IDと容量を確認する。現在のBUFFALO USBは警告歴があるため、H2testwの
+`all available space`を`Write + Verify`してエラー0件の場合だけRufusへ進む。
+Rufusでは次のISOをDDイメージモードで書き込む。
 
 ```text
 C:\lab\site-takeover-release\site-takeover-live-amd64.iso
 ```
 
-書き込み後の起動順序とWindowsへの戻し方は`C:\lab\bootstrap\DAY-OF.md`を使う。
+書き込み後は`C:\lab\site-takeover-operator-kit\METHODS.md`を索引にし、起動順序と
+Windowsへの戻し方は
+`C:\lab\site-takeover-operator-kit\labs\site-takeover\operator\DAY-OF.md`を使う。
+Kaliの準備と完全解答も同じ階層を保ったoperator kit内に揃う。
 
 ## 3. ソースを変更する場合だけcloneする
 

@@ -17,7 +17,9 @@
 
 ## 2. 全容量検査用にUSBを初期化する
 
-先にWindows用の [H2testw（Heise公式配布ページ）](https://www.heise.de/download/product/h2testw-50539) を内蔵SSDへ取得する。USBへはまだ保存しない。
+先に [COMPANY-SETUP.md](COMPANY-SETUP.md) のwinget手順で導入したH2testwを使う。
+USBへツールを保存しない。H2testwが導入されていない場合は、この文書内で別経路から
+取得せず会社準備へ戻る。
 
 USBだけを挿し、管理者PowerShellで次を実行する。
 
@@ -110,7 +112,7 @@ Write-Host "SHA-256 OK: $actual"
 
 ## 5. RufusでLive ISOを書き込む
 
-1. Rufusを公式サイトから取得して開く。
+1. [COMPANY-SETUP.md](COMPANY-SETUP.md) のwinget手順で導入したRufusを開く。
 2. 「デバイス」が全容量検査で記録したUSBの型番と容量に一致することを二人で確認する。
 3. `site-takeover-live-amd64.iso`を選ぶ。
 4. hybrid imageの方式を聞かれたらDDイメージモードを選ぶ。

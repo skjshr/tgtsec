@@ -4,10 +4,12 @@
 
 この文書は、GitHubへ公開する前のローカル検証記録です。物理USB、実機ノート、
 借用Kali、GitHub Actionsから生成した最終ISOは、別ゲートとして扱います。
+各節は記載されたtag、commit、SHA-256にだけ適用します。後続releaseはこのRC1の
+実測を引き継がず、そのrelease notesとchecksumを別に確認します。
 
 ## Local automated checks
 
-- `npm test`: 21/21 pass
+- `npm test`: 22/22 pass
 - Bash syntax: pass
 - PHP lint: 4/4 pass
 - PowerShell parse and safe bootstrap self-test: pass
@@ -83,7 +85,8 @@ NATアダプターも残っていたため、この実測は標的側の封じ�
 - Exact ISO SHA-256:
   `f6d5abfe122aa9f32a19001390ff9d312b26417aa3ae2f18fe2b352e68fc337f`
 - Exact ISO size: `1218756608` bytes
-- GitHub assets: ISO, external SHA-256, and BIOS/UEFI boot report uploaded
+- GitHub assets: ISO, external SHA-256, BIOS/UEFI boot report, company setup,
+  and the hierarchy-preserving operator kit with its own SHA-256 uploaded
 - GitHub re-download: SHA-256 match
 - Embedded source metadata: target commit and `dirty=false`
 - Exact-ISO VM: 22 preflight checks pass, 0 fail

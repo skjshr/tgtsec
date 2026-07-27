@@ -5,6 +5,8 @@
 ## Current: Site Takeover Live USB
 
 技術部会向けの現行教材は [`labs/site-takeover`](labs/site-takeover/README.md) です。
+準備、USB、起動、Kali、完全攻略、rootボーナス、復旧、検証を含む全手法は
+[`METHODS.md`](METHODS.md)から辿れます。
 
 - 標的ノートのWindowsと内蔵SSDを消去しない
 - 専用USBから`toram nopersistence`でRAM起動する
@@ -13,7 +15,8 @@
 - 初心者の必須ゴールは、店のトップページを自分たちの名前へ書き換えること
 - 非公開メモと管理者権限は任意のボーナス
 
-会社のWindowsだけで準備する場合は、最初に
+会社のWindowsだけで準備する場合も、最初に [`METHODS.md`](METHODS.md) で
+全体と安全範囲を確認してから、
 [`COMPANY-SETUP.md`](labs/site-takeover/operator/COMPANY-SETUP.md)を読みます。ISOを生成しただけでは当日用にせず、VM、USB全容量、対象ノートの順に検証します。
 
 ```text
