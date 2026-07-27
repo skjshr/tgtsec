@@ -1,0 +1,180 @@
+:root {
+  color-scheme: light;
+  --bg: #eef0f2;
+  --panel: #ffffff;
+  --ink: #17202a;
+  --muted: #5d6874;
+  --accent: #185d72;
+  --line: #cdd4da;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  padding: 4rem 1.25rem;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  line-height: 1.7;
+}
+
+.staff-shell {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 5vw, 3.5rem);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: 0 16px 50px rgba(23, 32, 42, 0.08);
+}
+
+.staff-label {
+  margin: 0 0 0.5rem;
+  color: var(--accent);
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.7rem);
+}
+
+h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.tool-list {
+  margin: 2rem 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+
+.tool-list li {
+  border-bottom: 1px solid var(--line);
+}
+
+.tool-list a,
+.tool-list .disabled {
+  display: block;
+  padding: 1.25rem 0;
+}
+
+.tool-list a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.tool-list a:hover span,
+.tool-list a:focus-visible span {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
+}
+
+.tool-list span,
+.tool-list small {
+  display: block;
+}
+
+.tool-list span {
+  font-weight: 700;
+}
+
+.tool-list small,
+.staff-footnote {
+  color: var(--muted);
+}
+
+.tool-list .disabled {
+  opacity: 0.55;
+}
+
+.staff-footnote {
+  font-size: 0.78rem;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 2rem;
+  color: var(--accent);
+  text-underline-offset: 0.25rem;
+}
+
+form {
+  margin-top: 2rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.field-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+input,
+button {
+  min-height: 3rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font: inherit;
+}
+
+input {
+  min-width: 0;
+  flex: 1;
+  padding: 0 0.9rem;
+}
+
+button {
+  padding: 0 1.2rem;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.result {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--line);
+}
+
+pre {
+  overflow-x: auto;
+  margin: 0;
+  padding: 1rem;
+  background: #17202a;
+  color: #eef7fa;
+  font: 0.88rem/1.6 ui-monospace, "Cascadia Mono", monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (max-width: 560px) {
+  body {
+    padding: 0;
+  }
+
+  .staff-shell {
+    min-height: 100vh;
+    border: 0;
+  }
+
+  .field-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

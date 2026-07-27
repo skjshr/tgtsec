@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+set -u
+
+# shellcheck disable=SC1091
+source /usr/local/lib/site-lab/common.sh
+
+printf '\nSITE TAKEOVER LAB\n'
+printf '=================\n'
+printf 'State: %s\n\n' "$(site_lab_state)"
+
+case "$(site_lab_state)" in
+  waiting-for-usb)
+    printf 'Remove the Live USB.\n'
+    printf 'If a disk remains listed, disable the internal SSD in UEFI.\n\n'
+    site_lab_physical_disks
+    ;;
+  waiting-for-lan)
+    printf 'No physical disk is visible.\n'
+    printf 'Connect the direct Ethernet cable to Kali.\n'
+    ;;
+  disk-blocked)
+    printf 'DISK DETECTED - STOP\n'
+    printf 'Exercise services are OFF.\n'
+    printf 'Reboot and disable the internal SSD in UEFI.\n\n'
+    site_lab_physical_disks
+    ;;
+  exercise)
+    printf 'Target: http://10.13.37.10/\n'
+    printf 'Guide : http://10.13.37.10/start/\n'
+    printf 'Participants must not touch this keyboard.\n'
+    ;;
+  maintenance)
+    printf 'Lab services are OFF.\n'
+    printf 'Use nmtui for a personal tether, then codex-maintenance.\n'
+    ;;
+  blocked)
+    printf 'Safety check failed. Exercise services are OFF.\n'
+    cat /etc/issue 2>/dev/null || true
+    ;;
+  *)
+    printf 'The guard is preparing the diskless target.\n'
+    ;;
+esac
+printf '\n'

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+requested_action="${1:-is-active}"
+
+# Intentionally vulnerable for the optional privilege-escalation chapter.
+# A real helper must use an allowlist and invoke systemctl without a shell.
+/bin/bash -c "/usr/bin/systemctl ${requested_action} apache2"

@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+# shellcheck disable=SC1091
+source /usr/local/lib/site-lab/common.sh
+
+export LC_ALL=C
+
+block() {
+  local reason="$1"
+  site_lab_lock_network || true
+  site_lab_set_state blocked
+  site_lab_write_issue "BLOCKED" "${reason}" "Exercise services are OFF."
+  printf 'BLOCKED: %s\n' "${reason}" >&2
+  exit 1
+}
+
+[[ "${EUID}" -eq 0 ]] || block "lab-guard must run as root."
+site_lab_lock_network
+site_lab_set_state guarded
+
+site_lab_assert_live_ram || block "Boot with toram and nopersistence from the Live USB."
+site_lab_assert_live_media_in_ram ||
+  block "The Live medium was not copied to RAM. Do not remove the USB."
+
+site_lab_set_state waiting-for-usb
+site_lab_write_issue \
+  "REMOVE USB" \
+  "1. Remove the Live USB now." \
+  "2. Disable the internal SSD in UEFI if a disk remains visible." \
+  "3. Connect the direct Ethernet cable."
+/usr/local/bin/lab-console
+
+while [[ -n "$(site_lab_physical_disks)" ]]; do
+  if [[ -z "$(site_lab_usb_disks)" && "$(site_lab_state)" != "disk-blocked" ]]; then
+    site_lab_set_state disk-blocked
+    site_lab_write_issue \
+      "DISK DETECTED - STOP" \
+      "The Live USB is gone, but another physical disk is visible." \
+      "Exercise services are OFF." \
+      "Reboot and disable the internal SSD in UEFI."
+    /usr/local/bin/lab-console
+  fi
+  printf 'Waiting for all physical disks to disappear:\n%s\n' "$(site_lab_physical_disks)"
+  sleep 3
+done
+
+site_lab_set_state waiting-for-lan
+site_lab_write_issue \
+  "CONNECT LAN" \
+  "No physical disk is visible." \
+  "Connect the target directly to the Kali laptop."
+/usr/local/bin/lab-console
+
+while ! site_lab_find_ethernet_with_carrier >/dev/null; do
+  sleep 2
+done
+
+/usr/local/sbin/lab-mode exercise --boot
+
+while sleep 2; do
+  site_lab_assert_no_physical_disks ||
+    block "A physical disk appeared after the exercise started."
+done
