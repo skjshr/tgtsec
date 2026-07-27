@@ -121,6 +121,7 @@ else
   pass "temporary Codex runtime was removed"
 fi
 
+check "pgrep is available" command -v pgrep
 if pgrep -x codex >/dev/null 2>&1 || pgrep -x codex-cli >/dev/null 2>&1; then
   fail "no Codex maintenance process remains"
 else

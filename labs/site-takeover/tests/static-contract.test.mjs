@@ -93,7 +93,6 @@ test("exercise mode fails closed on disks and external network paths", async () 
   const preflight = await text(
     "live/config/includes.chroot/usr/local/sbin/lab-preflight",
   );
-
   assert.match(guard, /site_lab_assert_live_media_in_ram[\s\S]*waiting-for-usb/);
   assert.match(guard, /A physical disk appeared after the exercise started/);
   assert.match(mode, /site_lab_assert_no_physical_disks[\s\S]*systemctl start apache2/);
@@ -117,6 +116,9 @@ test("Codex maintenance credentials live under run and are removed for exercise"
   const preflight = await text(
     "live/config/includes.chroot/usr/local/sbin/lab-preflight",
   );
+  const packages = await text(
+    "live/config/package-lists/site-takeover.list.chroot",
+  );
 
   assert.match(wrapper, /CODEX_HOME="\$\{SITE_LAB_CODEX_RUNTIME\}/);
   assert.match(wrapper, /cli_auth_credentials_store = "file"/);
@@ -127,6 +129,8 @@ test("Codex maintenance credentials live under run and are removed for exercise"
   assert.match(common, /kill -KILL -- "-\$\{pgid\}"/);
   assert.match(common, /rm -rf -- "\$\{SITE_LAB_CODEX_RUNTIME\}"/);
   assert.match(mode, /site_lab_stop_codex[\s\S]*site_lab_set_state arming/);
+  assert.match(packages, /^procps$/m);
+  assert.match(preflight, /pgrep is available/);
   assert.match(preflight, /no Codex maintenance process remains/);
 });
 

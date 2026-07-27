@@ -17,6 +17,7 @@ nftables
 nodejs
 npm
 php-cli
+procps
 rsync
 sudo
 util-linux

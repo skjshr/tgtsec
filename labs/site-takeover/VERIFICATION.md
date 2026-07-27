@@ -81,7 +81,7 @@ NATアダプターも残っていたため、この実測は標的側の封じ�
   write-and-verify run with zero errors.
 - The GitHub Actions workflow passes from the committed branch.
 - The exact draft-prerelease ISO passes hash, BIOS/UEFI, diskless boot, and
-  HTTP/reset smoke checks, including the added 20th Codex-process check.
+  HTTP/reset smoke checks, including the two added `pgrep`/Codex-process checks.
 - The target laptop boots the USB, reports RAM media, sees no internal SSD,
   allows USB removal, and reaches `EXERCISE READY`.
 - Both the borrowed Kali laptop and the fallback Kali environment pass
