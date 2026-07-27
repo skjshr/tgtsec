@@ -18,12 +18,14 @@
 
 ```text
 会社Windows + 個人テザリング
-  -> private GitHubへpush
-  -> 手動ActionsでLive ISOをビルド
-  -> draft prereleaseからISOとSHA-256を取得
+  -> private draft prereleaseから検証済みISOを取得
   -> USB全容量検査
   -> Rufusで書き込み
   -> 対象ノートで実機検証
+
+ソースを変える場合だけ
+  -> private GitHubへpush
+  -> Actionsで新しいLive ISOをビルド
 ```
 
 設計上の約束は [`PROJECT_CONSTITUTION.md`](PROJECT_CONSTITUTION.md)、

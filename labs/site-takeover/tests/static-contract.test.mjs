@@ -147,6 +147,19 @@ test("operator docs isolate both bare-metal and VirtualBox Kali", async () => {
   assert.match(dayOf, /sudo lab-mode exercise/);
 });
 
+test("company download mode verifies release assets without writing USB", async () => {
+  const bootstrap = await text("operator/company-bootstrap.ps1");
+  const companyGuide = await text("operator/COMPANY-SETUP.md");
+
+  assert.match(bootstrap, /\[switch\]\$DownloadRelease/);
+  assert.match(bootstrap, /isDraft,isPrerelease,targetCommitish,assets/);
+  assert.match(bootstrap, /Get-FileHash -LiteralPath \$isoPath -Algorithm SHA256/);
+  assert.match(bootstrap, /BIOS.*UEFI/s);
+  assert.doesNotMatch(bootstrap, /Clear-Disk|Format-Volume|Write-Disk/);
+  assert.match(companyGuide, /-DownloadRelease/);
+  assert.match(companyGuide, /C:\\lab\\site-takeover-release/);
+});
+
 test("root bonus reads the proof through the intentionally unsafe helper", async () => {
   const operatorGuide = await text("operator/ROOT-BONUS.md");
   const helper = await text(

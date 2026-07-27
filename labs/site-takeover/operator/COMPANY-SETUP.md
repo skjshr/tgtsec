@@ -1,6 +1,8 @@
 # 会社のWindowsだけで準備する
 
-標的ノートのWindowsを残したまま、会社でソース修正、GitHub ActionsのISOビルド、ISO取得、USB作成まで完結させる。会社LANや会社Wi-Fiは使わず、個人テザリングだけを使う。
+標的ノートのWindowsを残したまま、会社で検証済みISOの取得、USB検査、USB作成まで
+完結させる。ソースを変更する場合だけCodexとGitHub Actionsへ進む。会社LANや会社Wi-Fi
+は使わず、個人テザリングだけを使う。
 
 この手順では、ISOが生成されたことと実機で使えることを分けて扱う。Actions成功だけでは当日用USBにしない。
 
@@ -57,7 +59,28 @@ clone後に、非破壊の自己テストと現在状態の確認を行う。
 
 このスクリプトは認証、clone、USB修復、フォーマット、ISO書き込みを行わない。
 
-## 3. Codexで修正し、Actionsでビルドする
+## 3. 今日そのまま使うISOを取得する
+
+通常は再ビルドせず、検証済みのdraft prereleaseを取得する。個人テザリングを目視確認して
+次を実行する。
+
+```powershell
+.\labs\site-takeover\operator\company-bootstrap.ps1 `
+  -DownloadRelease `
+  -ConfirmPersonalTether
+```
+
+このモードは、draft/prerelease、対象commit、3成果物、SHA-256、BIOS/UEFI記録を確認し、
+次へ保存する。
+
+```text
+C:\lab\site-takeover-release
+```
+
+`SHA-256 verified`と`BIOS and UEFI boot entries are present`の両方が出た場合だけ
+[USB.md](USB.md)へ進む。スクリプトはUSBをフォーマットせず、ISOも書き込まない。
+
+## 4. ソースを変える場合だけCodexとActionsを使う
 
 ```powershell
 Set-Location C:\lab\tgtsec
@@ -79,7 +102,7 @@ site-takeover-live-amd64.iso.sha256
 site-takeover-live-amd64.boot.txt
 ```
 
-## 4. USBへ進めるゲート
+## 5. USBへ進めるゲート
 
 次の証拠が全て揃った場合だけ [USB.md](USB.md) へ進む。
 
@@ -93,7 +116,7 @@ site-takeover-live-amd64.boot.txt
 
 未確認の欄を推測で埋めない。古いDebian DVD、Ventoyキット、Actionsの未検証artifactを当日用ISOの代わりにしない。
 
-## 5. 共有Windowsならログアウトする
+## 6. 共有Windowsならログアウトする
 
 自分専用ではないWindowsを使った場合は、作業終了後に本人がログアウトする。
 

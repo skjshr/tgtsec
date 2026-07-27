@@ -7,7 +7,7 @@
 
 ## Local automated checks
 
-- `npm test`: 20/20 pass
+- `npm test`: 21/21 pass
 - Bash syntax: pass
 - PHP lint: 4/4 pass
 - PowerShell parse and safe bootstrap self-test: pass
@@ -75,13 +75,30 @@ NATアダプターも残っていたため、この実測は標的側の封じ�
 - `qa/screenshots/target-maintenance-codex-final.png`
 - `qa/screenshots/target-exercise-return-final.png`
 
+## Draft prerelease proof
+
+- Tag: `site-takeover-live-v0.1.0-rc1`
+- Target commit: `b7b9acaa7df430aa92a7447e4ba244d6bc9a6d11`
+- State: draft and prerelease; not published
+- Exact ISO SHA-256:
+  `f6d5abfe122aa9f32a19001390ff9d312b26417aa3ae2f18fe2b352e68fc337f`
+- Exact ISO size: `1218756608` bytes
+- GitHub assets: ISO, external SHA-256, and BIOS/UEFI boot report uploaded
+- GitHub re-download: SHA-256 match
+- Embedded source metadata: target commit and `dirty=false`
+- Exact-ISO VM: 22 preflight checks pass, 0 fail
+- Exact-ISO attack flow and reboot reset: pass
+
+GitHub-hosted Actions stopped before its first step because the account reported a
+payment/spending-limit gate. The draft asset was therefore built from the exact
+commit on the verified Debian 13 VM. An Actions-produced artifact remains a
+separate external gate.
+
 ## Gates still requiring physical or external evidence
 
 - The BUFFALO USB is connected and passes an all-available-space H2testw
   write-and-verify run with zero errors.
 - The GitHub Actions workflow passes from the committed branch.
-- The exact draft-prerelease ISO passes hash, BIOS/UEFI, diskless boot, and
-  HTTP/reset smoke checks, including the two added `pgrep`/Codex-process checks.
 - The target laptop boots the USB, reports RAM media, sees no internal SSD,
   allows USB removal, and reaches `EXERCISE READY`.
 - Both the borrowed Kali laptop and the fallback Kali environment pass
