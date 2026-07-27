@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+# shellcheck disable=SC1091
+source /usr/local/lib/site-lab/common.sh
+
+if [[ "$(site_lab_state)" != "maintenance" ]]; then
+  printf 'Codex is allowed only in maintenance mode.\n' >&2
+  printf 'Run: sudo lab-mode maintenance\n' >&2
+  exit 1
+fi
+
+command -v codex >/dev/null 2>&1 || {
+  printf 'Codex CLI is not installed in this image.\n' >&2
+  exit 1
+}
+
+umask 077
+export CODEX_HOME="${SITE_LAB_CODEX_RUNTIME}/$(id -u)"
+install -d -m 0700 "${CODEX_HOME}"
+
+cat > "${CODEX_HOME}/config.toml" <<'EOF'
+cli_auth_credentials_store = "file"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+network_access = true
+EOF
+
+if ! codex login status >/dev/null 2>&1; then
+  cat <<'EOF'
+No temporary Codex login is present.
+Use: codex-maintenance login --device-auth
+
+Credentials stay under /run and disappear in exercise mode or after reboot.
+EOF
+fi
+
+setsid codex "$@" &
+codex_pgid="$!"
+printf '%s\n' "${codex_pgid}" > "${CODEX_HOME}/pgid"
+trap 'site_lab_terminate_process_group "${codex_pgid}"; rm -f -- "${CODEX_HOME}/pgid"' EXIT INT TERM
+wait "${codex_pgid}"

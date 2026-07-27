@@ -1,0 +1,380 @@
+:root {
+  color-scheme: light;
+  --paper: #f2ede3;
+  --paper-deep: #e4dacb;
+  --ink: #211d19;
+  --muted: #71675d;
+  --accent: #8c2f20;
+  --line: rgba(33, 29, 25, 0.18);
+  --serif: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+  --sans: "Yu Gothic", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.75;
+}
+
+a {
+  color: inherit;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1.25rem 2rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+}
+
+.brand-mark svg {
+  width: 100%;
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.6;
+}
+
+.brand strong,
+.brand small {
+  display: block;
+}
+
+.brand strong {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  letter-spacing: 0.08em;
+}
+
+.brand small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+nav {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.82rem;
+}
+
+nav a {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.35rem;
+}
+
+main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 2rem 5rem;
+}
+
+.hero {
+  display: grid;
+  min-height: 590px;
+  grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+}
+
+.hero-copy {
+  padding: 4rem 3rem 4rem 0;
+}
+
+.eyebrow {
+  margin: 0 0 1rem;
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+}
+
+h1,
+h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+}
+
+h1 {
+  max-width: 8em;
+  font-size: clamp(3rem, 6vw, 5.4rem);
+}
+
+h2 {
+  font-size: clamp(2rem, 4vw, 3.5rem);
+}
+
+.hero-copy > p:not(.eyebrow) {
+  max-width: 32rem;
+  margin: 2rem 0;
+  color: var(--muted);
+}
+
+.hero-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 3rem;
+  padding: 0 1.25rem;
+  border: 1px solid var(--ink);
+  text-decoration: none;
+}
+
+.hero-link::after {
+  margin-left: 1.5rem;
+  content: "→";
+}
+
+.hero-art {
+  position: relative;
+  display: grid;
+  min-height: 470px;
+  place-items: center;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(140, 47, 32, 0.05), transparent 55%),
+    var(--paper-deep);
+}
+
+.cup {
+  position: relative;
+  z-index: 2;
+  width: 210px;
+  height: 155px;
+  border: 3px solid var(--ink);
+  border-radius: 8px 8px 72px 72px;
+  background: #f8f2e8;
+}
+
+.coffee {
+  position: absolute;
+  top: 9px;
+  right: 12px;
+  left: 12px;
+  height: 22px;
+  border-radius: 50%;
+  background: #553322;
+}
+
+.handle {
+  position: absolute;
+  top: 30px;
+  right: -62px;
+  width: 68px;
+  height: 82px;
+  border: 3px solid var(--ink);
+  border-left: 0;
+  border-radius: 0 42px 42px 0;
+}
+
+.saucer {
+  position: absolute;
+  z-index: 1;
+  top: calc(50% + 85px);
+  width: 300px;
+  height: 36px;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+}
+
+.steam {
+  position: absolute;
+  top: 72px;
+  width: 44px;
+  height: 120px;
+  border-left: 3px solid var(--accent);
+  border-radius: 50%;
+}
+
+.steam-one {
+  left: calc(50% - 35px);
+  transform: rotate(8deg);
+}
+
+.steam-two {
+  left: calc(50% + 30px);
+  top: 90px;
+  height: 96px;
+  transform: rotate(-8deg);
+}
+
+.notice,
+.split-section,
+.menu-section,
+.access-section {
+  display: grid;
+  padding: 4.5rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.notice {
+  grid-template-columns: 80px minmax(0, 1fr);
+}
+
+.notice > div {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 2rem;
+}
+
+.notice-message {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(1.6rem, 3vw, 2.7rem);
+  line-height: 1.5;
+}
+
+.section-number {
+  margin: 0;
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+}
+
+.split-section {
+  grid-template-columns: 80px 1.3fr 0.7fr;
+  gap: 2rem;
+}
+
+.split-section > p:last-child {
+  align-self: end;
+  margin: 0;
+  color: var(--muted);
+}
+
+.menu-section {
+  grid-template-columns: 80px 1fr;
+}
+
+.menu-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.menu-list {
+  grid-column: 2;
+  margin: 3rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menu-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 1.2rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.menu-list strong {
+  color: var(--accent);
+  font-family: ui-monospace, monospace;
+}
+
+.access-section {
+  grid-template-columns: 80px 1fr 1fr;
+  gap: 2rem;
+}
+
+.access-section p {
+  margin: 0.25rem 0;
+}
+
+.hours {
+  font-family: var(--serif);
+  font-size: 2rem;
+}
+
+footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 2rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 780px) {
+  .site-header {
+    align-items: flex-start;
+  }
+
+  nav {
+    display: none;
+  }
+
+  main {
+    padding-inline: 1.25rem;
+  }
+
+  .hero {
+    min-height: auto;
+    grid-template-columns: 1fr;
+  }
+
+  .hero-copy {
+    padding: 4rem 0 3rem;
+  }
+
+  .hero-art {
+    min-height: 360px;
+  }
+
+  .notice,
+  .split-section,
+  .menu-section,
+  .access-section {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 3rem 0;
+  }
+
+  .notice > div {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .menu-list {
+    grid-column: 1;
+  }
+
+  footer {
+    flex-direction: column;
+  }
+}

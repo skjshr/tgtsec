@@ -1,38 +1,55 @@
-# Yamamoto Mfg. CTF
+# tgtsec training targets
 
-社内プチ CTF。**山本製作所(Yamamoto Manufacturing Co., Ltd.)** という架空の中小企業の、長年放置された Web サーバーを攻略します。
+このprivateリポジトリは、許可された隔離環境だけで使うセキュリティ教材の正本です。
 
-> 配布: takes-security-hacking-lab
+## Current: Site Takeover Live USB
 
-## 概要
+技術部会向けの現行教材は [`labs/site-takeover`](labs/site-takeover/README.md) です。
+準備、USB、起動、Kali、完全攻略、rootボーナス、復旧、検証を含む全手法は
+[`METHODS.md`](METHODS.md)から辿れます。
 
-| 項目 | 内容 |
-|---|---|
-| 形式 | Boot2Root (1台のVMを完全制覇) |
-| 難度 | 中級初心者(semi-beginner) |
-| 想定時間 | 2〜4時間(初心者) / 30〜60分(慣れてる人) |
-| カテゴリ | Web exploitation, Linux 権限昇格 |
-| フラグ形式 | `TSHL{...}` × 3個 |
+- 標的ノートのWindowsと内蔵SSDを消去しない
+- 専用USBから`toram nopersistence`でRAM起動する
+- USBと物理ディスクが見えない場合だけ脆弱Webサービスを開始する
+- Kaliと直結したEthernetだけで完結する
+- 初心者の必須ゴールは、店のトップページを自分たちの名前へ書き換えること
+- 非公開メモと管理者権限は任意のボーナス
 
-## 始め方
+会社のWindowsだけで準備する場合も、最初に [`METHODS.md`](METHODS.md) で
+全体と安全範囲を確認してから、
+[`COMPANY-SETUP.md`](labs/site-takeover/operator/COMPANY-SETUP.md)を読みます。ISOを生成しただけでは当日用にせず、VM、USB全容量、対象ノートの順に検証します。
 
-1. [Releases](https://github.com/skjshr/tgtsec/releases) から OVA をダウンロード
-2. [`SETUP.md`](SETUP.md) に従ってインポート + ネットワーク設定
-3. 攻撃用VMから `nmap` でターゲット発見 → CTF開始
+```text
+会社Windows + 個人テザリング
+  -> private draft prereleaseから検証済みISOを取得
+  -> USB全容量検査
+  -> Rufusで書き込み
+  -> 対象ノートで実機検証
 
-## このリポジトリにあるもの
+ソースを変える場合だけ
+  -> private GitHubへpush
+  -> Actionsで新しいLive ISOをビルド
+```
 
-- [`README.md`](README.md) — このファイル
-- [`SETUP.md`](SETUP.md) — **プレイヤー向け** VirtualBox インポート手順
-- [`PRIMER.md`](PRIMER.md) — **CTF初参加者はまずこれ**。基礎用語・心構え・ツール導入
-- [`WALKTHROUGH-BEGINNER.md`](WALKTHROUGH-BEGINNER.md) — 段階的ヒント集(完全ネタバレなし)
-- [`TOOLS-CHEATSHEET.md`](TOOLS-CHEATSHEET.md) — よく使うコマンド一覧
-- [`DISTRIBUTION.md`](DISTRIBUTION.md) — **出題者向け** OVA配布手順
+設計上の約束は [`PROJECT_CONSTITUTION.md`](PROJECT_CONSTITUTION.md)、
+見た目と教材体験は [`DESIGN.md`](DESIGN.md)、現在の完了条件は
+[`TASK_CONTRACT.md`](TASK_CONTRACT.md)に分けています。
 
-## ルール
+## Legacy: Yamamoto Mfg. OVA
 
-- 攻撃対象は提供されたVMのみ。ホストOSや他ネットワークは攻撃禁止
-- 詰まったら `WALKTHROUGH-BEGINNER.md` を1段階ずつ開く
-- ブルートフォース系を**長時間回さない**(意図された解法では不要です)
+山本製作所を題材にした旧OVA教材は、現行Live USB教材とは別物です。既存OVAを使う場合だけ、次の旧文書を参照します。
 
-楽しんで!
+- [`SETUP.md`](SETUP.md) — VirtualBoxへのOVA導入
+- [`PRIMER.md`](PRIMER.md) — 初参加者向け基礎
+- [`WALKTHROUGH-BEGINNER.md`](WALKTHROUGH-BEGINNER.md) — 段階的ヒント
+- [`TOOLS-CHEATSHEET.md`](TOOLS-CHEATSHEET.md) — コマンド一覧
+- [`DISTRIBUTION.md`](DISTRIBUTION.md) — OVA配布手順
+
+旧OVAを物理SSDへ変換したり、現行Live USBの代用品にしたりしません。
+
+## 共通ルール
+
+- 攻撃対象は、その回に運営担当が指定した標的だけ
+- 会社LAN、インターネット、第三者のIPを調査しない
+- 認証情報、個人情報、会社情報を標的へ置かない
+- 失敗した安全検査を無効化して続行しない
