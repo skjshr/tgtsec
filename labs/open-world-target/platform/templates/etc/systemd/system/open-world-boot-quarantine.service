@@ -1,0 +1,16 @@
+[Unit]
+Description=Fail-closed network state before open-world lab mode selection
+DefaultDependencies=no
+Before=network-pre.target NetworkManager.service wpa_supplicant.service
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/nft --file /etc/nftables.d/open-world-quarantine.nft
+ExecStart=/usr/sbin/rfkill block wifi
+ExecStart=/usr/sbin/rfkill block wwan
+ExecStart=/usr/sbin/rfkill block bluetooth
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

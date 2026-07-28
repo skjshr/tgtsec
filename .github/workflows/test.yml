@@ -1,0 +1,80 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "**"
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Static and unit checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/lab-guide/package-lock.json
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.13"
+
+      - name: Install guide dependencies
+        run: npm ci --prefix apps/lab-guide
+
+      - name: Run repository checks
+        run: npm run check
+
+      - name: Check Bash syntax
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          checked=0
+          while IFS= read -r -d '' file; do
+            if head -n 1 "${file}" | grep -Eq '^#!.*(/|env )(ba)?sh([[:space:]]|$)'; then
+              bash -n "${file}"
+              checked=$((checked + 1))
+            fi
+          done < <(find labs/open-world-target -type f -print0)
+          ((checked > 0))
+          printf 'Checked %d shell scripts.\n' "${checked}"
+
+      - name: Check PHP syntax
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          command -v php >/dev/null
+          checked=0
+          while IFS= read -r -d '' file; do
+            php -l "${file}"
+            checked=$((checked + 1))
+          done < <(find labs/open-world-target -type f -name '*.php' -print0)
+          ((checked > 0))
+          printf 'Checked %d PHP files.\n' "${checked}"
+
+      - name: Check C fixture syntax
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          checked=0
+          while IFS= read -r -d '' file; do
+            cc -Wall -Wextra -Werror -fsyntax-only "${file}"
+            checked=$((checked + 1))
+          done < <(find labs/open-world-target -type f -name '*.c' -print0)
+          ((checked > 0))
+          printf 'Checked %d C files.\n' "${checked}"

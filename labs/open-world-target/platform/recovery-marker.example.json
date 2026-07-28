@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "trustedPurpose": "examserver-open-world-recovery",
+  "kitId": "REPLACE_WITH_KIT_ID",
+  "mediaUuid": "REPLACE_WITH_RECOVERY_MEDIA_UUID",
+  "goldenDebianFilesystemUuid": "REPLACE_WITH_GOLDEN_DEBIAN_BTRFS_UUID"
+}

@@ -1,0 +1,17 @@
+{
+  "name": "examserver-practical-lab",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:repo": "node --test tests/*.test.mjs",
+    "test:world": "node labs/open-world-target/world/validate-world.mjs",
+    "test:telemetry": "npm --prefix labs/open-world-target/telemetry test",
+    "test:bridge": "npm --prefix labs/open-world-target/bridge test",
+    "test:platform": "python -m unittest discover -s labs/open-world-target/platform/tests -t labs/open-world-target/platform -v",
+    "test:operator": "python -m unittest discover -s labs/open-world-target/operator/tests -v",
+    "test:guide": "npm --prefix apps/lab-guide test",
+    "typecheck:guide": "npm --prefix apps/lab-guide run typecheck",
+    "build:guide": "npm --prefix apps/lab-guide run build",
+    "check": "npm run test:repo && npm run test:world && npm run test:telemetry && npm run test:bridge && npm run test:platform && npm run test:operator && npm run test:guide && npm run typecheck:guide && npm run build:guide"
+  }
+}

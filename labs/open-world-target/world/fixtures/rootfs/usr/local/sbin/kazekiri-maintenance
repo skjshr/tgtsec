@@ -1,0 +1,21 @@
+#!/bin/sh
+set -eu
+
+hook="${1:-}"
+resolved_hook=$(/usr/bin/realpath -e -- "$hook" 2>/dev/null) || {
+  echo "hook not found" >&2
+  exit 2
+}
+case "$resolved_hook" in
+  /srv/kazekiri/maintenance-hooks/*) ;;
+  *)
+    echo "usage: sudo kazekiri-maintenance /srv/kazekiri/maintenance-hooks/NAME" >&2
+    exit 2
+    ;;
+esac
+[ -f "$resolved_hook" ] || exit 2
+
+/usr/bin/head -c 1 /root/route-flags/SUDO.flag >/dev/null
+
+# TRAINING-ONLY: the group-writable hook is intentionally executed as root.
+exec /bin/sh "$resolved_hook"

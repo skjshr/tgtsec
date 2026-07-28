@@ -1,0 +1,14 @@
+[Unit]
+Description=ExamServer open-world allowlisted event socket
+PartOf=open-world-vulnerable.target
+
+[Socket]
+ListenStream=/run/examserver-open-world/events.sock
+SocketUser=root
+SocketGroup=lab-events
+SocketMode=0660
+DirectoryMode=0750
+RemoveOnStop=yes
+
+[Install]
+WantedBy=sockets.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=ExamServer open-world exercise mode
+Documentation=file:///usr/local/share/doc/open-world-lab/operator/DAY-OF.md
+ConditionPathExists=/run/open-world-lab/exercise-ready
+Requires=open-world-vulnerable.target
+BindsTo=open-world-vulnerable.target
+After=open-world-vulnerable.target
+Conflicts=open-world-maintenance.target
+
+[Install]
+WantedBy=multi-user.target

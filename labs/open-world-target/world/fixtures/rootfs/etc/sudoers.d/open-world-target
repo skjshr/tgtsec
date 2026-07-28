@@ -1,0 +1,2 @@
+# TRAINING-ONLY: every foothold can ask the helper to run a shared hook.
+%lab-foothold ALL=(root) NOPASSWD: /usr/local/sbin/kazekiri-maintenance

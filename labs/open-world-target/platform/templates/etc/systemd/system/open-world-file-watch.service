@@ -1,0 +1,33 @@
+[Unit]
+Description=ExamServer fixed-path flag access telemetry
+Requires=open-world-telemetry.socket
+After=open-world-telemetry.socket
+Before=apache2.service nfs-server.service open-world-root-timer.timer smbd.service ssh.service
+PartOf=open-world-vulnerable.target
+OnFailure=open-world-vulnerable-failure.service
+
+[Service]
+Type=notify
+NotifyAccess=main
+User=root
+Group=root
+ExecStartPre=/usr/bin/test -f /run/open-world-lab/exercise-ready
+ExecStart=/usr/local/libexec/open-world-file-watch
+Restart=no
+TimeoutStartSec=15s
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadOnlyPaths=/opt/kazekiri/clues/SUDO.flag
+ReadOnlyPaths=/opt/kazekiri/clues/TIMER.flag
+ReadOnlyPaths=/opt/kazekiri/clues/SUID.flag
+ReadOnlyPaths=/root/route-flags/SUDO.flag
+ReadOnlyPaths=/root/route-flags/TIMER.flag
+ReadOnlyPaths=/root/route-flags/SUID.flag
+ReadOnlyPaths=/root/ROOT.flag
+RestrictAddressFamilies=AF_UNIX
+LockPersonality=yes
+
+[Install]
+WantedBy=open-world-vulnerable.target

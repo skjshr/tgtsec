@@ -1,0 +1,269 @@
+#!/usr/bin/python3
+"""Map access to seven fixed lab files into allowlisted telemetry events."""
+
+from __future__ import annotations
+
+import ctypes
+import errno
+import os
+import select
+import signal
+import socket
+import stat
+import struct
+import subprocess
+import time
+from pathlib import Path
+
+
+IN_ACCESS = 0x00000001
+IN_ATTRIB = 0x00000004
+IN_DELETE_SELF = 0x00000400
+IN_MOVE_SELF = 0x00000800
+IN_IGNORED = 0x00008000
+WATCH_MASK = IN_ACCESS | IN_ATTRIB | IN_DELETE_SELF | IN_MOVE_SELF
+INVALIDATING_MASK = IN_ATTRIB | IN_DELETE_SELF | IN_MOVE_SELF | IN_IGNORED
+EVENT_HEADER = struct.Struct("iIII")
+READY_MARKER = Path("/run/open-world-lab/exercise-ready")
+DEFAULT_EMITTER = Path("/usr/local/bin/open-world-event")
+STARTUP_TIMEOUT_SECONDS = 10.0
+
+# This is the complete detector contract. No command line, process identity,
+# syscall record, or arbitrary path is serialized or passed to telemetry.
+WATCH_SPECS = (
+    (
+        Path("/opt/kazekiri/clues/SUDO.flag"),
+        (
+            "--kind", "clue.discovered",
+            "--node", "clue-sudo-helper",
+            "--source", "open-world-file-watch.service",
+            "--evidence", "file.clue_sudo.read",
+        ),
+    ),
+    (
+        Path("/opt/kazekiri/clues/TIMER.flag"),
+        (
+            "--kind", "clue.discovered",
+            "--node", "clue-writable-timer",
+            "--source", "open-world-file-watch.service",
+            "--evidence", "file.clue_timer.read",
+        ),
+    ),
+    (
+        Path("/opt/kazekiri/clues/SUID.flag"),
+        (
+            "--kind", "clue.discovered",
+            "--node", "clue-unsafe-path",
+            "--source", "open-world-file-watch.service",
+            "--evidence", "file.clue_suid.read",
+        ),
+    ),
+    (
+        Path("/root/route-flags/SUDO.flag"),
+        (
+            "--kind", "root_path.completed",
+            "--node", "root-path-sudo",
+            "--source", "open-world-file-watch.service",
+            "--evidence", "root.sudo_hook.executed",
+        ),
+    ),
+    (
+        Path("/root/route-flags/TIMER.flag"),
+        (
+            "--kind", "root_path.completed",
+            "--node", "root-path-timer",
+            "--source", "open-world-file-watch.service",
+            "--evidence", "root.timer_payload.executed",
+        ),
+    ),
+    (
+        Path("/root/route-flags/SUID.flag"),
+        (
+            "--kind", "root_path.completed",
+            "--node", "root-path-suid",
+            "--source", "open-world-file-watch.service",
+            "--evidence", "root.suid_renderer.executed",
+        ),
+    ),
+    (
+        Path("/root/ROOT.flag"),
+        (
+            "--kind", "root.acquired",
+            "--node", "root-common",
+            "--source", "open-world-file-watch.service",
+            "--evidence", "root.common_flag.read",
+        ),
+    ),
+)
+
+
+class Inotify:
+    def __init__(self) -> None:
+        libc = ctypes.CDLL(None, use_errno=True)
+        libc.inotify_init1.argtypes = [ctypes.c_int]
+        libc.inotify_init1.restype = ctypes.c_int
+        libc.inotify_add_watch.argtypes = [
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint32,
+        ]
+        libc.inotify_add_watch.restype = ctypes.c_int
+        self._libc = libc
+        self.fd = libc.inotify_init1(os.O_CLOEXEC | os.O_NONBLOCK)
+        if self.fd < 0:
+            error = ctypes.get_errno()
+            raise OSError(error, os.strerror(error))
+
+    def add(self, path: Path) -> int:
+        watch = self._libc.inotify_add_watch(
+            self.fd,
+            os.fsencode(path),
+            WATCH_MASK,
+        )
+        if watch < 0:
+            error = ctypes.get_errno()
+            raise OSError(error, os.strerror(error))
+        return watch
+
+    def close(self) -> None:
+        os.close(self.fd)
+
+
+def parse_events(payload: bytes) -> list[tuple[int, int]]:
+    events: list[tuple[int, int]] = []
+    offset = 0
+    while offset + EVENT_HEADER.size <= len(payload):
+        watch, mask, _cookie, name_length = EVENT_HEADER.unpack_from(
+            payload, offset
+        )
+        offset += EVENT_HEADER.size + name_length
+        events.append((watch, mask))
+    if offset != len(payload):
+        raise RuntimeError("truncated inotify event")
+    return events
+
+
+def _regular_identity(path: Path) -> tuple[int, int]:
+    metadata = path.lstat()
+    if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISREG(metadata.st_mode):
+        raise RuntimeError("watched object is not a regular file")
+    return metadata.st_dev, metadata.st_ino
+
+
+def _wait_for_contract(
+    specs: tuple[tuple[Path, tuple[str, ...]], ...],
+    ready_marker: Path,
+) -> dict[Path, tuple[int, int]]:
+    deadline = time.monotonic() + STARTUP_TIMEOUT_SECONDS
+    while True:
+        try:
+            if not ready_marker.is_file() or ready_marker.is_symlink():
+                raise FileNotFoundError(errno.ENOENT, "ready marker absent")
+            return {path: _regular_identity(path) for path, _event in specs}
+        except (FileNotFoundError, NotADirectoryError):
+            if time.monotonic() >= deadline:
+                raise RuntimeError("fixed watcher contract was not ready")
+            time.sleep(0.1)
+
+
+def _emit(emitter: Path, arguments: tuple[str, ...]) -> None:
+    try:
+        completed = subprocess.run(
+            [str(emitter), *arguments],
+            check=False,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise RuntimeError("fixed event delivery failed") from error
+    if completed.returncode != 0:
+        raise RuntimeError("fixed event delivery failed")
+
+
+def _notify_ready() -> None:
+    address = os.environ.get("NOTIFY_SOCKET")
+    if not address:
+        return
+    if address.startswith("@"):
+        address = "\0" + address[1:]
+    with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as notifier:
+        notifier.connect(address)
+        notifier.sendall(b"READY=1")
+
+
+def watch(
+    specs: tuple[tuple[Path, tuple[str, ...]], ...] = WATCH_SPECS,
+    *,
+    ready_marker: Path = READY_MARKER,
+    emitter: Path = DEFAULT_EMITTER,
+    stop_after_events: int | None = None,
+) -> int:
+    if len(specs) != 7 or len({path for path, _event in specs}) != 7:
+        raise RuntimeError("fixed watcher allowlist must contain seven paths")
+    stopping = False
+
+    def request_stop(_signum: int, _frame: object) -> None:
+        nonlocal stopping
+        stopping = True
+
+    signal.signal(signal.SIGINT, request_stop)
+    signal.signal(signal.SIGTERM, request_stop)
+
+    identities = _wait_for_contract(specs, ready_marker)
+    notifier = Inotify()
+    delivered = 0
+    last_emitted: dict[int, float] = {}
+    try:
+        by_watch: dict[int, tuple[Path, tuple[str, ...]]] = {}
+        for path, event in specs:
+            watch_id = notifier.add(path)
+            if watch_id in by_watch:
+                raise RuntimeError("inotify watch descriptor collision")
+            by_watch[watch_id] = (path, event)
+        for path, _event in specs:
+            if _regular_identity(path) != identities[path]:
+                raise RuntimeError("watched file changed during startup")
+
+        _notify_ready()
+        print("watch-ready", flush=True)
+        while not stopping:
+            readable, _, _ = select.select([notifier.fd], [], [], 1.0)
+            if not readable:
+                continue
+            try:
+                payload = os.read(notifier.fd, 65536)
+            except BlockingIOError:
+                continue
+            for watch_id, mask in parse_events(payload):
+                watched = by_watch.get(watch_id)
+                if watched is None:
+                    raise RuntimeError("unknown inotify watch")
+                if mask & INVALIDATING_MASK:
+                    raise RuntimeError("fixed watched file changed")
+                if not mask & IN_ACCESS:
+                    continue
+                now = time.monotonic()
+                if now - last_emitted.get(watch_id, 0.0) < 1.0:
+                    continue
+                _emit(emitter, watched[1])
+                last_emitted[watch_id] = now
+                delivered += 1
+                if stop_after_events is not None and delivered >= stop_after_events:
+                    return 0
+    finally:
+        notifier.close()
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(watch())
+    except Exception as error:
+        print(
+            f"open-world-file-watch: {type(error).__name__}",
+            file=os.sys.stderr,
+            flush=True,
+        )
+        raise SystemExit(1)

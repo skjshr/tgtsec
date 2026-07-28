@@ -1,0 +1,350 @@
+.map-screen {
+  display: grid;
+  grid-template-columns: clamp(260px, 20.1vw, 336px) minmax(0, 1fr) clamp(300px, 22.9vw, 384px);
+  grid-template-rows: minmax(0, 1fr) 108px;
+  height: calc(100dvh - var(--header-height));
+}
+
+.map-screen .known-facts {
+  grid-row: 1 / -1;
+}
+
+.map-stage {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 30px 30px 0;
+  overflow: hidden;
+  background: var(--canvas);
+}
+
+.stage-intro h1 {
+  margin-bottom: 8px;
+  font-family: var(--heading);
+  font-size: clamp(25px, 2vw, 31px);
+  font-weight: 650;
+  letter-spacing: 0.015em;
+}
+
+.stage-intro p {
+  margin-bottom: 0;
+  color: var(--muted-text);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.success-callout {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 13px;
+  align-items: center;
+  padding: 12px 15px;
+  margin-top: 16px;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 5%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--success) 36%, var(--border));
+  border-radius: 6px;
+}
+
+.success-callout > svg {
+  width: 30px;
+  height: 30px;
+}
+
+.success-callout strong,
+.success-callout span {
+  display: block;
+}
+
+.success-callout strong {
+  margin-bottom: 2px;
+  font-size: 14px;
+}
+
+.success-callout span {
+  color: var(--muted-text);
+  font-size: 12px;
+}
+
+.map-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 58px;
+  margin-top: 20px;
+}
+
+.map-toolbar h2 {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 0;
+  font-family: var(--heading);
+  font-size: 20px;
+}
+
+.map-toolbar h2 svg {
+  width: 27px;
+  height: 27px;
+  color: var(--primary);
+}
+
+.map-legend {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  color: var(--muted-text);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.map-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.map-legend svg {
+  width: 21px;
+  height: 21px;
+}
+
+.map-legend span:nth-child(1) svg {
+  color: var(--success);
+}
+
+.map-legend span:nth-child(2) svg {
+  color: var(--primary);
+}
+
+.map-canvas {
+  flex: 1;
+  min-height: 340px;
+  margin: 0 -4px;
+}
+
+.map-canvas .react-flow {
+  background: transparent;
+}
+
+.react-flow__node-world {
+  width: 190px;
+  border: 0;
+}
+
+.world-node {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 86px;
+  padding: 13px 10px;
+  color: var(--text);
+  background: var(--surface);
+  border: 2px solid var(--success);
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgb(31 27 22 / 5%);
+}
+
+.world-node--selected,
+.world-node.is-focused {
+  border-color: var(--primary);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--warning) 25%, transparent),
+    0 1px 2px rgb(31 27 22 / 5%);
+}
+
+.world-node--undiscovered {
+  justify-content: center;
+  color: var(--muted-text);
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  border-color: var(--muted-text);
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.world-node-icon {
+  flex: 0 0 auto;
+  display: grid;
+  width: 30px;
+  place-items: center;
+}
+
+.world-node-icon svg {
+  width: 29px;
+  height: 29px;
+}
+
+.world-node-copy {
+  display: block;
+  min-width: 0;
+}
+
+.world-node-copy strong,
+.world-node-copy small,
+.world-node-copy em {
+  display: block;
+}
+
+.world-node-copy strong {
+  font-size: 14px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.world-node-copy small {
+  margin-top: 2px;
+  color: var(--muted-text);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.world-node-copy em {
+  width: fit-content;
+  padding: 1px 5px;
+  margin-top: 5px;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 7%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--success) 36%, var(--border));
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-style: normal;
+}
+
+.world-node .react-flow__handle {
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.react-flow__edge-path {
+  stroke: var(--muted-text);
+  stroke-width: 1.7;
+}
+
+.world-edge--possible .react-flow__edge-path {
+  stroke-dasharray: 7 6;
+}
+
+.react-flow__node:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary) 38%, white);
+  outline-offset: 4px;
+}
+
+.mobile-map {
+  display: none;
+}
+
+.investigation-rail {
+  min-width: 0;
+  padding: 34px 24px 22px;
+  overflow-y: auto;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+}
+
+.rail-intro {
+  margin-bottom: 22px;
+  color: var(--muted-text);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.investigation-list {
+  display: grid;
+  gap: 14px;
+}
+
+.investigation-option {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 20px;
+  gap: 12px;
+  align-items: start;
+  width: 100%;
+  min-height: 112px;
+  padding: 18px 14px;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+}
+
+.investigation-option:hover {
+  background: color-mix(in srgb, var(--primary) 4%, var(--surface));
+  border-color: var(--primary-hover);
+}
+
+.investigation-option > svg:first-child {
+  width: 34px;
+  height: 34px;
+}
+
+.investigation-option > svg:last-child {
+  align-self: center;
+  width: 20px;
+  height: 20px;
+  color: var(--primary);
+}
+
+.investigation-option strong,
+.investigation-option small {
+  display: block;
+}
+
+.investigation-option strong {
+  margin-bottom: 6px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.investigation-option small {
+  color: var(--muted-text);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.outline-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  margin-top: 24px;
+  background: var(--surface);
+  border: 1px solid var(--text);
+  border-radius: 4px;
+  font-weight: 650;
+}
+
+.outline-action:hover {
+  color: var(--primary-hover);
+  border-color: var(--primary);
+}
+
+.outline-action svg {
+  width: 23px;
+  height: 23px;
+}
+
+.safety-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 20px 4px 0;
+  color: var(--muted-text);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.safety-note svg {
+  flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
+}
+
+.map-screen .event-strip {
+  grid-column: 2 / -1;
+}

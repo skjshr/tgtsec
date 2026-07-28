@@ -1,0 +1,10 @@
+[Unit]
+Description=ExamServer open-world maintenance mode
+Documentation=file:///usr/local/share/doc/open-world-lab/operator/DAY-OF.md
+Conflicts=open-world-exercise.target open-world-vulnerable.target
+Requires=open-world-boot-quarantine.service
+After=open-world-exercise.target open-world-vulnerable.target open-world-boot-quarantine.service
+AllowIsolate=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,24 @@
+#!/bin/sh
+set -eu
+
+[ "${PAM_TYPE:-}" = "open_session" ] || exit 0
+
+case "${PAM_USER:-}" in
+  sales)
+    exec /usr/local/bin/open-world-event \
+      --kind foothold.acquired \
+      --node foothold-sales \
+      --source ssh.service \
+      --evidence ssh.sales.session_opened
+    ;;
+  mechanic)
+    exec /usr/local/bin/open-world-event \
+      --kind foothold.acquired \
+      --node foothold-mechanic \
+      --source ssh.service \
+      --evidence ssh.mechanic.session_opened
+    ;;
+  *)
+    exit 0
+    ;;
+esac

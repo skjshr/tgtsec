@@ -1,0 +1,10 @@
+[Unit]
+Description=TRAINING ONLY - Kazekiri root maintenance payload
+PartOf=open-world-vulnerable.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStartPre=/usr/local/libexec/open-world-timer-check
+ExecStart=/bin/sh /opt/kazekiri/maintenance/nightly.sh

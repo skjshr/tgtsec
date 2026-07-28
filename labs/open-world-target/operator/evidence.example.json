@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 1,
+  "targetProfileSha256": null,
+  "targetBundleManifestSha256": null,
+  "recoveryKitManifestSha256": null,
+  "physicalGates": {
+    "debian13Amd64LiveIdentity": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "debianWindowsDualBoot": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "windowsVolumeFullyDecrypted": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "windowsHibernationFastStartupDisabled": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "windowsReadOnlyPartuuidMount": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "exerciseWiredOnlyIsolation": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "dnsmasqDhcpOnlyNoDns": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "targetTelemetryBridgeBearer": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "smbTcp445OnlyNmbdMasked": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "dnsmasqLeaseRuntimePermissions": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "nfsV4RpcbindSocketIsolation": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "nfsWatcherEventDelivery": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "windowsFlagAbsentFromDebianRoot": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "eventKeyInstalledIdentityAccess": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "fileWatchEventDelivery": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "maintenanceDirectLinkDisconnectedUnmanaged": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "systemdNetworkdMaskedDirectIpOwner": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "maintenanceWifiFirmwareAndTethering": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "nineRouteCombinations": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "fourteenFlagsReset": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "normalDebianRecovery": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "goldenDebianBtrfsUuidPreserved": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "microsoftEfiUnchanged": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "offlineWindowsBoot": {
+      "status": "not-run",
+      "evidence": []
+    },
+    "fullDiskFallbackRehearsal": {
+      "status": "not-run",
+      "evidence": []
+    }
+  },
+  "routeRuns": [
+    {
+      "id": "WEB-SUDO",
+      "status": "not-run",
+      "sessionId": null,
+      "startedAt": null,
+      "finishedAt": null,
+      "evidenceCodes": [],
+      "artifactPaths": []
+    },
+    {
+      "id": "WEB-TIMER",
+      "status": "not-run",
+      "sessionId": null,
+      "startedAt": null,
+      "finishedAt": null,
+      "evidenceCodes": [],
+      "artifactPaths": []
+    },
+    {
+      "id": "WEB-SUID",
+      "status": "not-run",
+      "sessionId": null,
+      "startedAt": null,
+      "finishedAt": null,
+      "evidenceCodes": [],
+      "artifactPaths": []
+    },
+    {
+      "id": "SMB-SUDO",
+      "status": "not-run",
+      "sessionId": null,
+      "startedAt": null,
+      "finishedAt": null,
+      "evidenceCodes": [],
+      "artifactPaths": []
+    },
+    {
+      "id": "SMB-TIMER",
+      "status": "not-run",
+      "sessionId": null,
+      "startedAt": null,
+      "finishedAt": null,
+      "evidenceCodes": [],
+      "artifactPaths": []
+    },
+    {
+      "id": "SMB-SUID",
+      "status": "not-run",
+      "sessionId": null,
+      "startedAt": null,
+      "finishedAt": null,
+      "evidenceCodes": [],
+      "artifactPaths": []
+    },
+    {
+      "id": "NFS-SUDO",
+      "status": "not-run",
+      "sessionId": null,
+      "startedAt": null,
+      "finishedAt": null,
+      "evidenceCodes": [],
+      "artifactPaths": []
+    },
+    {
+      "id": "NFS-TIMER",
+      "status": "not-run",
+      "sessionId": null,
+      "startedAt": null,
+      "finishedAt": null,
+      "evidenceCodes": [],
+      "artifactPaths": []
+    },
+    {
+      "id": "NFS-SUID",
+      "status": "not-run",
+      "sessionId": null,
+      "startedAt": null,
+      "finishedAt": null,
+      "evidenceCodes": [],
+      "artifactPaths": []
+    }
+  ]
+}

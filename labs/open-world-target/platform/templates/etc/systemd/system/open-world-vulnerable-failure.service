@@ -1,0 +1,10 @@
+[Unit]
+Description=Fail closed after an exercise runtime unit fails
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl --no-block stop open-world-vulnerable.target
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
