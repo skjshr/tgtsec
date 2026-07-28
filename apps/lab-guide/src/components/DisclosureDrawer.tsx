@@ -161,3 +161,41 @@ export function DisclosurePull({
     </button>
   );
 }
+
+export interface ToolShelfItem<T extends string> {
+  id: T;
+  label: string;
+  meta?: string;
+  icon: ReactNode;
+}
+
+interface ToolShelfProps<T extends string> {
+  items: ToolShelfItem<T>[];
+  active: T;
+  onSelect: (id: T) => void;
+}
+
+export function ToolShelf<T extends string>({
+  items,
+  active,
+  onSelect,
+}: ToolShelfProps<T>) {
+  return (
+    <nav className="tool-shelf-nav" aria-label="表示する情報">
+      {items.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          aria-pressed={active === item.id}
+          onClick={() => onSelect(item.id)}
+        >
+          <span className="tool-shelf-icon" aria-hidden="true">
+            {item.icon}
+          </span>
+          <span>{item.label}</span>
+          {item.meta ? <small>{item.meta}</small> : null}
+        </button>
+      ))}
+    </nav>
+  );
+}

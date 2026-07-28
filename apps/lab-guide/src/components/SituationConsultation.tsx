@@ -27,6 +27,8 @@ import { ConnectionBanner } from "./ConnectionBanner";
 import {
   DisclosureDrawer,
   DisclosurePull,
+  ToolShelf,
+  type ToolShelfItem,
 } from "./DisclosureDrawer";
 import { EventStrip } from "./EventStrip";
 import { KnownFacts } from "./KnownFacts";
@@ -228,12 +230,26 @@ export function SituationConsultation({
           : false
       : false;
   const drawerId = "consultation-disclosure-drawer";
-  const drawerTitle =
-    activeDisclosure === "facts"
-      ? "分かっていること"
-      : activeDisclosure === "hints"
-        ? "必要ならヒント"
-        : "最近の発見";
+  const shelfItems: ToolShelfItem<ConsultationDisclosure>[] = [
+    {
+      id: "facts",
+      label: "事実",
+      meta: `${projection.facts.length}件`,
+      icon: <IconListCheck />,
+    },
+    {
+      id: "hints",
+      label: "ヒント",
+      meta: `${projection.hints.length}段階`,
+      icon: <IconBulb />,
+    },
+    {
+      id: "events",
+      label: "履歴",
+      meta: `${projection.recentEvents.length}件`,
+      icon: <IconListDetails />,
+    },
+  ];
 
   return (
     <main className="lab-screen consultation-screen">
@@ -246,13 +262,21 @@ export function SituationConsultation({
             onRefresh={onRefresh}
           />
         ) : null}
-        <header className="consultation-intro">
-          <IconMessageCircleQuestion aria-hidden="true" />
-          <div>
+        <div className="stage-heading-row">
+          <header className="consultation-intro">
+            <span className="stage-eyebrow">状況相談</span>
             <h1>次に確かめることを選ぶ</h1>
-            <p>いま分かっている事実から、次の仮説を1つ選びます。</p>
-          </div>
-        </header>
+          </header>
+          <nav className="disclosure-pulls" aria-label="必要な情報を開く">
+            <DisclosurePull
+              label="相談ツール"
+              icon={<IconBulb />}
+              controls={drawerId}
+              open={activeDisclosure !== null}
+              onClick={() => setActiveDisclosure("hints")}
+            />
+          </nav>
+        </div>
 
         <section className="stage-context" aria-label="現在の目標">
           <IconTargetArrow aria-hidden="true" />
@@ -261,33 +285,6 @@ export function SituationConsultation({
             <strong>{projection.objective}</strong>
           </div>
         </section>
-
-        <nav className="disclosure-pulls" aria-label="必要な情報を開く">
-          <DisclosurePull
-            label="事実"
-            meta={`${projection.facts.length}件`}
-            icon={<IconListCheck />}
-            controls={drawerId}
-            open={activeDisclosure === "facts"}
-            onClick={() => setActiveDisclosure("facts")}
-          />
-          <DisclosurePull
-            label="ヒント"
-            meta={`${projection.hints.length}段階`}
-            icon={<IconBulb />}
-            controls={drawerId}
-            open={activeDisclosure === "hints"}
-            onClick={() => setActiveDisclosure("hints")}
-          />
-          <DisclosurePull
-            label="最近の発見"
-            meta={`${projection.recentEvents.length}件`}
-            icon={<IconListDetails />}
-            controls={drawerId}
-            open={activeDisclosure === "events"}
-            onClick={() => setActiveDisclosure("events")}
-          />
-        </nav>
 
         {projection.hypotheses.length > 0 ? (
           <>
@@ -373,9 +370,17 @@ export function SituationConsultation({
       <DisclosureDrawer
         id={drawerId}
         open={activeDisclosure !== null}
-        title={drawerTitle}
+        title="相談ツール"
         onClose={() => setActiveDisclosure(null)}
       >
+        {activeDisclosure ? (
+          <ToolShelf
+            items={shelfItems}
+            active={activeDisclosure}
+            onSelect={setActiveDisclosure}
+          />
+        ) : null}
+
         {activeDisclosure === "facts" ? (
           <KnownFacts
             facts={projection.facts}

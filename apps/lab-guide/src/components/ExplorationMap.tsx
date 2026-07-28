@@ -7,7 +7,6 @@ import {
   IconCompass,
   IconListCheck,
   IconListDetails,
-  IconMap2,
   IconPlugConnected,
   IconRoute,
   IconTargetArrow,
@@ -24,6 +23,8 @@ import { ConnectionBanner } from "./ConnectionBanner";
 import {
   DisclosureDrawer,
   DisclosurePull,
+  ToolShelf,
+  type ToolShelfItem,
 } from "./DisclosureDrawer";
 import { EventStrip } from "./EventStrip";
 import { KnownFacts } from "./KnownFacts";
@@ -115,14 +116,38 @@ export function ExplorationMap({
   }, [activeDisclosure, experience]);
 
   const drawerId = "map-disclosure-drawer";
-  const drawerTitle =
-    activeDisclosure === "pairing"
-      ? "ライブ接続"
-      : activeDisclosure === "facts"
-        ? "分かっていること"
-        : activeDisclosure === "investigations"
-          ? "次の調査"
-          : "最近の発見";
+  const defaultDisclosure: MapDisclosure =
+    experience === "browse" ? "pairing" : "facts";
+  const shelfItems: ToolShelfItem<MapDisclosure>[] = [
+    ...(experience === "browse"
+      ? [
+          {
+            id: "pairing" as const,
+            label: "接続",
+            meta: "6文字",
+            icon: <IconPlugConnected />,
+          },
+        ]
+      : []),
+    {
+      id: "facts",
+      label: "事実",
+      meta: `${projection.facts.length}件`,
+      icon: <IconListCheck />,
+    },
+    {
+      id: "investigations",
+      label: "次の調査",
+      meta: `${projection.investigations.slice(0, 3).length}件`,
+      icon: <IconCompass />,
+    },
+    {
+      id: "events",
+      label: "履歴",
+      meta: `${projection.recentEvents.length}件`,
+      icon: <IconListDetails />,
+    },
+  ];
 
   const openConsultation = (hypothesisId?: string) => {
     setActiveDisclosure(null);
@@ -142,10 +167,21 @@ export function ExplorationMap({
             onRefresh={onRefresh}
           />
         ) : null}
-        <header className="stage-intro">
-          <h1>{projection.heading}</h1>
-          <p>{projection.lede}</p>
-        </header>
+        <div className="stage-heading-row">
+          <header className="stage-intro">
+            <span className="stage-eyebrow">探索地図</span>
+            <h1>{projection.heading}</h1>
+          </header>
+          <nav className="disclosure-pulls" aria-label="必要な情報を開く">
+            <DisclosurePull
+              label="探索ツール"
+              icon={<IconCompass />}
+              controls={drawerId}
+              open={activeDisclosure !== null}
+              onClick={() => setActiveDisclosure(defaultDisclosure)}
+            />
+          </nav>
+        </div>
 
         <section className="stage-context" aria-label="現在の目標">
           <IconTargetArrow aria-hidden="true" />
@@ -169,43 +205,6 @@ export function ExplorationMap({
           ) : null}
         </section>
 
-        <nav className="disclosure-pulls" aria-label="必要な情報を開く">
-          {experience === "browse" ? (
-            <DisclosurePull
-              label="ライブ接続"
-              meta="6文字"
-              icon={<IconPlugConnected />}
-              controls={drawerId}
-              open={activeDisclosure === "pairing"}
-              onClick={() => setActiveDisclosure("pairing")}
-            />
-          ) : null}
-          <DisclosurePull
-            label="事実"
-            meta={`${projection.facts.length}件`}
-            icon={<IconListCheck />}
-            controls={drawerId}
-            open={activeDisclosure === "facts"}
-            onClick={() => setActiveDisclosure("facts")}
-          />
-          <DisclosurePull
-            label="次の調査"
-            meta={`${projection.investigations.slice(0, 3).length}件`}
-            icon={<IconCompass />}
-            controls={drawerId}
-            open={activeDisclosure === "investigations"}
-            onClick={() => setActiveDisclosure("investigations")}
-          />
-          <DisclosurePull
-            label="最近の発見"
-            meta={`${projection.recentEvents.length}件`}
-            icon={<IconListDetails />}
-            controls={drawerId}
-            open={activeDisclosure === "events"}
-            onClick={() => setActiveDisclosure("events")}
-          />
-        </nav>
-
         {projection.status === "complete" ? (
           <section className="success-callout" aria-labelledby="success-title">
             <IconRoute aria-hidden="true" />
@@ -216,32 +215,16 @@ export function ExplorationMap({
           </section>
         ) : null}
 
-        <div className="map-toolbar">
-          <h2>
-            <IconMap2 aria-hidden="true" />
+        <section className="map-workspace" aria-labelledby="map-workspace-title">
+          <h2 id="map-workspace-title" className="sr-only">
             探索地図
           </h2>
-          <details className="map-legend-details">
-            <summary>地図記号</summary>
-            <div className="map-legend" aria-label="地図の状態">
-              <span>
-                <IconCircleCheck aria-hidden="true" /> 発見済み
-              </span>
-              <span>
-                <IconCircleDot aria-hidden="true" /> 選択中
-              </span>
-              <span>
-                <IconCircleDashed aria-hidden="true" /> 未発見
-              </span>
-            </div>
-          </details>
-        </div>
-
-        <MapCanvas
-          projection={projection}
-          selectedNodeId={selectedNodeId}
-          onSelectNode={setSelectedNodeId}
-        />
+          <MapCanvas
+            projection={projection}
+            selectedNodeId={selectedNodeId}
+            onSelectNode={setSelectedNodeId}
+          />
+        </section>
 
         {selectedNode && selectedNode.state !== "undiscovered" ? (
           <section
@@ -254,10 +237,6 @@ export function ExplorationMap({
             <div className="selected-node-copy">
               <small>選択中の地点</small>
               <strong>{selectedNode.label}</strong>
-              <span>
-                {selectedNode.detail ??
-                  "この地点で得た事実を、次の仮説につなげます。"}
-              </span>
             </div>
             {selectedNode.progress ? (
               <span className="selected-node-progress">
@@ -278,9 +257,17 @@ export function ExplorationMap({
       <DisclosureDrawer
         id={drawerId}
         open={activeDisclosure !== null}
-        title={drawerTitle}
+        title="探索ツール"
         onClose={() => setActiveDisclosure(null)}
       >
+        {activeDisclosure ? (
+          <ToolShelf
+            items={shelfItems}
+            active={activeDisclosure}
+            onSelect={setActiveDisclosure}
+          />
+        ) : null}
+
         {activeDisclosure === "pairing" ? (
           <SessionPairingPanel
             pending={pairingPending}
@@ -290,15 +277,31 @@ export function ExplorationMap({
         ) : null}
 
         {activeDisclosure === "facts" ? (
-          <KnownFacts
-            facts={projection.facts}
-            title="分かっていること"
-            projection={projection}
-            detailed
-            experience={experience}
-            showHeading={false}
-            showContextCards={false}
-          />
+          <>
+            <KnownFacts
+              facts={projection.facts}
+              title="分かっていること"
+              projection={projection}
+              detailed
+              experience={experience}
+              showHeading={false}
+              showContextCards={false}
+            />
+            <section className="drawer-map-legend" aria-label="地図の記号">
+              <h3>地図の記号</h3>
+              <div>
+                <span>
+                  <IconCircleCheck aria-hidden="true" /> 発見済み
+                </span>
+                <span>
+                  <IconCircleDot aria-hidden="true" /> 選択中
+                </span>
+                <span>
+                  <IconCircleDashed aria-hidden="true" /> 未発見
+                </span>
+              </div>
+            </section>
+          </>
         ) : null}
 
         {activeDisclosure === "investigations" ? (
