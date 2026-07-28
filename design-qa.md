@@ -125,12 +125,35 @@ Evidence:
 
 ## External verification boundary
 
-Repository, automated, and local browser gates pass. Production is accepted only
-after the exact saved version is deployed and both the deployed route and
-canonical ExamServer `/lab` route are opened successfully.
+Repository, automated, and local browser gates pass.
+
+- Canonical ExamServer production:
+  `https://exam-server-one.vercel.app/lab`
+  - Vercel reported the `main` deployment for `43ee434a4a4bda202bc1d573f8d964237e0e4b3a`
+    as complete.
+  - The deployed browser DOM contains the heading
+    `風切モータースへ接続する` and `.mission-stage`.
+  - The retired `.map-stage` surface is absent.
+- Owner-only Sites production:
+  `https://examserver-open-world-lab.shkjhr.chatgpt.site`
+  - Saved version 5 was built from and deployed with source commit
+    `266403ead81fbec99f3cdf0706204677d1192838`.
+  - The deployment finished with `succeeded`.
+  - Authorized production requests returned 200 for the root HTML, main
+    JavaScript, theme CSS, and browse projection chunk.
+  - The deployed HTML uses root `/assets/` URLs rather than the invalid
+    `/lab/assets/` URLs found and corrected during release verification.
+  - The deployed chunks contain `mission-stage` and
+    `風切モータースへ接続する`.
+
+GitHub Actions did not execute the test job. GitHub stopped it before the first
+step because of the account billing or spending-limit state. This is recorded as
+an external CI infrastructure exception, not a passing CI run; the complete
+local `npm run check` result above remains the executed test evidence.
 
 The physical Kali-to-Debian connection, dual-boot installation, recovery image,
 and hardware isolation gates remain **NOT RUN** until tested on the designated
 machines.
 
-final result: local pass; production pending
+final result: production pass; GitHub-hosted CI not executed; physical hardware
+NOT RUN
