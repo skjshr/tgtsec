@@ -63,3 +63,18 @@ test("implementation roots exist", () => {
     assert.equal(existsSync(resolve(root, path)), true, `${path} is missing`);
   }
 });
+
+test("Vercel origin exposes only the ExamServer lab namespace", () => {
+  const config = JSON.parse(read("vercel.json"));
+
+  assert.equal(config.outputDirectory, "apps/lab-guide/dist/client");
+  assert.deepEqual(
+    config.rewrites.map(({ source }) => source),
+    ["/api/lab/:path*", "/lab", "/lab/:path*"],
+  );
+  assert.equal(
+    config.redirects[0].destination,
+    "https://exam-server-one.vercel.app/lab",
+  );
+  assert.equal(existsSync(resolve(root, "api/index.mjs")), true);
+});
