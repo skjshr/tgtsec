@@ -102,16 +102,21 @@ describe("Lab guide", () => {
         name: "風切モータースの世界を先に歩く",
       }),
     ).toBeVisible();
-    expect(screen.getByText("公開ガイド")).toBeVisible();
     expect(screen.queryByLabelText(/接続コード/)).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     const pairingPull = screen.getByRole("button", {
-      name: /^ライブ接続、6文字を開く$/,
+      name: "探索ツールを開く",
     });
     expect(pairingPull).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getAllByRole("button", { name: /ツールを開く/ })).toHaveLength(
+      1,
+    );
 
     await user.click(pairingPull);
-    const pairingDialog = screen.getByRole("dialog", { name: "ライブ接続" });
+    const pairingDialog = screen.getByRole("dialog", { name: "探索ツール" });
+    expect(
+      within(pairingDialog).getByRole("button", { name: /^接続6文字$/ }),
+    ).toHaveAttribute("aria-pressed", "true");
     expect(within(pairingDialog).getByLabelText(/接続コード/)).toBeVisible();
     expect(
       within(pairingDialog).getByRole("button", { name: "ライブ接続" }),
@@ -132,14 +137,14 @@ describe("Lab guide", () => {
     );
 
     const pairingPull = await screen.findByRole("button", {
-      name: /^ライブ接続、6文字を開く$/,
+      name: "探索ツールを開く",
     });
     pairingPull.focus();
     await user.click(pairingPull);
 
-    const dialog = screen.getByRole("dialog", { name: "ライブ接続" });
+    const dialog = screen.getByRole("dialog", { name: "探索ツール" });
     const close = within(dialog).getByRole("button", {
-      name: "ライブ接続を閉じる",
+      name: "探索ツールを閉じる",
     });
     const input = within(dialog).getByLabelText(/接続コード/);
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
@@ -155,7 +160,8 @@ describe("Lab guide", () => {
     expect(pairingPull).toHaveFocus();
   });
 
-  it("updates pull counts without opening a drawer on a live discovery", async () => {
+  it("keeps live counts stored until the user asks for the tool shelf", async () => {
+    const user = userEvent.setup();
     render(<App client={createFixtureClient("transition")} />);
 
     expect(
@@ -164,7 +170,7 @@ describe("Lab guide", () => {
       }),
     ).toBeVisible();
     expect(
-      screen.getByRole("button", { name: /^事実、0件を開く$/ }),
+      screen.getByRole("button", { name: "探索ツールを開く" }),
     ).toBeVisible();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
@@ -175,13 +181,18 @@ describe("Lab guide", () => {
         { timeout: 2_000 },
       ),
     ).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: /^事実、1件を開く$/ }),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: /^最近の発見、1件を開く$/ }),
-    ).toBeVisible();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "探索ツールを開く" }),
+    );
+    const toolDialog = screen.getByRole("dialog", { name: "探索ツール" });
+    expect(
+      within(toolDialog).getByRole("button", { name: /^事実1件$/ }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      within(toolDialog).getByRole("button", { name: /^履歴1件$/ }),
+    ).toBeVisible();
   });
 
   it("defaults to PLAY and changes art direction without losing the active screen", async () => {
@@ -190,7 +201,7 @@ describe("Lab guide", () => {
     const user = userEvent.setup();
     render(<App client={createFixtureClient("live")} />);
 
-    await user.click(screen.getByLabelText("見た目 PLAY"));
+    await user.click(screen.getByLabelText("メニュー"));
     const themeGroup = screen.getByRole("group", { name: "表示テーマ" });
     expect(
       within(themeGroup).getByRole("button", {
@@ -202,8 +213,12 @@ describe("Lab guide", () => {
     await user.click(
       screen.getByRole("button", { name: "状況相談" }),
     );
+    await user.click(screen.getByLabelText("メニュー"));
+    const reopenedThemeGroup = screen.getByRole("group", {
+      name: "表示テーマ",
+    });
     await user.click(
-      within(themeGroup).getByRole("button", {
+      within(reopenedThemeGroup).getByRole("button", {
         name: "OPS ハッカー",
       }),
     );
@@ -213,11 +228,12 @@ describe("Lab guide", () => {
     expect(
       screen.getByRole("heading", { name: "次に確かめることを選ぶ" }),
     ).toBeVisible();
-    await user.click(screen.getByLabelText("見た目 OPS"));
+    await user.click(screen.getByLabelText("メニュー"));
     expect(
-      within(themeGroup).getByRole("button", {
-        name: "OPS ハッカー",
-      }),
+      within(screen.getByRole("group", { name: "表示テーマ" })).getByRole(
+        "button",
+        { name: "OPS ハッカー" },
+      ),
     ).toHaveAttribute("aria-pressed", "true");
 
     window.localStorage.removeItem(THEME_STORAGE_KEY);
@@ -228,8 +244,7 @@ describe("Lab guide", () => {
     const user = userEvent.setup();
     render(<App client={createFixtureClient("live")} />);
 
-    expect(await screen.findByLabelText("見た目 FOCUS")).toBeVisible();
-    await user.click(screen.getByLabelText("見た目 FOCUS"));
+    await user.click(await screen.findByLabelText("メニュー"));
     expect(
       screen.getByRole("button", { name: "FOCUS シンプル" }),
     ).toHaveAttribute("aria-pressed", "true");
@@ -325,7 +340,7 @@ describe("Lab guide", () => {
     ).toBeVisible();
     expect(screen.queryByLabelText("見つけたflag")).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "状況相談" }));
+    await user.click(screen.getByRole("button", { name: "次の一手" }));
 
     expect(
       screen.getByRole("heading", { name: "次に確かめることを選ぶ" }),
@@ -346,7 +361,7 @@ describe("Lab guide", () => {
     const user = userEvent.setup();
     render(<App client={createFixtureClient("live")} />);
 
-    await user.click(await screen.findByRole("button", { name: "状況相談" }));
+    await user.click(await screen.findByRole("button", { name: "次の一手" }));
     await user.click(
       screen.getByRole("button", {
         name: /公開ファイルに別の手掛かりがないか探す/,
@@ -370,12 +385,12 @@ describe("Lab guide", () => {
     const user = userEvent.setup();
     render(<App client={createFixtureClient("live")} />);
 
-    await user.click(await screen.findByRole("button", { name: "状況相談" }));
+    await user.click(await screen.findByRole("button", { name: "次の一手" }));
     await user.click(
-      screen.getByRole("button", { name: /^ヒント、3段階を開く$/ }),
+      screen.getByRole("button", { name: "相談ツールを開く" }),
     );
     const hintDialog = screen.getByRole("dialog", {
-      name: "必要ならヒント",
+      name: "相談ツール",
     });
     expect(
       within(hintDialog).getByText(
@@ -413,11 +428,16 @@ describe("Lab guide", () => {
     render(<App client={createFixtureClient("unavailable")} />);
 
     await user.click(
-      await screen.findByRole("button", { name: /^次の調査、/ }),
+      await screen.findByRole("button", { name: "探索ツールを開く" }),
     );
     const investigationDialog = screen.getByRole("dialog", {
-      name: "次の調査",
+      name: "探索ツール",
     });
+    await user.click(
+      within(investigationDialog).getByRole("button", {
+        name: /^次の調査\d+件$/,
+      }),
+    );
     const input = within(investigationDialog).getByLabelText("見つけたflag");
     await user.type(input, "manual-proof");
     await user.click(
@@ -442,11 +462,16 @@ describe("Lab guide", () => {
     render(<App client={createFixtureClient("success")} />);
 
     await user.click(
-      await screen.findByRole("button", { name: /^次の調査、/ }),
+      await screen.findByRole("button", { name: "探索ツールを開く" }),
     );
     const investigationDialog = screen.getByRole("dialog", {
-      name: "次の調査",
+      name: "探索ツール",
     });
+    await user.click(
+      within(investigationDialog).getByRole("button", {
+        name: /^次の調査\d+件$/,
+      }),
+    );
     expect(
       within(investigationDialog).getByLabelText("Windowsで見つけたflag"),
     ).toBeVisible();
@@ -464,6 +489,7 @@ describe("Lab guide", () => {
       name: "中古バイク店の業務サーバを調べる",
     });
 
+    await user.click(screen.getByLabelText("メニュー"));
     const endSession = screen.getByRole("button", { name: "演習を終了" });
     await user.click(endSession);
     expect(
@@ -482,8 +508,9 @@ describe("Lab guide", () => {
 
     await user.click(screen.getByRole("button", { name: "探索を続ける" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(endSession).toHaveFocus();
+    expect(screen.getByLabelText("メニュー")).toHaveFocus();
 
+    await user.click(screen.getByLabelText("メニュー"));
     await user.click(screen.getByRole("button", { name: "演習を終了" }));
     await user.click(screen.getByRole("button", { name: "終了する" }));
     expect(
@@ -495,10 +522,10 @@ describe("Lab guide", () => {
     const user = userEvent.setup();
     render(<App client={createFixtureClient("empty")} />);
     await user.click(
-      await screen.findByRole("button", { name: /^事実、0件を開く$/ }),
+      await screen.findByRole("button", { name: "探索ツールを開く" }),
     );
     const factsDialog = screen.getByRole("dialog", {
-      name: "分かっていること",
+      name: "探索ツール",
     });
     expect(
       within(factsDialog).getByText("まだ発見はありません。"),
@@ -536,10 +563,10 @@ describe("Lab guide", () => {
     });
     await waitFor(() => expect(publish).toBeTypeOf("function"));
     await user.click(
-      screen.getByRole("button", { name: /^事実、3件を開く$/ }),
+      screen.getByRole("button", { name: "探索ツールを開く" }),
     );
     const factsDialog = screen.getByRole("dialog", {
-      name: "分かっていること",
+      name: "探索ツール",
     });
     expect(within(factsDialog).getByText("Webサイトが見える")).toBeVisible();
 

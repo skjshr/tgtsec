@@ -1,0 +1,814 @@
+/* Calm shell ------------------------------------------------------------
+   The default view exposes one primary task and one labelled way to ask
+   for more. Legacy theme rules remain available inside the opened shelves. */
+
+:root[data-theme] {
+  --header-height: 56px;
+}
+
+/* Header: brand + one menu --------------------------------------------- */
+
+:root[data-theme] .app-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: var(--header-height);
+  align-items: center;
+  height: var(--header-height);
+  padding: 0 clamp(14px, 2.4vw, 30px);
+  border-bottom-width: 1px;
+  box-shadow: none;
+}
+
+:root[data-theme] .brand-lockup {
+  gap: 10px;
+  min-width: 0;
+  padding: 0;
+}
+
+:root[data-theme] .brand-lockup > svg {
+  width: 24px;
+  height: 24px;
+}
+
+:root[data-theme] .brand-name {
+  overflow: hidden;
+  font-family: var(--body);
+  font-size: 17px;
+  font-weight: 760;
+  letter-spacing: -0.035em;
+  text-overflow: ellipsis;
+}
+
+:root[data-theme] .brand-divider {
+  height: 18px;
+}
+
+:root[data-theme] .brand-lab {
+  font-family: var(--body);
+  font-size: 12px;
+  font-weight: 680;
+  letter-spacing: 0;
+}
+
+:root[data-theme] .header-actions {
+  display: flex;
+  grid-column: 2;
+  grid-row: 1;
+  align-items: center;
+  gap: 0;
+  height: auto;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.app-menu {
+  position: relative;
+}
+
+.app-menu > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 12px;
+  color: inherit;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 720;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.app-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.app-menu > summary svg {
+  width: 20px;
+  height: 20px;
+}
+
+.app-menu[open] > summary {
+  color: var(--primary);
+  background: var(--surface);
+  border-color: var(--primary);
+}
+
+.app-menu-panel {
+  position: absolute;
+  z-index: 90;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  gap: 14px;
+  width: min(320px, calc(100vw - 24px));
+  padding: 14px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 18px 55px var(--ink-shadow);
+}
+
+:root[data-theme="play"] .app-menu-panel {
+  border: 2px solid #11110e;
+  border-radius: 2px;
+  box-shadow: 5px 5px 0 var(--signal);
+}
+
+:root[data-theme="ops"] .app-menu-panel {
+  background: #08161b;
+  border-color: #31545b;
+  box-shadow: 0 20px 58px rgb(0 0 0 / 45%);
+}
+
+.app-menu-status {
+  justify-self: start;
+  min-height: 26px;
+}
+
+.app-menu-section {
+  display: grid;
+  gap: 5px;
+}
+
+.app-menu-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 24px;
+  color: var(--muted-text);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 730;
+  letter-spacing: 0.08em;
+}
+
+.app-menu-label svg {
+  width: 16px;
+  height: 16px;
+}
+
+.app-menu-label small {
+  margin-left: auto;
+  font-size: 9px;
+}
+
+.app-menu-section > button,
+.app-menu-end {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 18px;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  color: var(--text);
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+}
+
+.app-menu-section > button:hover,
+.app-menu-section > button[aria-current="page"],
+.app-menu-section > button[aria-pressed="true"] {
+  background: var(--muted-surface);
+  border-color: var(--border);
+}
+
+.app-menu-section > button[aria-current="page"],
+.app-menu-section > button[aria-pressed="true"] {
+  color: var(--primary-hover);
+  border-color: var(--primary);
+}
+
+.app-menu-section > button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.app-menu-section > button svg:last-child {
+  justify-self: end;
+  width: 16px;
+  height: 16px;
+}
+
+.app-menu-themes {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.app-menu-themes .app-menu-label {
+  grid-column: 1 / -1;
+}
+
+.app-menu-themes > button {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  min-height: 52px;
+  padding: 7px 6px;
+  text-align: center;
+}
+
+.app-menu-themes > button > span {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 760;
+}
+
+.app-menu-themes > button > small {
+  color: var(--muted-text);
+  font-size: 9px;
+}
+
+.app-menu-end {
+  grid-template-columns: 22px minmax(0, 1fr);
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 28%, var(--border));
+}
+
+.app-menu-end svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Main task surface ----------------------------------------------------- */
+
+:root[data-theme] .map-screen,
+:root[data-theme] .consultation-screen {
+  display: block;
+  height: calc(100dvh - var(--header-height));
+  min-height: 0;
+  overflow: hidden;
+}
+
+:root[data-theme] .map-stage,
+:root[data-theme] .consultation-stage {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0 auto;
+  background-color: var(--canvas);
+}
+
+:root[data-theme] .map-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 1540px;
+  padding: clamp(14px, 2.2vh, 22px) clamp(18px, 3.2vw, 48px) 16px;
+  overflow: hidden;
+}
+
+:root[data-theme] .consultation-stage {
+  display: block;
+  max-width: 920px;
+  padding: clamp(18px, 3vh, 30px) clamp(20px, 4vw, 48px) 32px;
+  overflow-y: auto;
+}
+
+.stage-heading-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: end;
+}
+
+:root[data-theme] .stage-intro,
+:root[data-theme] .consultation-intro {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+:root[data-theme] .stage-intro::before,
+:root[data-theme] .consultation-intro::before {
+  display: none;
+}
+
+.stage-eyebrow {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--muted-text);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 740;
+  letter-spacing: 0.1em;
+}
+
+:root[data-theme] .stage-intro h1,
+:root[data-theme] .consultation-intro h1 {
+  margin: 0;
+  font-family: var(--heading);
+  font-size: clamp(22px, 2.2vw, 30px);
+  font-weight: 680;
+  line-height: 1.32;
+  letter-spacing: -0.02em;
+}
+
+:root[data-theme] .stage-context {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 46px;
+  padding: 7px 12px;
+  margin: 0;
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  border: 0;
+  border-left: 2px solid var(--primary);
+}
+
+:root[data-theme] .stage-context > svg {
+  width: 21px;
+  height: 21px;
+}
+
+:root[data-theme] .stage-context div > small {
+  margin-bottom: 0;
+  font-size: 8px;
+}
+
+:root[data-theme] .stage-context strong {
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:root[data-theme] .stage-context > span {
+  min-width: 52px;
+  padding: 4px 6px;
+  font-size: 10px;
+}
+
+/* One labelled pull ----------------------------------------------------- */
+
+:root[data-theme] .disclosure-pulls {
+  display: block;
+  min-height: 44px;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+}
+
+:root[data-theme] .disclosure-pull {
+  display: grid;
+  grid-template-columns: 19px auto;
+  gap: 7px;
+  min-height: 44px;
+  padding: 0 12px;
+}
+
+:root[data-theme] .disclosure-pull-cord {
+  top: -13px;
+  left: 22px;
+  height: 12px;
+}
+
+:root[data-theme] .disclosure-pull-meta {
+  display: none;
+}
+
+/* Map gets the remaining viewport -------------------------------------- */
+
+.map-workspace {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  min-width: 0;
+  min-height: 260px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--surface) 56%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: 5px;
+  flex-direction: column;
+}
+
+:root[data-theme="play"] .map-workspace {
+  background: color-mix(in srgb, var(--surface) 68%, transparent);
+  border: 2px solid #11110e;
+  border-radius: 2px;
+}
+
+:root[data-theme="ops"] .map-workspace {
+  border-color: #203b42;
+  border-radius: 2px;
+}
+
+:root[data-theme="focus"] .map-workspace {
+  background: transparent;
+  border-width: 1px 0;
+  border-radius: 0;
+}
+
+:root[data-theme] .map-workspace .map-canvas {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+}
+
+:root[data-theme] .selected-node-brief {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto auto;
+  gap: 11px;
+  align-items: center;
+  min-height: 62px;
+  padding: 8px 10px;
+  margin: 0;
+  border-width: 1px;
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+:root[data-theme] .selected-node-symbol {
+  width: 38px;
+  height: 38px;
+}
+
+:root[data-theme] .selected-node-symbol svg {
+  width: 22px;
+  height: 22px;
+}
+
+:root[data-theme] .selected-node-copy small {
+  font-size: 8px;
+}
+
+:root[data-theme] .selected-node-copy strong {
+  margin-top: 1px;
+  font-size: 13px;
+}
+
+:root[data-theme] .selected-node-progress {
+  font-size: 9px;
+}
+
+:root[data-theme] .selected-node-brief > button {
+  min-height: 42px;
+  box-shadow: none;
+}
+
+/* Drawer navigation appears only after the user asks ------------------- */
+
+.tool-shelf-nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding-bottom: 16px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tool-shelf-nav > button {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 2px 6px;
+  align-items: center;
+  min-width: 0;
+  min-height: 54px;
+  padding: 7px 6px;
+  color: var(--muted-text);
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+}
+
+.tool-shelf-nav > button:hover,
+.tool-shelf-nav > button[aria-pressed="true"] {
+  color: var(--text);
+  background: var(--muted-surface);
+  border-color: var(--border);
+}
+
+.tool-shelf-nav > button[aria-pressed="true"] {
+  color: var(--primary-hover);
+  border-color: var(--primary);
+}
+
+.tool-shelf-icon {
+  display: grid;
+  grid-row: 1 / 3;
+  place-items: center;
+}
+
+.tool-shelf-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.tool-shelf-nav > button > span:not(.tool-shelf-icon) {
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-shelf-nav > button small {
+  color: var(--muted-text);
+  font-family: var(--mono);
+  font-size: 8px;
+}
+
+.drawer-map-legend {
+  padding-top: 18px;
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.drawer-map-legend h3 {
+  margin: 0 0 10px;
+  font-size: 12px;
+}
+
+.drawer-map-legend > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  color: var(--muted-text);
+  font-size: 11px;
+}
+
+.drawer-map-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.drawer-map-legend svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Consultation: necessary choice, not stacked exposition ---------------- */
+
+:root[data-theme] .hypothesis-fieldset {
+  padding-top: 20px;
+}
+
+:root[data-theme] .hypothesis-fieldset legend {
+  padding: 0 0 12px;
+  font-size: 16px;
+}
+
+:root[data-theme] .hypothesis-option {
+  min-height: 66px;
+  font-size: 15px;
+}
+
+:root[data-theme] .hypothesis-explanation {
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 14px;
+  min-height: 82px;
+  padding: 12px 16px;
+  margin-top: 12px;
+}
+
+:root[data-theme] .hypothesis-explanation > svg {
+  width: 38px;
+  height: 38px;
+  padding: 9px;
+}
+
+:root[data-theme] .hypothesis-explanation h2 {
+  margin-bottom: 3px;
+  font-size: 14px;
+}
+
+:root[data-theme] .hypothesis-explanation p {
+  font-size: 12px;
+}
+
+:root[data-theme] .consultation-actions {
+  gap: 10px;
+  margin-top: 14px;
+}
+
+:root[data-theme] .consultation-actions .primary-action,
+:root[data-theme] .consultation-actions .secondary-action {
+  min-width: 0;
+}
+
+/* Responsive ----------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  :root[data-theme] .app-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: var(--header-height);
+  }
+
+  :root[data-theme] .header-actions {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 0;
+  }
+
+  :root[data-theme] .map-screen,
+  :root[data-theme] .consultation-screen {
+    height: calc(100dvh - var(--header-height));
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  :root[data-theme] .map-stage,
+  :root[data-theme] .consultation-stage {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: 14px 16px 16px;
+    overflow-y: auto;
+  }
+
+  :root[data-theme] .map-stage {
+    display: flex;
+  }
+
+  .stage-heading-row {
+    gap: 10px;
+  }
+
+  :root[data-theme] .stage-intro h1,
+  :root[data-theme] .consultation-intro h1 {
+    font-size: clamp(20px, 6vw, 25px);
+  }
+
+  :root[data-theme] .disclosure-pulls {
+    min-height: 44px;
+    padding: 0;
+    margin: 0;
+  }
+
+  :root[data-theme] .disclosure-pull {
+    width: auto;
+  }
+
+  .map-workspace {
+    order: 4;
+    flex-basis: 300px;
+    min-height: 300px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  :root[data-theme] .selected-node-brief {
+    order: 3;
+  }
+
+  .map-stage > .success-callout {
+    order: 2;
+  }
+
+  .map-stage > .stage-heading-row {
+    order: 0;
+  }
+
+  .map-stage > .stage-context,
+  .map-stage > .connection-banner {
+    order: 1;
+  }
+
+  :root[data-theme] .consultation-intro {
+    padding: 0;
+  }
+
+  .tool-shelf-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  :root[data-theme] .disclosure-drawer .known-facts,
+  :root[data-theme] .disclosure-drawer .investigation-rail,
+  :root[data-theme] .disclosure-drawer .hint-rail,
+  :root[data-theme] .disclosure-drawer .event-strip {
+    display: block;
+  }
+}
+
+@media (max-width: 560px) {
+  :root[data-theme] .app-header {
+    padding-inline: 12px;
+  }
+
+  :root[data-theme] .brand-lockup {
+    gap: 7px;
+  }
+
+  :root[data-theme] .brand-lockup > svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  :root[data-theme] .brand-name {
+    font-size: 15px;
+  }
+
+  :root[data-theme] .brand-lab {
+    font-size: 10px;
+  }
+
+  .app-menu > summary {
+    min-height: 40px;
+    padding-inline: 10px;
+  }
+
+  .app-menu > summary span {
+    font-size: 11px;
+  }
+
+  :root[data-theme] .map-stage,
+  :root[data-theme] .consultation-stage {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .stage-eyebrow {
+    margin-bottom: 2px;
+  }
+
+  :root[data-theme] .stage-context {
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    gap: 7px;
+    min-height: 42px;
+    padding: 6px 8px;
+  }
+
+  :root[data-theme] .stage-context > svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  :root[data-theme] .stage-context strong {
+    font-size: 11px;
+  }
+
+  :root[data-theme] .selected-node-brief {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    min-height: 58px;
+    padding: 7px 8px;
+  }
+
+  :root[data-theme] .selected-node-symbol,
+  :root[data-theme] .selected-node-progress {
+    display: none;
+  }
+
+  :root[data-theme] .selected-node-brief > button {
+    min-height: 42px;
+    padding-inline: 11px;
+  }
+
+  .map-workspace {
+    flex-basis: 280px;
+    min-height: 280px;
+  }
+
+  :root[data-theme] .hypothesis-fieldset {
+    padding-top: 16px;
+  }
+
+  :root[data-theme] .hypothesis-option {
+    grid-template-columns: 30px minmax(0, 1fr) 20px;
+    gap: 8px;
+    min-height: 58px;
+    padding: 9px 10px;
+    font-size: 13px;
+  }
+
+  :root[data-theme] .hypothesis-option > svg:first-child {
+    width: 26px;
+    height: 26px;
+  }
+
+  :root[data-theme] .hypothesis-explanation {
+    display: block;
+    min-height: 0;
+    padding: 10px 12px;
+  }
+
+  :root[data-theme] .hypothesis-explanation > svg {
+    display: none;
+  }
+
+  :root[data-theme] .consultation-actions {
+    display: grid;
+    grid-template-columns: 1fr auto;
+  }
+
+  :root[data-theme] .consultation-actions .primary-action,
+  :root[data-theme] .consultation-actions .secondary-action {
+    min-width: 0;
+    padding-inline: 10px;
+  }
+}
