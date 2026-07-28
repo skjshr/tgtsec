@@ -70,7 +70,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 42px;
+  min-height: 44px;
   padding: 0 12px;
   color: inherit;
   background: transparent;
@@ -127,6 +127,7 @@
 }
 
 .app-menu-status {
+  display: inline-flex;
   justify-self: start;
   min-height: 26px;
 }
@@ -455,7 +456,7 @@
 }
 
 :root[data-theme] .selected-node-brief > button {
-  min-height: 42px;
+  min-height: 44px;
   box-shadow: none;
 }
 
@@ -718,7 +719,7 @@
   }
 
   .app-menu > summary {
-    min-height: 40px;
+    min-height: 44px;
     padding-inline: 10px;
   }
 
@@ -765,7 +766,10 @@
   }
 
   :root[data-theme] .selected-node-brief > button {
-    min-height: 42px;
+    grid-column: auto;
+    justify-self: end;
+    width: auto;
+    min-height: 44px;
     padding-inline: 11px;
   }
 
