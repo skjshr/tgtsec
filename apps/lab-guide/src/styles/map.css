@@ -1,55 +1,223 @@
-.map-screen {
-  display: grid;
-  grid-template-columns: clamp(260px, 20.1vw, 336px) minmax(0, 1fr) clamp(300px, 22.9vw, 384px);
-  grid-template-rows: minmax(0, 1fr) 108px;
+/* Mission stage --------------------------------------------------------- */
+
+:root[data-theme] .map-screen {
+  display: block;
   height: calc(100dvh - var(--header-height));
+  min-height: 0;
+  overflow: hidden;
 }
 
-.map-screen .known-facts {
-  grid-row: 1 / -1;
-}
-
-.map-stage {
+:root[data-theme] .mission-stage {
+  --mission-type-state: 0.4375rem;
+  --mission-type-micro: 0.5rem;
+  --mission-type-detail: 0.5625rem;
+  --mission-type-action: 0.625rem;
+  --mission-type-objective-mobile: 0.6875rem;
+  --mission-type-compact: 0.75rem;
+  --mission-type-objective-desktop: 0.8125rem;
+  --mission-type-node-mobile: 0.875rem;
+  --mission-type-node-desktop: 0.9375rem;
+  --mission-type-display-desktop: clamp(30px, 3.25vw, 46px);
+  --mission-type-display-tablet: clamp(23px, 6.5vw, 30px);
+  --mission-type-display-mobile: clamp(22px, 6.4vw, 27px);
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  gap: 0;
+  width: min(100%, 1500px);
+  height: 100%;
   min-height: 0;
-  padding: 30px 30px 0;
+  padding: clamp(14px, 2.2vh, 22px) clamp(24px, 3.4vw, 50px) 18px;
+  margin: 0 auto;
   overflow: hidden;
   background: var(--canvas);
 }
 
-.stage-intro h1 {
-  margin-bottom: 8px;
-  font-family: var(--heading);
-  font-size: clamp(25px, 2vw, 31px);
-  font-weight: 650;
-  letter-spacing: 0.015em;
+.mission-header {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: clamp(24px, 4vw, 64px);
+  align-items: end;
+  padding: 0 4px 18px;
 }
 
-.stage-intro p {
-  margin-bottom: 0;
+.mission-heading {
+  min-width: 0;
+}
+
+.mission-kicker {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 5px;
   color: var(--muted-text);
-  font-size: 15px;
-  line-height: 1.7;
+  font-family: var(--mono);
+  font-size: var(--mission-type-detail);
+  font-weight: 720;
+  letter-spacing: 0.11em;
+}
+
+.mission-kicker > span:first-child {
+  color: var(--primary);
+}
+
+.mission-heading h1 {
+  max-width: 21ch;
+  margin: 0;
+  font-family: var(--heading);
+  font-size: var(--mission-type-display-desktop);
+  font-weight: 820;
+  line-height: 1.16;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.mission-objective {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  max-width: 66ch;
+  min-height: 38px;
+  padding: 0;
+  margin-top: 12px;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+}
+
+.mission-objective > svg {
+  width: 22px;
+  height: 22px;
+  color: var(--primary);
+}
+
+.mission-objective small,
+.mission-objective strong {
+  display: block;
+}
+
+.mission-objective small {
+  margin-bottom: 1px;
+  color: var(--primary);
+  font-family: var(--mono);
+  font-size: var(--mission-type-micro);
+  font-weight: 760;
+  letter-spacing: 0.08em;
+}
+
+.mission-objective strong {
+  overflow: hidden;
+  font-size: var(--mission-type-objective-desktop);
+  font-weight: 680;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mission-objective > [role="progressbar"] {
+  min-width: 58px;
+  padding: 0;
+  color: var(--primary);
+  font-family: var(--mono);
+  font-size: var(--mission-type-objective-mobile);
+  font-weight: 760;
+  text-align: center;
+  white-space: nowrap;
+  border: 0;
+}
+
+.mission-objective > [role="progressbar"] > small {
+  display: inline;
+  margin: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+.mission-tools {
+  position: relative;
+  z-index: 3;
+  align-self: end;
+  min-height: 44px;
+  margin-bottom: -25px;
+}
+
+.mission-tools .disclosure-pull {
+  position: relative;
+  display: grid;
+  grid-template-columns: 19px auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 126px;
+  min-height: 46px;
+  padding: 0 13px;
+  color: var(--text);
+  background: var(--surface);
+  border: 2px solid var(--text);
+  border-radius: 0;
+  box-shadow: 4px 4px 0 color-mix(in srgb, var(--text) 14%, transparent);
+  transition:
+    color 200ms var(--ease-out),
+    background-color 200ms var(--ease-out),
+    border-color 200ms var(--ease-out),
+    transform 200ms var(--ease-out);
+}
+
+.mission-tools .disclosure-pull:hover {
+  color: var(--primary-hover);
+  transform: translateY(2px);
+}
+
+.mission-tools .disclosure-pull:active {
+  transform: translateY(3px) scale(0.985);
+}
+
+.mission-tools .disclosure-pull-cord {
+  position: absolute;
+  top: auto;
+  bottom: -21px;
+  left: 50%;
+  width: 2px;
+  height: 19px;
+  background: var(--text);
+  transform: translateX(-50%);
+}
+
+.mission-tools .disclosure-pull-meta {
+  display: none;
+}
+
+.mission-tools .disclosure-pull-icon,
+.mission-tools .disclosure-pull-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.mission-tools .disclosure-pull-label {
+  font-size: var(--mission-type-objective-mobile);
+  font-weight: 760;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
 .success-callout {
+  flex: 0 0 auto;
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr);
-  gap: 13px;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 10px;
   align-items: center;
-  padding: 12px 15px;
-  margin-top: 16px;
-  color: var(--success);
-  background: color-mix(in srgb, var(--success) 5%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--success) 36%, var(--border));
-  border-radius: 6px;
+  min-height: 50px;
+  padding: 7px 4px 10px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
 }
 
 .success-callout > svg {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
+  color: var(--primary);
 }
 
 .success-callout strong,
@@ -58,293 +226,988 @@
 }
 
 .success-callout strong {
-  margin-bottom: 2px;
-  font-size: 14px;
+  font-size: var(--mission-type-objective-desktop);
+  font-weight: 760;
+  line-height: 1.35;
 }
 
 .success-callout span {
+  margin-top: 2px;
   color: var(--muted-text);
-  font-size: 12px;
+  font-size: var(--mission-type-objective-mobile);
+  line-height: 1.4;
 }
 
-.map-toolbar {
+/* Route is the world, not a card --------------------------------------- */
+
+.mission-route {
+  position: relative;
+  flex: 1 1 auto;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  min-height: 58px;
-  margin-top: 20px;
+  min-width: 0;
+  min-height: 330px;
+  padding: 26px 6px 4px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 78% 48%, color-mix(in srgb, var(--primary) 7%, transparent), transparent 25%),
+    linear-gradient(90deg, color-mix(in srgb, var(--text) 3%, transparent) 1px, transparent 1px),
+    linear-gradient(color-mix(in srgb, var(--text) 3%, transparent) 1px, transparent 1px);
+  background-size: auto, 40px 40px, 40px 40px;
+  border-top: 1px solid color-mix(in srgb, var(--text) 42%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
 }
 
-.map-toolbar h2 {
+.mission-route::before {
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: clamp(120px, 15vw, 210px);
+  height: 3px;
+  content: "";
+  background: var(--primary);
+}
+
+.route-caption {
+  position: absolute;
+  top: 9px;
+  left: 12px;
+  z-index: 2;
   display: flex;
-  align-items: center;
-  gap: 11px;
+  gap: 8px;
+  align-items: baseline;
+  color: var(--muted-text);
+  pointer-events: none;
+}
+
+.route-caption span {
+  color: var(--primary);
+  font-family: var(--mono);
+  font-size: var(--mission-type-micro);
+  font-weight: 780;
+  letter-spacing: 0.14em;
+}
+
+.route-caption strong {
+  font-size: var(--mission-type-action);
+  font-weight: 680;
+}
+
+.mission-map {
+  flex: 1 1 auto;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mission-map .map-canvas {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
   margin: 0;
-  font-family: var(--heading);
-  font-size: 20px;
 }
 
-.map-toolbar h2 svg {
-  width: 27px;
-  height: 27px;
-  color: var(--primary);
-}
-
-.map-legend {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  color: var(--muted-text);
-  font-size: 13px;
-  white-space: nowrap;
-}
-
-.map-legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.map-legend svg {
-  width: 21px;
-  height: 21px;
-}
-
-.map-legend span:nth-child(1) svg {
-  color: var(--success);
-}
-
-.map-legend span:nth-child(2) svg {
-  color: var(--primary);
-}
-
-.map-canvas {
-  flex: 1;
-  min-height: 340px;
-  margin: 0 -4px;
-}
-
-.map-canvas .react-flow {
+.map-canvas .react-flow,
+.map-canvas .react-flow__renderer {
   background: transparent;
 }
 
+.map-canvas .react-flow__background {
+  opacity: 0;
+}
+
 .react-flow__node-world {
-  width: 190px;
+  width: 220px;
   border: 0;
 }
 
-.world-node {
-  display: flex;
-  gap: 8px;
+.react-flow__node-world:has(.world-node--undiscovered) {
+  width: 152px;
+}
+
+:root[data-theme] .world-node {
+  position: relative;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 10px;
   align-items: center;
-  min-height: 86px;
-  padding: 13px 10px;
+  width: 100%;
+  min-height: 90px;
+  padding: 22px 14px 13px;
   color: var(--text);
   background: var(--surface);
-  border: 2px solid var(--success);
-  border-radius: 6px;
-  box-shadow: 0 1px 2px rgb(31 27 22 / 5%);
+  border: 2px solid color-mix(in srgb, var(--primary) 80%, var(--text));
+  border-radius: 2px;
+  box-shadow: 6px 6px 0 color-mix(in srgb, var(--text) 12%, transparent);
+  transition:
+    color 220ms var(--ease-out),
+    background-color 220ms var(--ease-out),
+    border-color 220ms var(--ease-out),
+    box-shadow 220ms var(--ease-out),
+    transform 220ms var(--ease-out);
 }
 
-.world-node--selected,
-.world-node.is-focused {
-  border-color: var(--primary);
-  box-shadow:
-    0 0 0 4px color-mix(in srgb, var(--warning) 25%, transparent),
-    0 1px 2px rgb(31 27 22 / 5%);
+:root[data-theme] button.world-node {
+  appearance: none;
+  text-align: left;
 }
 
-.world-node--undiscovered {
-  justify-content: center;
-  color: var(--muted-text);
-  background: color-mix(in srgb, var(--surface) 60%, transparent);
-  border-color: var(--muted-text);
-  border-style: dashed;
-  box-shadow: none;
+:root[data-theme] .world-node-index {
+  position: absolute;
+  top: 0;
+  right: auto;
+  left: 0;
+  min-width: 28px;
+  padding: 2px 5px;
+  color: var(--surface);
+  background: var(--text);
+  font-family: var(--mono);
+  font-size: var(--mission-type-micro);
+  font-weight: 760;
+  line-height: 1.2;
+  text-align: center;
 }
 
-.world-node-icon {
-  flex: 0 0 auto;
+:root[data-theme] .world-node-state {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  color: var(--primary-hover);
+  font-family: var(--mono);
+  font-size: var(--mission-type-state);
+  font-weight: 760;
+  letter-spacing: 0.08em;
+}
+
+:root[data-theme] .world-node-icon {
   display: grid;
-  width: 30px;
+  width: 40px;
+  height: 40px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--primary) 45%, var(--border));
   place-items: center;
 }
 
-.world-node-icon svg {
-  width: 29px;
-  height: 29px;
+:root[data-theme] .world-node-icon svg {
+  width: 24px;
+  height: 24px;
 }
 
-.world-node-copy {
+:root[data-theme] .world-node-copy {
   display: block;
   min-width: 0;
 }
 
-.world-node-copy strong,
-.world-node-copy small,
-.world-node-copy em {
+:root[data-theme] .world-node-copy strong,
+:root[data-theme] .world-node-copy small,
+:root[data-theme] .world-node-copy em {
   display: block;
 }
 
-.world-node-copy strong {
-  font-size: 14px;
-  line-height: 1.4;
+:root[data-theme] .world-node-copy strong {
+  overflow: hidden;
+  font-size: var(--mission-type-node-desktop);
+  font-weight: 760;
+  line-height: 1.3;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.world-node-copy small {
-  margin-top: 2px;
+:root[data-theme] .world-node-copy small {
+  display: -webkit-box;
+  margin-top: 3px;
+  overflow: hidden;
   color: var(--muted-text);
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--mission-type-action);
+  line-height: 1.42;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
-.world-node-copy em {
+:root[data-theme] .world-node-copy em {
   width: fit-content;
-  padding: 1px 5px;
+  padding: 2px 5px;
   margin-top: 5px;
-  color: var(--success);
-  background: color-mix(in srgb, var(--success) 7%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--success) 36%, var(--border));
-  border-radius: 3px;
+  color: var(--primary-hover);
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--primary) 42%, var(--border));
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--mission-type-micro);
   font-style: normal;
 }
 
-.world-node .react-flow__handle {
+:root[data-theme] .world-node--undiscovered {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 68px;
+  padding: 18px 12px 12px;
+  color: var(--muted-text);
+  background: color-mix(in srgb, var(--surface) 54%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--muted-text) 82%, transparent);
+  box-shadow: none;
+}
+
+:root[data-theme] .world-node--undiscovered .world-node-state {
+  display: none;
+}
+
+:root[data-theme] .world-node--undiscovered .world-node-index {
+  color: var(--muted-text);
+  background: transparent;
+}
+
+:root[data-theme] .world-node--undiscovered .world-node-copy {
+  text-align: center;
+}
+
+:root[data-theme] .world-node--undiscovered .world-node-copy strong {
+  font-size: var(--mission-type-compact);
+  font-weight: 640;
+}
+
+:root[data-theme] .world-node.is-focused {
+  z-index: 2;
+  color: var(--surface);
+  background: var(--text);
+  border-color: var(--signal);
+  box-shadow:
+    0 0 0 4px var(--signal),
+    8px 8px 0 color-mix(in srgb, var(--text) 18%, transparent);
+  transform: translateY(-3px);
+}
+
+:root[data-theme] .world-node.is-focused .world-node-index {
+  color: var(--text);
+  background: var(--signal);
+}
+
+:root[data-theme] .world-node.is-focused .world-node-state {
+  color: var(--signal);
+}
+
+:root[data-theme] .world-node.is-focused .world-node-icon {
+  color: var(--signal);
+  background: color-mix(in srgb, var(--surface) 7%, transparent);
+  border-color: color-mix(in srgb, var(--surface) 30%, transparent);
+}
+
+:root[data-theme] .world-node.is-focused .world-node-copy small {
+  color: color-mix(in srgb, var(--surface) 68%, transparent);
+}
+
+:root[data-theme] .world-node.is-focused .world-node-copy em {
+  color: var(--signal);
+  background: transparent;
+  border-color: var(--signal);
+}
+
+.react-flow__node-world > .react-flow__handle {
   width: 1px;
   height: 1px;
   opacity: 0;
 }
 
+.world-node-toolbar {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.world-node-action {
+  display: grid;
+  grid-template-columns: auto 30px;
+  gap: 12px;
+  align-items: center;
+  min-width: 156px;
+  min-height: 46px;
+  padding: 4px 5px 4px 16px;
+  color: var(--text);
+  background: var(--signal);
+  border: 2px solid var(--text);
+  border-radius: 0;
+  box-shadow: 4px 4px 0 color-mix(in srgb, var(--text) 24%, transparent);
+  font-size: var(--mission-type-compact);
+  font-weight: 800;
+  transition:
+    transform 200ms var(--ease-out),
+    box-shadow 200ms var(--ease-out);
+}
+
+.world-node-action > span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  place-items: center;
+}
+
+.world-node-action svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 200ms var(--ease-out);
+}
+
+.world-node-action:hover {
+  box-shadow: 2px 2px 0 color-mix(in srgb, var(--text) 24%, transparent);
+  transform: translate(2px, 2px);
+}
+
+.world-node-action:hover svg {
+  transform: translateX(2px);
+}
+
+.world-node-action:active {
+  transform: translate(3px, 3px) scale(0.985);
+}
+
 .react-flow__edge-path {
-  stroke: var(--muted-text);
-  stroke-width: 1.7;
+  stroke: var(--text);
+  stroke-width: 2.2;
 }
 
 .world-edge--possible .react-flow__edge-path {
-  stroke-dasharray: 7 6;
+  stroke: color-mix(in srgb, var(--muted-text) 82%, transparent);
+  stroke-dasharray: 7 7;
+}
+
+.react-flow__edge .react-flow__arrowhead polyline,
+.react-flow__edge marker path {
+  fill: var(--text);
+  stroke: var(--text);
 }
 
 .react-flow__node:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--primary) 38%, white);
-  outline-offset: 4px;
+  outline: 3px solid var(--signal);
+  outline-offset: 6px;
 }
 
 .mobile-map {
   display: none;
 }
 
-.investigation-rail {
-  min-width: 0;
-  padding: 34px 24px 22px;
-  overflow-y: auto;
-  background: var(--surface);
-  border-left: 1px solid var(--border);
+/* Theme expression stays inside the route ------------------------------ */
+
+:root[data-theme="play"] {
+  --mission-route-ink: #171611;
+  --mission-selected-background: #11110e;
+  --mission-unknown: #777166;
+  --mission-possible-edge: #716c62;
 }
 
-.rail-intro {
-  margin-bottom: 22px;
-  color: var(--muted-text);
-  font-size: 13px;
-  line-height: 1.6;
+:root[data-theme="ops"] {
+  --mission-node-border: #31545b;
+  --mission-unknown: #49636a;
+  --mission-route-edge: #71ddc4;
+  --mission-possible-edge: #879893;
 }
 
-.investigation-list {
-  display: grid;
-  gap: 14px;
+:root[data-theme="focus"] {
+  --mission-unknown: #817e75;
+  --mission-route-edge: #4b4944;
 }
 
-.investigation-option {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 20px;
-  gap: 12px;
-  align-items: start;
-  width: 100%;
-  min-height: 112px;
-  padding: 18px 14px;
-  text-align: left;
-  background: var(--surface);
-  border: 1px solid var(--primary);
-  border-radius: 6px;
+:root[data-theme="play"] .mission-route {
+  background:
+    radial-gradient(circle at 76% 46%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 26%),
+    radial-gradient(circle at 16% 72%, color-mix(in srgb, var(--signal) 5%, transparent), transparent 20%),
+    linear-gradient(color-mix(in srgb, var(--text) 2.8%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--text) 2.2%, transparent) 1px, transparent 1px);
+  background-size: auto, auto, 42px 42px, 42px 42px;
+  border-top-color: var(--mission-route-ink);
 }
 
-.investigation-option:hover {
-  background: color-mix(in srgb, var(--primary) 4%, var(--surface));
-  border-color: var(--primary-hover);
-}
-
-.investigation-option > svg:first-child {
-  width: 34px;
-  height: 34px;
-}
-
-.investigation-option > svg:last-child {
-  align-self: center;
-  width: 20px;
-  height: 20px;
-  color: var(--primary);
-}
-
-.investigation-option strong,
-.investigation-option small {
-  display: block;
-}
-
-.investigation-option strong {
-  margin-bottom: 6px;
-  font-size: 16px;
-  line-height: 1.5;
-}
-
-.investigation-option small {
-  color: var(--muted-text);
-  font-size: 12px;
-  line-height: 1.65;
-}
-
-.outline-action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 52px;
-  margin-top: 24px;
-  background: var(--surface);
-  border: 1px solid var(--text);
-  border-radius: 4px;
-  font-weight: 650;
-}
-
-.outline-action:hover {
-  color: var(--primary-hover);
+:root[data-theme="play"] .world-node {
   border-color: var(--primary);
 }
 
-.outline-action svg {
-  width: 23px;
-  height: 23px;
+:root[data-theme="play"] .world-node--undiscovered {
+  border-color: var(--mission-unknown);
 }
 
-.safety-note {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  margin: 20px 4px 0;
+:root[data-theme="play"] .world-node.is-focused {
+  color: var(--surface);
+  background: var(--mission-selected-background);
+  border-width: 3px;
+  border-color: var(--signal);
+  box-shadow:
+    0 0 0 4px var(--signal),
+    8px 8px 0 color-mix(in srgb, var(--text) 18%, transparent);
+  transform: translateY(-3px);
+}
+
+:root[data-theme="play"] .world-node-copy em {
+  font-weight: 750;
+}
+
+:root[data-theme="play"] .react-flow__edge-path {
+  stroke: var(--mission-route-ink);
+  stroke-width: 2.3;
+}
+
+:root[data-theme="play"] .world-edge--possible .react-flow__edge-path {
+  stroke: var(--mission-possible-edge);
+  stroke-dasharray: 8 6;
+}
+
+:root[data-theme="ops"] .mission-route {
+  background:
+    radial-gradient(circle at 74% 48%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 26%),
+    linear-gradient(color-mix(in srgb, var(--primary) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--primary) 3%, transparent) 1px, transparent 1px);
+  background-size: auto, 40px 40px, 40px 40px;
+  border-color: var(--border);
+}
+
+:root[data-theme="ops"] .mission-tools .disclosure-pull {
+  color: var(--text);
+  background: var(--surface);
+  border-color: var(--mission-node-border);
+  box-shadow: 4px 4px 0 rgb(0 0 0 / 28%);
+}
+
+:root[data-theme="ops"] .mission-tools .disclosure-pull-cord {
+  background: var(--primary);
+}
+
+:root[data-theme="ops"] .world-node {
+  background: var(--surface);
+  border-color: var(--mission-node-border);
+  box-shadow: 6px 6px 0 rgb(0 0 0 / 26%);
+}
+
+:root[data-theme="ops"] .world-node-index {
+  color: var(--canvas);
+  background: var(--primary);
+}
+
+:root[data-theme="ops"] .world-node-icon {
+  background: color-mix(in srgb, var(--primary) 7%, transparent);
+}
+
+:root[data-theme="ops"] .world-node-copy small,
+:root[data-theme="ops"] .world-node-copy em {
+  font-family: var(--mono);
+}
+
+:root[data-theme="ops"] .world-node-copy em {
+  border-radius: 1px;
+}
+
+:root[data-theme="ops"] .world-node--undiscovered {
+  background: color-mix(in srgb, var(--surface) 45%, transparent);
+  border-color: var(--mission-unknown);
+}
+
+:root[data-theme="ops"] .world-node--undiscovered .world-node-index {
   color: var(--muted-text);
-  font-size: 11px;
-  line-height: 1.65;
+  background: transparent;
 }
 
-.safety-note svg {
-  flex: 0 0 auto;
-  width: 19px;
-  height: 19px;
+:root[data-theme="ops"] .world-node.is-focused {
+  color: var(--text);
+  background: var(--canvas);
+  border-color: var(--signal);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--signal) 92%, transparent),
+    0 12px 36px rgb(0 0 0 / 42%);
 }
 
-.map-screen .event-strip {
-  grid-column: 2 / -1;
+:root[data-theme="ops"] .world-node-action {
+  color: var(--canvas);
+  background: var(--signal);
+  border-color: var(--signal);
+  box-shadow: 4px 4px 0 rgb(0 0 0 / 34%);
+}
+
+:root[data-theme="ops"] .react-flow__edge-path {
+  stroke: var(--mission-route-edge);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--primary) 35%, transparent));
+}
+
+:root[data-theme="ops"] .world-edge--possible .react-flow__edge-path {
+  stroke: var(--mission-possible-edge);
+  stroke-dasharray: 7 7;
+  animation: ops-route 2.8s linear infinite;
+}
+
+@keyframes ops-route {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+
+:root[data-theme="focus"] .mission-route {
+  background:
+    linear-gradient(color-mix(in srgb, var(--text) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, transparent calc(100% - 1px), color-mix(in srgb, var(--text) 3%, transparent) 1px);
+  background-size: 100% 44px, 84px 100%;
+  border-top-color: var(--text);
+  border-bottom-color: var(--border);
+}
+
+:root[data-theme="focus"] .mission-route::before {
+  background: var(--primary);
+}
+
+:root[data-theme="focus"] .mission-kicker > span:first-child,
+:root[data-theme="focus"] .route-caption span {
+  color: var(--primary);
+}
+
+:root[data-theme="focus"] .world-node {
+  background: var(--surface);
+  border-width: 1px;
+  border-color: var(--text);
+  box-shadow: none;
+}
+
+:root[data-theme="focus"] .world-node-index {
+  color: var(--surface);
+  background: var(--text);
+}
+
+:root[data-theme="focus"] .world-node-icon {
+  color: var(--accent);
+  background: transparent;
+  border-color: var(--border);
+}
+
+:root[data-theme="focus"] .world-node-copy strong {
+  font-family: var(--heading);
+}
+
+:root[data-theme="focus"] .world-node-copy em {
+  border-radius: 1px;
+}
+
+:root[data-theme="focus"] .world-node--undiscovered {
+  background: transparent;
+  border-color: var(--mission-unknown);
+}
+
+:root[data-theme="focus"] .world-node--undiscovered .world-node-index {
+  color: var(--muted-text);
+  background: transparent;
+}
+
+:root[data-theme="focus"] .world-node.is-focused {
+  color: var(--text);
+  background: var(--surface);
+  border: 3px solid var(--primary);
+  box-shadow: 7px 7px 0 color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+:root[data-theme="focus"] .world-node.is-focused .world-node-index {
+  color: var(--surface);
+  background: var(--primary);
+}
+
+:root[data-theme="focus"] .world-node.is-focused .world-node-state,
+:root[data-theme="focus"] .world-node.is-focused .world-node-copy em {
+  color: var(--primary);
+}
+
+:root[data-theme="focus"] .world-node.is-focused .world-node-icon {
+  color: var(--accent);
+  background: transparent;
+  border-color: var(--accent);
+}
+
+:root[data-theme="focus"] .world-node.is-focused .world-node-copy small {
+  color: var(--muted-text);
+}
+
+:root[data-theme="focus"] .world-node-action {
+  color: var(--surface);
+  background: var(--text);
+  border-color: var(--text);
+  box-shadow: 4px 4px 0 color-mix(in srgb, var(--primary) 26%, transparent);
+}
+
+:root[data-theme="focus"] .react-flow__edge-path {
+  stroke: var(--mission-route-edge);
+  stroke-width: 1.4;
+}
+
+/* Narrow route keeps its topology ------------------------------------- */
+
+@media (max-width: 900px) {
+  :root[data-theme] .mission-stage {
+    gap: 0;
+    padding: 12px 14px 14px;
+    overflow: hidden;
+  }
+
+  .mission-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: end;
+    padding: 0 0 14px;
+  }
+
+  .mission-kicker {
+    gap: 6px;
+    margin-bottom: 3px;
+    font-size: var(--mission-type-micro);
+  }
+
+  .mission-heading h1 {
+    max-width: 18ch;
+    font-size: var(--mission-type-display-tablet);
+    line-height: 1.2;
+  }
+
+  .mission-objective {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    gap: 7px;
+    min-height: 34px;
+    margin-top: 8px;
+  }
+
+  .mission-objective > svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .mission-objective small {
+    font-size: var(--mission-type-micro);
+  }
+
+  .mission-objective strong {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: var(--mission-type-objective-mobile);
+    line-height: 1.4;
+    text-overflow: clip;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .mission-objective > [role="progressbar"] {
+    min-width: 48px;
+    padding: 0;
+    font-size: var(--mission-type-action);
+  }
+
+  .mission-tools {
+    margin-bottom: -20px;
+  }
+
+  .mission-tools .disclosure-pull {
+    min-width: 108px;
+    min-height: 44px;
+    padding: 0 10px;
+    box-shadow: 3px 3px 0 color-mix(in srgb, var(--text) 14%, transparent);
+  }
+
+  .mission-tools .disclosure-pull-cord {
+    bottom: -17px;
+    height: 15px;
+  }
+
+  .mission-tools .disclosure-pull-label {
+    font-size: var(--mission-type-action);
+  }
+
+  .mission-route {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 28px 0 0;
+    overflow: hidden;
+  }
+
+  .route-caption {
+    top: 8px;
+    left: 4px;
+  }
+
+  .mission-map {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+
+  .map-canvas {
+    display: none;
+  }
+
+  .mobile-map {
+    position: relative;
+    align-self: flex-start;
+    display: grid;
+    gap: 0;
+    width: 100%;
+    min-height: max-content;
+    padding: 12px 8px 44px 54px;
+    margin: 0;
+    list-style: none;
+    counter-reset: route-step;
+  }
+
+  .success-callout {
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: 8px;
+    min-height: 54px;
+    padding: 7px 2px 9px;
+  }
+
+  .success-callout > svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .success-callout strong {
+    font-size: var(--mission-type-objective-mobile);
+  }
+
+  .success-callout span {
+    font-size: var(--mission-type-detail);
+  }
+
+  .mobile-map::before {
+    position: absolute;
+    top: 34px;
+    bottom: 64px;
+    left: 28px;
+    width: 2px;
+    content: "";
+    background: color-mix(in srgb, var(--text) 28%, transparent);
+  }
+
+  .mobile-map > li {
+    position: relative;
+    min-width: 0;
+    min-height: 74px;
+    counter-increment: route-step;
+  }
+
+  .mobile-map > li::before {
+    position: absolute;
+    top: 23px;
+    left: -40px;
+    z-index: 2;
+    display: grid;
+    width: 28px;
+    height: 28px;
+    color: var(--surface);
+    content: counter(route-step, decimal-leading-zero);
+    background: var(--text);
+    border: 2px solid var(--canvas);
+    border-radius: 50%;
+    font-family: var(--mono);
+    font-size: var(--mission-type-state);
+    font-weight: 760;
+    place-items: center;
+  }
+
+  .mobile-map > li:has(.mobile-map-node--undiscovered)::before {
+    color: var(--muted-text);
+    background: var(--canvas);
+    border-color: var(--muted-text);
+    border-style: dashed;
+  }
+
+  .mobile-map > li:has(.mobile-map-node.is-focused)::before {
+    color: var(--text);
+    background: var(--signal);
+    border-color: var(--text);
+  }
+
+  :root[data-theme] .mobile-map-node {
+    display: block;
+    width: 100%;
+    min-height: 66px;
+    padding: 0;
+    color: var(--text);
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .mobile-map-select {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) 20px;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+    min-height: 66px;
+    padding: 8px 10px;
+    color: inherit;
+    text-align: left;
+    background: transparent;
+    border: 0;
+  }
+
+  .mobile-map-select > svg:first-child {
+    width: 27px;
+    height: 27px;
+  }
+
+  .mobile-map-select > svg:last-child {
+    width: 20px;
+    height: 20px;
+    color: var(--primary);
+  }
+
+  .mobile-map-select strong,
+  .mobile-map-select small {
+    display: block;
+  }
+
+  .mobile-map-select strong {
+    font-size: var(--mission-type-node-mobile);
+    font-weight: 760;
+    line-height: 1.3;
+  }
+
+  .mobile-map-select small {
+    margin-top: 2px;
+    color: var(--muted-text);
+    font-size: var(--mission-type-detail);
+    line-height: 1.4;
+  }
+
+  :root[data-theme] .mobile-map-node.is-focused {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    min-height: 78px;
+    margin: 4px 0 8px;
+    color: var(--surface);
+    background: var(--text);
+    border: 2px solid var(--signal);
+    box-shadow: 4px 4px 0 color-mix(in srgb, var(--text) 16%, transparent);
+  }
+
+  :root[data-theme] .mobile-map-node.is-focused .mobile-map-select {
+    grid-template-columns: 30px minmax(0, 1fr);
+    min-height: 74px;
+    padding: 8px 5px 8px 10px;
+  }
+
+  :root[data-theme] .mobile-map-node.is-focused .mobile-map-select > svg:last-child {
+    display: none;
+  }
+
+  :root[data-theme] .mobile-map-node.is-focused .mobile-map-select small {
+    color: color-mix(in srgb, var(--surface) 68%, transparent);
+  }
+
+  .mobile-map-action {
+    display: grid;
+    grid-template-columns: auto 18px;
+    gap: 6px;
+    align-items: center;
+    min-width: 104px;
+    min-height: 46px;
+    padding: 0 9px 0 12px;
+    margin: 8px;
+    color: var(--text);
+    background: var(--signal);
+    border: 0;
+    font-size: var(--mission-type-action);
+    font-weight: 800;
+  }
+
+  .mobile-map-action svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  :root[data-theme] .mobile-map-node--undiscovered {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    min-height: 62px;
+    padding: 8px 10px;
+    color: var(--muted-text);
+    border-bottom-style: dashed;
+  }
+
+  :root[data-theme] .mobile-map-node--undiscovered > svg {
+    display: none;
+  }
+
+  :root[data-theme] .mobile-map-node--undiscovered span {
+    font-size: var(--mission-type-compact);
+  }
+
+  :root[data-theme="focus"] .mobile-map-node.is-focused {
+    color: var(--text);
+    background: var(--surface);
+    border-color: var(--primary);
+  }
+
+  :root[data-theme="ops"] .mobile-map-node.is-focused {
+    color: var(--text);
+    background: var(--canvas);
+    border-color: var(--signal);
+  }
+
+  :root[data-theme="ops"] .mobile-map-node.is-focused .mobile-map-select small {
+    color: var(--muted-text);
+  }
+
+  :root[data-theme="ops"] .mobile-map-action {
+    color: var(--canvas);
+    background: var(--signal);
+  }
+
+  :root[data-theme="focus"] .mobile-map-node.is-focused .mobile-map-select small {
+    color: var(--muted-text);
+  }
+
+  :root[data-theme="focus"] .mobile-map-action {
+    color: var(--surface);
+    background: var(--text);
+  }
+}
+
+@media (max-width: 560px) {
+  .mission-header {
+    gap: 8px;
+  }
+
+  .mission-heading h1 {
+    font-size: var(--mission-type-display-mobile);
+  }
+
+  .mission-tools .disclosure-pull {
+    min-width: 102px;
+    padding-inline: 8px;
+  }
+
+  .mobile-map {
+    padding-right: 4px;
+    padding-left: 50px;
+  }
+
+  .mobile-map-node.is-focused {
+    grid-template-columns: minmax(0, 1fr) 98px;
+  }
+
+  .mobile-map-action {
+    min-width: 0;
+    padding-inline: 8px;
+    margin: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mission-tools .disclosure-pull,
+  .world-node,
+  .world-node-action,
+  .world-node-action svg {
+    transition: none;
+  }
 }

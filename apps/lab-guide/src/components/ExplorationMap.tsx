@@ -72,11 +72,6 @@ export function ExplorationMap({
   const [activeDisclosure, setActiveDisclosure] =
     useState<MapDisclosure | null>(null);
   const previousRevision = useRef(projection.revision);
-  const selectedNode = useMemo(
-    () =>
-      projection.graph.nodes.find((node) => node.id === selectedNodeId),
-    [projection.graph.nodes, selectedNodeId],
-  );
 
   useEffect(() => {
     setSelectedNodeId((currentSelection) => {
@@ -158,7 +153,7 @@ export function ExplorationMap({
     <main
       className={`lab-screen map-screen map-screen--${experience} ${liveUpdate ? "is-live-update" : ""}`}
     >
-      <section className="map-stage">
+      <section className="mission-stage">
         {experience === "live" ? (
           <ConnectionBanner
             status={connectionStatus}
@@ -167,12 +162,39 @@ export function ExplorationMap({
             onRefresh={onRefresh}
           />
         ) : null}
-        <div className="stage-heading-row">
-          <header className="stage-intro">
-            <span className="stage-eyebrow">探索地図</span>
+        <div className="mission-header">
+          <header className="mission-heading">
+            <span className="mission-kicker">
+              <span>{experience === "browse" ? "MISSION 00" : "LIVE MISSION"}</span>
+              <span aria-hidden="true">/</span>
+              <span>探索地図</span>
+            </span>
             <h1>{projection.heading}</h1>
+
+            <section className="mission-objective" aria-label="現在の目標">
+              <IconTargetArrow aria-hidden="true" />
+              <div>
+                <small>現在の目標</small>
+                <strong>{projection.objective}</strong>
+              </div>
+              {experience === "live" ? (
+                <span
+                  role="progressbar"
+                  aria-label={`${projection.progress.total}件中${projection.progress.discovered}件を発見`}
+                  aria-valuemin={0}
+                  aria-valuemax={projection.progress.total}
+                  aria-valuenow={projection.progress.discovered}
+                >
+                  {projection.progress.discovered}
+                  <small aria-hidden="true"> / </small>
+                  {projection.progress.total}
+                  <span className="sr-only">件中を発見</span>
+                </span>
+              ) : null}
+            </section>
           </header>
-          <nav className="disclosure-pulls" aria-label="必要な情報を開く">
+
+          <nav className="mission-tools" aria-label="必要な情報を開く">
             <DisclosurePull
               label="探索ツール"
               icon={<IconCompass />}
@@ -182,28 +204,6 @@ export function ExplorationMap({
             />
           </nav>
         </div>
-
-        <section className="stage-context" aria-label="現在の目標">
-          <IconTargetArrow aria-hidden="true" />
-          <div>
-            <small>現在の目標</small>
-            <strong>{projection.objective}</strong>
-          </div>
-          {experience === "live" ? (
-            <span
-              role="progressbar"
-              aria-label={`${projection.progress.total}件中${projection.progress.discovered}件を発見`}
-              aria-valuemin={0}
-              aria-valuemax={projection.progress.total}
-              aria-valuenow={projection.progress.discovered}
-            >
-              {projection.progress.discovered}
-              <small aria-hidden="true"> / </small>
-              {projection.progress.total}
-              <span className="sr-only">件中を発見</span>
-            </span>
-          ) : null}
-        </section>
 
         {projection.status === "complete" ? (
           <section className="success-callout" aria-labelledby="success-title">
@@ -215,43 +215,24 @@ export function ExplorationMap({
           </section>
         ) : null}
 
-        <section className="map-workspace" aria-labelledby="map-workspace-title">
-          <h2 id="map-workspace-title" className="sr-only">
-            探索地図
-          </h2>
-          <MapCanvas
-            projection={projection}
-            selectedNodeId={selectedNodeId}
-            onSelectNode={setSelectedNodeId}
-          />
-        </section>
+        <section className="mission-route">
+          <div className="route-caption" aria-hidden="true">
+            <span>ROUTE</span>
+            <strong>{experience === "browse" ? "準備経路" : "発見した経路"}</strong>
+          </div>
 
-        {selectedNode && selectedNode.state !== "undiscovered" ? (
-          <section
-            className="selected-node-brief"
-            aria-label={`選択中の地点 ${selectedNode.label}`}
-          >
-            <span className="selected-node-symbol" aria-hidden="true">
-              <AppIcon name={selectedNode.icon} stroke={1.7} />
-            </span>
-            <div className="selected-node-copy">
-              <small>選択中の地点</small>
-              <strong>{selectedNode.label}</strong>
-            </div>
-            {selectedNode.progress ? (
-              <span className="selected-node-progress">
-                {selectedNode.progress}
-              </span>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => openConsultation()}
-            >
-              次の一手
-              <IconChevronRight aria-hidden="true" />
-            </button>
+          <section className="mission-map" aria-labelledby="mission-map-title">
+            <h2 id="mission-map-title" className="sr-only">
+              探索地図
+            </h2>
+            <MapCanvas
+              projection={projection}
+              selectedNodeId={selectedNodeId}
+              onSelectNode={setSelectedNodeId}
+              onOpenNode={() => openConsultation()}
+            />
           </section>
-        ) : null}
+        </section>
       </section>
 
       <DisclosureDrawer
