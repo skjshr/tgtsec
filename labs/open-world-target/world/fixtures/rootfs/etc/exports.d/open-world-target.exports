@@ -1,0 +1,2 @@
+# TRAINING-ONLY: NFSv4 pseudo-root is mechanic's writable SSH area.
+/home/mechanic/.ssh 10.13.37.0/24(rw,sync,no_subtree_check,fsid=0,all_squash,anonuid=1102,anongid=1102)

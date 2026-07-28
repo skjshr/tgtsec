@@ -1,0 +1,12 @@
+[Unit]
+Description=TRAINING ONLY - Kazekiri root maintenance timer
+PartOf=open-world-vulnerable.target
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=3min
+Unit=open-world-root-timer.service
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

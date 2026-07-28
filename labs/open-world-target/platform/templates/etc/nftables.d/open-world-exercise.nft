@@ -1,0 +1,25 @@
+flush ruleset
+
+table inet open_world_lab {
+  chain input {
+    type filter hook input priority filter; policy drop;
+    iifname "lo" accept
+    ct state established,related accept
+    iifname "{{WIRED_INTERFACE}}" ip saddr 10.13.37.0/24 icmp type echo-request accept
+    iifname "{{WIRED_INTERFACE}}" ip saddr 10.13.37.0/24 tcp dport 20048 drop
+    iifname "{{WIRED_INTERFACE}}" ip saddr 10.13.37.0/24 tcp dport { 22, 80, 445, 2049, 8787 } accept
+    iifname "{{WIRED_INTERFACE}}" ip saddr 0.0.0.0/0 udp sport 68 udp dport 67 accept
+  }
+
+  chain forward {
+    type filter hook forward priority filter; policy drop;
+  }
+
+  chain output {
+    type filter hook output priority filter; policy drop;
+    oifname "lo" accept
+    ct state established,related accept
+    oifname "{{WIRED_INTERFACE}}" ip daddr 10.13.37.0/24 accept
+    oifname "{{WIRED_INTERFACE}}" ip daddr 255.255.255.255 udp sport 67 udp dport 68 accept
+  }
+}

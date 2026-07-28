@@ -1,6 +1,0 @@
-店長メモ（演習用）
-
-Webサイトから公開する予定のないファイルです。
-これをWeb用の利用者から読めたなら、ページ改ざんだけでなく情報流出も起こせる状態です。
-
-BONUS-PROOF: LAB{limited_user_read_private_note}

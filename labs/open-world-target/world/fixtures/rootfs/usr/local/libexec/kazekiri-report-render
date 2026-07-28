@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+echo "風切モータース 整備レポート"
+echo "training renderer: no pending records"

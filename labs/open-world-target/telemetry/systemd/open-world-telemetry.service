@@ -1,0 +1,29 @@
+[Unit]
+Description=ExamServer open-world target telemetry
+Requires=open-world-telemetry.socket
+After=network.target open-world-telemetry.socket
+PartOf=open-world-vulnerable.target
+
+[Service]
+Type=simple
+User=lab-telemetry
+Group=lab-telemetry
+SupplementaryGroups=lab-events
+EnvironmentFile=/etc/examserver-open-world/session.env
+Environment=LAB_HTTP_HOST=10.13.37.10
+Environment=LAB_HTTP_PORT=8787
+Environment=LAB_STATE_PATH=/var/lib/examserver-open-world/telemetry-state.json
+ExecStart=/usr/bin/node /opt/examserver/open-world/telemetry/bin/server.mjs
+Restart=on-failure
+RestartSec=2
+UMask=0027
+NoNewPrivileges=yes
+PrivateDevices=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/examserver-open-world
+RestrictAddressFamilies=AF_UNIX AF_INET
+
+[Install]
+WantedBy=multi-user.target

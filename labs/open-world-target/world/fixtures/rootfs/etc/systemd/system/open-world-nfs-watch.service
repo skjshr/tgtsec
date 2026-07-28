@@ -1,0 +1,27 @@
+[Unit]
+Description=ExamServer NFS flag access telemetry
+Requires=open-world-telemetry.socket
+After=open-world-telemetry.socket
+Before=nfs-server.service
+PartOf=open-world-vulnerable.target
+
+[Service]
+Type=notify
+NotifyAccess=main
+User=root
+Group=root
+ExecStartPre=/usr/bin/test -f /run/open-world-lab/exercise-ready
+ExecStart=/usr/local/libexec/open-world-nfs-watch
+Restart=on-failure
+RestartSec=1s
+TimeoutStartSec=10s
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadOnlyPaths=/home/mechanic/.ssh/ENTRY-NFS.flag
+RestrictAddressFamilies=AF_UNIX
+LockPersonality=yes
+
+[Install]
+WantedBy=open-world-vulnerable.target

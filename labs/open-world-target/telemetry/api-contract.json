@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "basePath": "/api/session",
+  "authentication": {
+    "scheme": "Bearer",
+    "targetEnvironmentVariable": "TELEMETRY_BRIDGE_TOKEN",
+    "kaliEnvironmentVariable": "BRIDGE_TARGET_TOKEN",
+    "requiredFor": [
+      "state",
+      "events",
+      "selectHypothesis",
+      "unlockHint",
+      "submitManualFlag"
+    ],
+    "failure": {
+      "status": 401,
+      "code": "unauthorized",
+      "secretEcho": false
+    }
+  },
+  "state": {
+    "method": "GET",
+    "path": "/api/session/state",
+    "response": {
+      "experience": "live",
+      "sessionId": "exercise-2026-07-27-a",
+      "status": "active",
+      "revision": 0,
+      "facts": [],
+      "hypotheses": [
+        {
+          "id": "hyp-service-inventory",
+          "label": "まず、直結先で応答するサービスを整理する",
+          "summary": "入口を決める前に、見えている面を事実として並べる。",
+          "selected": true,
+          "available": true
+        }
+      ],
+      "graph": {
+        "nodes": [
+          {
+            "id": "map-01",
+            "state": "undiscovered"
+          },
+          {
+            "id": "map-02",
+            "state": "undiscovered"
+          },
+          {
+            "id": "map-03",
+            "state": "undiscovered"
+          }
+        ],
+        "edges": []
+      },
+      "hints": [
+        {
+          "id": "hyp-service-inventory:1",
+          "step": 1,
+          "title": "見る場所",
+          "state": "available"
+        },
+        {
+          "id": "hyp-service-inventory:2",
+          "step": 2,
+          "title": "使う道具",
+          "state": "locked"
+        },
+        {
+          "id": "hyp-service-inventory:3",
+          "step": 3,
+          "title": "操作例",
+          "state": "locked"
+        }
+      ],
+      "progress": {
+        "discovered": 0,
+        "total": 14
+      },
+      "recentEvents": [],
+      "telemetry": {
+        "status": "live"
+      },
+      "capabilities": {
+        "manualFlagSubmission": true
+      }
+    }
+  },
+  "events": {
+    "method": "GET",
+    "path": "/api/session/events",
+    "contentType": "text/event-stream",
+    "event": "state",
+    "id": "projection.revision",
+    "data": "same shape as GET /api/session/state",
+    "reconnect": "Last-Event-ID is accepted and every connection receives a full state snapshot"
+  },
+  "detectorStatusControl": {
+    "publicEndpoint": false,
+    "unavailableSignal": "SIGUSR1",
+    "liveSignal": "SIGUSR2",
+    "helper": "/usr/local/sbin/open-world-telemetry-status",
+    "meaning": "switch automatic detector availability while this daemon and HTTP API remain alive"
+  },
+  "selectHypothesis": {
+    "method": "POST",
+    "path": "/api/session/hypotheses/{hypothesisId}/select",
+    "body": {},
+    "response": "state projection"
+  },
+  "unlockHint": {
+    "method": "POST",
+    "path": "/api/session/hints/{hintId}/unlock",
+    "body": {},
+    "response": "state projection"
+  },
+  "submitManualFlag": {
+    "method": "POST",
+    "path": "/api/session/flags/submit",
+    "body": {
+      "flag": "participant-entered value"
+    },
+    "response": {
+      "accepted": true,
+      "message": "flagを確認しました。",
+      "state": "state projection"
+    },
+    "availability": "Kali loopback fallback only; Bridge and cloud never forward flag strings"
+  }
+}

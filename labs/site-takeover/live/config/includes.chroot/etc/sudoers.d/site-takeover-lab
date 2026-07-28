@@ -1,6 +1,0 @@
-# Local operator access on the diskless Live system.
-lab ALL=(ALL:ALL) NOPASSWD: ALL
-
-# Deliberately over-broad for the isolated root-bonus chapter.
-# This file must never be installed outside the disposable training target.
-www-data ALL=(root) NOPASSWD: /usr/local/sbin/site-maintenance *

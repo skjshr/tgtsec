@@ -1,0 +1,14 @@
+{
+  "name": "@examserver/open-world-telemetry",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "test:nfs-watch:linux": "python3 tests/nfs-watch.integration.py",
+    "validate:world": "node ../world/validate-private-answers.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,2 @@
+# Append this exact line to Debian's packaged /etc/pam.d/sshd.
+session optional pam_exec.so quiet /usr/local/libexec/open-world-ssh-session-event

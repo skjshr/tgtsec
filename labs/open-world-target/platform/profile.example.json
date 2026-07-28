@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "target": {
+    "diskById": "/dev/disk/by-id/REPLACE_WITH_STABLE_ID",
+    "diskSerial": "REPLACE_WITH_SERIAL",
+    "diskWwn": "REPLACE_WITH_WWN",
+    "diskSizeBytes": 0,
+    "debianPartuuid": "REPLACE_WITH_DEBIAN_PARTUUID",
+    "espPartuuid": "REPLACE_WITH_ESP_PARTUUID",
+    "windowsPartuuid": "REPLACE_WITH_WINDOWS_PARTUUID"
+  },
+  "network": {
+    "wiredInterface": "REPLACE_WITH_INTERFACE",
+    "wiredMac": "REPLACE_WITH_MAC",
+    "maintenanceConnectivityService": "NetworkManager.service"
+  },
+  "recovery": {
+    "kitId": "REPLACE_WITH_KIT_ID",
+    "mediaUuid": "REPLACE_WITH_RECOVERY_MEDIA_UUID",
+    "goldenBtrfsStream": {
+      "path": "assets/debian-root.btrfs",
+      "sha256": "REPLACE_WITH_SHA256",
+      "filesystemUuid": "REPLACE_WITH_GOLDEN_DEBIAN_BTRFS_UUID"
+    },
+    "debianEfiArchive": {
+      "path": "assets/debian-efi.tar",
+      "sha256": "REPLACE_WITH_SHA256"
+    },
+    "microsoftEfiTreeSha256": "REPLACE_WITH_SHA256",
+    "bareMetalImage": {
+      "path": "assets/full-disk.img",
+      "sha256": "REPLACE_WITH_SHA256"
+    }
+  }
+}

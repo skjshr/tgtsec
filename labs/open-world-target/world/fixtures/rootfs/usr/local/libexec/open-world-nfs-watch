@@ -1,0 +1,195 @@
+#!/usr/bin/python3
+"""Translate a kernel file-access notification into one allowlisted lab event."""
+
+from __future__ import annotations
+
+import argparse
+import ctypes
+import errno
+import os
+import select
+import signal
+import socket
+import struct
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+
+IN_ACCESS = 0x00000001
+IN_DELETE_SELF = 0x00000400
+IN_MOVE_SELF = 0x00000800
+IN_IGNORED = 0x00008000
+WATCH_MASK = IN_ACCESS | IN_DELETE_SELF | IN_MOVE_SELF
+EVENT_HEADER = struct.Struct("iIII")
+DEFAULT_WATCH_PATH = Path("/home/mechanic/.ssh/ENTRY-NFS.flag")
+DEFAULT_EMITTER = Path("/usr/local/bin/open-world-event")
+EVENT_ARGUMENTS = (
+    "--kind",
+    "entry.discovered",
+    "--node",
+    "entrance-nfs-workshop",
+    "--source",
+    "nfs-server.service",
+    "--evidence",
+    "nfs.workshop.flag_read",
+)
+
+
+class Inotify:
+    def __init__(self) -> None:
+        self.libc = ctypes.CDLL(None, use_errno=True)
+        self.libc.inotify_init1.argtypes = [ctypes.c_int]
+        self.libc.inotify_init1.restype = ctypes.c_int
+        self.libc.inotify_add_watch.argtypes = [
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint32,
+        ]
+        self.libc.inotify_add_watch.restype = ctypes.c_int
+        self.fd = self.libc.inotify_init1(os.O_CLOEXEC | os.O_NONBLOCK)
+        if self.fd < 0:
+            error = ctypes.get_errno()
+            raise OSError(error, os.strerror(error))
+
+    def add(self, directory: Path) -> int:
+        watch = self.libc.inotify_add_watch(
+            self.fd,
+            os.fsencode(directory),
+            WATCH_MASK,
+        )
+        if watch < 0:
+            error = ctypes.get_errno()
+            raise OSError(error, os.strerror(error), str(directory))
+        return watch
+
+    def close(self) -> None:
+        os.close(self.fd)
+
+
+def parse_events(
+    payload: bytes,
+    expected_watch: int,
+) -> list[tuple[int, str]]:
+    events: list[tuple[int, str]] = []
+    offset = 0
+    while offset + EVENT_HEADER.size <= len(payload):
+        watch, mask, _cookie, name_length = EVENT_HEADER.unpack_from(
+            payload,
+            offset,
+        )
+        offset += EVENT_HEADER.size
+        raw_name = payload[offset : offset + name_length]
+        offset += name_length
+        if watch == expected_watch:
+            name = os.fsdecode(raw_name.split(b"\0", 1)[0])
+            events.append((mask, name))
+    return events
+
+
+def emit(emitter: Path) -> bool:
+    try:
+        completed = subprocess.run(
+            [str(emitter), *EVENT_ARGUMENTS],
+            check=False,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return completed.returncode == 0
+
+
+def notify_ready() -> None:
+    address = os.environ.get("NOTIFY_SOCKET")
+    if not address:
+        return
+    if address.startswith("@"):
+        address = "\0" + address[1:]
+    with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as notifier:
+        notifier.connect(address)
+        notifier.sendall(b"READY=1")
+
+
+def watch(path: Path, emitter: Path, *, once: bool) -> int:
+    stopping = False
+
+    def request_stop(_signum: int, _frame: object) -> None:
+        nonlocal stopping
+        stopping = True
+
+    signal.signal(signal.SIGINT, request_stop)
+    signal.signal(signal.SIGTERM, request_stop)
+
+    notifier = Inotify()
+    last_emitted = 0.0
+    ready_notified = False
+    watch_id: int | None = None
+    try:
+        while not stopping:
+            if watch_id is None:
+                try:
+                    watch_id = notifier.add(path.parent)
+                except OSError as error:
+                    if error.errno not in (errno.ENOENT, errno.ENOTDIR):
+                        raise
+                    time.sleep(0.25)
+                    continue
+
+            if not ready_notified and path.is_file():
+                notify_ready()
+                ready_notified = True
+                print("watch-ready", flush=True)
+
+            readable, _, _ = select.select([notifier.fd], [], [], 1.0)
+            if not readable:
+                continue
+
+            try:
+                payload = os.read(notifier.fd, 65536)
+            except BlockingIOError:
+                continue
+
+            for mask, name in parse_events(payload, watch_id):
+                now = time.monotonic()
+                if (
+                    mask & IN_ACCESS
+                    and name == path.name
+                    and now - last_emitted >= 1.0
+                ):
+                    delivered = emit(emitter)
+                    if not delivered:
+                        raise RuntimeError("fixed event delivery failed")
+                    last_emitted = now
+                    if once:
+                        return 0
+                if mask & (IN_DELETE_SELF | IN_MOVE_SELF | IN_IGNORED):
+                    watch_id = None
+                    break
+    finally:
+        notifier.close()
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--watch", type=Path, default=DEFAULT_WATCH_PATH)
+    parser.add_argument("--emitter", type=Path, default=DEFAULT_EMITTER)
+    parser.add_argument("--once", action="store_true")
+    arguments = parser.parse_args()
+    return watch(arguments.watch, arguments.emitter, once=arguments.once)
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except Exception as error:
+        print(
+            f"open-world-nfs-watch: {type(error).__name__}",
+            file=sys.stderr,
+            flush=True,
+        )
+        raise SystemExit(1)

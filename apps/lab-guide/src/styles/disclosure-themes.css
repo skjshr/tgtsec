@@ -1,0 +1,279 @@
+/* PLAY / Mission Deck ----------------------------------------------------- */
+
+:root[data-theme="play"] .theme-menu > summary {
+  color: #fffdf5;
+  background: #292823;
+  border: 2px solid #4a4942;
+  border-radius: 1px;
+}
+
+:root[data-theme="play"] .theme-menu > summary span {
+  color: #bcb8aa;
+}
+
+:root[data-theme="play"] .theme-menu > summary strong {
+  color: var(--signal);
+}
+
+:root[data-theme="play"] .theme-menu-options {
+  color: #fffdf5;
+  background: #11110e;
+  border: 3px solid var(--signal);
+  border-radius: 1px;
+  box-shadow: 6px 6px 0 rgb(0 0 0 / 34%);
+}
+
+:root[data-theme="play"] .theme-menu-options button[aria-pressed="true"] {
+  color: #11110e;
+  background: var(--signal);
+  border-color: var(--signal);
+}
+
+:root[data-theme="play"] .stage-context {
+  color: #fffdf5;
+  background: #11110e;
+  border: 2px solid #11110e;
+  border-left: 8px solid var(--accent);
+  box-shadow: 4px 4px 0 rgb(21 20 16 / 15%);
+}
+
+:root[data-theme="play"] .stage-context div > small {
+  color: var(--signal);
+}
+
+:root[data-theme="play"] .stage-context > svg {
+  color: var(--accent);
+}
+
+:root[data-theme="play"] .stage-context > span {
+  color: #11110e;
+  background: var(--signal);
+  border: 2px solid var(--signal);
+}
+
+:root[data-theme="play"] .disclosure-pull {
+  border: 2px solid #11110e;
+  border-radius: 1px;
+  box-shadow: 3px 3px 0 rgb(21 20 16 / 16%);
+  font-weight: 780;
+}
+
+:root[data-theme="play"] .disclosure-pull-cord {
+  width: 2px;
+  background: #11110e;
+}
+
+:root[data-theme="play"] .disclosure-pull[aria-expanded="true"],
+:root[data-theme="play"] .disclosure-pull:hover {
+  color: #11110e;
+  background: var(--signal);
+  border-color: #11110e;
+}
+
+:root[data-theme="play"] .disclosure-drawer {
+  background: var(--surface);
+  border-left: 4px solid #11110e;
+}
+
+:root[data-theme="play"] .disclosure-drawer-header {
+  color: #fffdf5;
+  background: #11110e;
+  border-bottom: 4px solid var(--signal);
+}
+
+:root[data-theme="play"] .disclosure-close {
+  color: #11110e;
+  background: var(--signal);
+  border: 2px solid var(--signal);
+  border-radius: 1px;
+}
+
+/* OPS / Night Circuit ----------------------------------------------------- */
+
+:root[data-theme="ops"] .theme-menu > summary {
+  color: var(--text);
+  background: #09171c;
+  border-color: #31535b;
+  border-radius: 2px;
+  font-family: var(--mono);
+}
+
+:root[data-theme="ops"] .theme-menu > summary span {
+  color: #688681;
+}
+
+:root[data-theme="ops"] .theme-menu > summary strong {
+  color: var(--primary);
+}
+
+:root[data-theme="ops"] .theme-menu-options {
+  background: #071419;
+  border-color: var(--primary);
+  border-radius: 2px;
+  box-shadow: 0 0 26px rgb(89 231 194 / 15%);
+}
+
+:root[data-theme="ops"] .theme-menu-options button {
+  font-family: var(--mono);
+}
+
+:root[data-theme="ops"] .theme-menu-options button[aria-pressed="true"] {
+  color: #071217;
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+:root[data-theme="ops"] .stage-context {
+  background: #061015;
+  border-color: #28474e;
+  border-left-color: var(--primary);
+}
+
+:root[data-theme="ops"] .stage-context > span {
+  color: var(--primary);
+  border-color: #31535b;
+}
+
+:root[data-theme="ops"] .disclosure-pull {
+  background: #08171c;
+  border-color: #31535b;
+  border-radius: 2px;
+  font-family: var(--mono);
+}
+
+:root[data-theme="ops"] .disclosure-pull-cord {
+  background: var(--primary);
+  box-shadow: 0 0 7px rgb(89 231 194 / 35%);
+}
+
+:root[data-theme="ops"] .disclosure-pull[aria-expanded="true"],
+:root[data-theme="ops"] .disclosure-pull:hover {
+  color: var(--primary);
+  background: #0d2027;
+  border-color: var(--primary);
+  box-shadow: 0 0 16px rgb(89 231 194 / 11%);
+}
+
+:root[data-theme="ops"] .disclosure-drawer {
+  background: #071419;
+  border-left-color: var(--primary);
+  box-shadow: -18px 0 70px rgb(0 0 0 / 55%);
+}
+
+:root[data-theme="ops"] .disclosure-drawer-header {
+  background: #061015;
+  border-bottom-color: #28474e;
+}
+
+:root[data-theme="ops"] .disclosure-drawer-header h2 {
+  color: var(--primary);
+  font-family: var(--mono);
+}
+
+:root[data-theme="ops"] .disclosure-close {
+  color: var(--primary);
+  background: #0a181e;
+  border-color: #31535b;
+  border-radius: 2px;
+}
+
+/* FOCUS / Field Notes ----------------------------------------------------- */
+
+:root[data-theme="focus"] .theme-menu > summary {
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--text);
+  border-radius: 0;
+}
+
+:root[data-theme="focus"] .theme-menu > summary span {
+  color: var(--muted-text);
+}
+
+:root[data-theme="focus"] .theme-menu > summary strong {
+  color: var(--primary);
+}
+
+:root[data-theme="focus"] .theme-menu-options {
+  border: 2px solid var(--text);
+  border-radius: 0;
+  box-shadow: 8px 8px 0 rgb(17 17 15 / 10%);
+}
+
+:root[data-theme="focus"] .theme-menu-options button {
+  border-radius: 0;
+}
+
+:root[data-theme="focus"] .theme-menu-options button[aria-pressed="true"] {
+  color: var(--primary);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid var(--primary);
+}
+
+:root[data-theme="focus"] .stage-context {
+  padding-inline: 0;
+  background: transparent;
+  border-width: 1px 0;
+  border-left: 0;
+}
+
+:root[data-theme="focus"] .stage-context > span {
+  color: var(--primary);
+  border-width: 0 0 1px;
+}
+
+:root[data-theme="focus"] .disclosure-pull {
+  padding-inline: 8px;
+  background: transparent;
+  border-width: 0 0 1px;
+  border-radius: 0;
+}
+
+:root[data-theme="focus"] .disclosure-pull-cord {
+  background: var(--primary);
+}
+
+:root[data-theme="focus"] .disclosure-pull[aria-expanded="true"],
+:root[data-theme="focus"] .disclosure-pull:hover {
+  color: var(--primary);
+  background: transparent;
+  border-color: var(--primary);
+}
+
+:root[data-theme="focus"] .disclosure-pull-meta {
+  background: transparent;
+}
+
+:root[data-theme="focus"] .disclosure-drawer {
+  background: var(--surface);
+  border-left: 2px solid var(--text);
+  box-shadow: -14px 0 42px rgb(17 17 15 / 12%);
+}
+
+:root[data-theme="focus"] .disclosure-drawer-header {
+  border-bottom: 2px solid var(--text);
+}
+
+:root[data-theme="focus"] .disclosure-close {
+  border-color: var(--text);
+  border-radius: 0;
+}
+
+:root[data-theme="play"] .disclosure-drawer .known-facts,
+:root[data-theme="play"] .disclosure-drawer .investigation-rail,
+:root[data-theme="play"] .disclosure-drawer .hint-rail,
+:root[data-theme="play"] .disclosure-drawer .event-strip,
+:root[data-theme="ops"] .disclosure-drawer .known-facts,
+:root[data-theme="ops"] .disclosure-drawer .investigation-rail,
+:root[data-theme="ops"] .disclosure-drawer .hint-rail,
+:root[data-theme="ops"] .disclosure-drawer .event-strip,
+:root[data-theme="focus"] .disclosure-drawer .known-facts,
+:root[data-theme="focus"] .disclosure-drawer .investigation-rail,
+:root[data-theme="focus"] .disclosure-drawer .hint-rail,
+:root[data-theme="focus"] .disclosure-drawer .event-strip {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}

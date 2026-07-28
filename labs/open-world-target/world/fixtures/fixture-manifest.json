@@ -1,0 +1,166 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "network": {
+    "targetAddress": "10.13.37.10/24",
+    "allowedClientCidr": "10.13.37.0/24",
+    "externalRouteRequired": false
+  },
+  "services": [
+    "apache2.service",
+    "dnsmasq.service",
+    "ssh.service",
+    "smbd.service",
+    "nfs-server.service",
+    "open-world-nfs-watch.service",
+    "open-world-file-watch.service",
+    "open-world-root-timer.timer",
+    "open-world-telemetry.service"
+  ],
+  "groups": {
+    "lab-foothold": [
+      "www-data",
+      "sales",
+      "mechanic"
+    ],
+    "lab-events": [
+      "www-data",
+      "nobody",
+      "lab-telemetry"
+    ]
+  },
+  "eventKeyProvisioning": {
+    "directory": {
+      "path": "/etc/examserver-open-world/event-keys",
+      "owner": "root",
+      "group": "root",
+      "mode": "0711"
+    },
+    "low": {
+      "path": "/etc/examserver-open-world/event-keys/low.key",
+      "owner": "root",
+      "group": "lab-events",
+      "mode": "0440",
+      "minimumRandomBytes": 32
+    },
+    "root": {
+      "path": "/etc/examserver-open-world/event-keys/root.key",
+      "owner": "root",
+      "group": "lab-telemetry",
+      "mode": "0440",
+      "minimumRandomBytes": 32
+    }
+  },
+  "accounts": [
+    {
+      "name": "sales",
+      "uid": 1101,
+      "interactive": true,
+      "synthetic": true
+    },
+    {
+      "name": "mechanic",
+      "uid": 1102,
+      "interactive": true,
+      "synthetic": true
+    },
+    {
+      "name": "lab-telemetry",
+      "uid": 1103,
+      "interactive": false,
+      "synthetic": true
+    }
+  ],
+  "requiredOwnership": [
+    {
+      "path": "/var/lib/open-world/flags",
+      "owner": "root",
+      "group": "www-data",
+      "mode": "0750"
+    },
+    {
+      "path": "/home/sales",
+      "owner": "sales",
+      "group": "sales",
+      "mode": "0750"
+    },
+    {
+      "path": "/home/mechanic",
+      "owner": "mechanic",
+      "group": "mechanic",
+      "mode": "0750"
+    },
+    {
+      "path": "/srv/kazekiri/handover",
+      "owner": "root",
+      "group": "root",
+      "mode": "0755"
+    },
+    {
+      "path": "/home/mechanic/.ssh",
+      "owner": "mechanic",
+      "group": "mechanic",
+      "mode": "0700"
+    },
+    {
+      "path": "/srv/kazekiri/maintenance-hooks",
+      "owner": "root",
+      "group": "lab-foothold",
+      "mode": "0775"
+    },
+    {
+      "path": "/opt/kazekiri/maintenance/nightly.sh",
+      "owner": "root",
+      "group": "lab-foothold",
+      "mode": "0775"
+    },
+    {
+      "path": "/usr/local/bin/kazekiri-report",
+      "owner": "root",
+      "group": "root",
+      "mode": "4755"
+    },
+    {
+      "path": "/var/www/.lab-flags",
+      "owner": "root",
+      "group": "www-data",
+      "mode": "0750"
+    },
+    {
+      "path": "/opt/kazekiri/clues",
+      "owner": "root",
+      "group": "lab-foothold",
+      "mode": "0550"
+    },
+    {
+      "path": "/root/route-flags",
+      "owner": "root",
+      "group": "root",
+      "mode": "0700"
+    },
+    {
+      "path": "/root",
+      "owner": "root",
+      "group": "root",
+      "mode": "0700"
+    },
+    {
+      "path": "/usr/local/sbin/open-world-telemetry-status",
+      "owner": "root",
+      "group": "root",
+      "mode": "0750"
+    },
+    {
+      "path": "/usr/local/libexec/open-world-nfs-watch",
+      "owner": "root",
+      "group": "root",
+      "mode": "0755"
+    },
+    {
+      "path": "/usr/local/libexec/open-world-file-watch",
+      "owner": "root",
+      "group": "root",
+      "mode": "0755"
+    }
+  ]
+}

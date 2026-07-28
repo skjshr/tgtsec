@@ -1,0 +1,22 @@
+#!/bin/sh
+set -eu
+
+case "${1:-}" in
+  unavailable)
+    signal=SIGUSR1
+    ;;
+  live)
+    signal=SIGUSR2
+    ;;
+  *)
+    echo "usage: open-world-telemetry-status unavailable|live" >&2
+    exit 2
+    ;;
+esac
+
+/usr/bin/systemctl kill \
+  --kill-who=main \
+  --signal="$signal" \
+  open-world-telemetry.service
+
+echo "automatic detector status requested: $1"

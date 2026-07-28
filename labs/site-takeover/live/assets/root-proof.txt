@@ -1,3 +1,0 @@
-ROOT BONUS COMPLETE
-ROOT-PROOF: LAB{misconfigured_maintenance_reached_root}
-このファイルはPC全体を変更できる管理者だけが読めます。

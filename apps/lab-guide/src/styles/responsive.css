@@ -1,0 +1,538 @@
+@media (min-width: 901px) {
+  body {
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 1366px) and (min-width: 901px) {
+  .brand-lockup {
+    gap: 9px;
+    padding-inline: 16px;
+  }
+
+  .brand-name {
+    font-size: 21px;
+  }
+
+  .brand-lab {
+    font-size: 15px;
+  }
+
+  .primary-nav {
+    gap: 12px;
+  }
+
+  .nav-tab {
+    min-width: 130px;
+    font-size: 17px;
+  }
+
+  .known-facts,
+  .investigation-rail,
+  .hint-rail {
+    padding-inline: 18px;
+  }
+
+  .map-stage {
+    padding-inline: 22px;
+  }
+
+  .session-pairing {
+    grid-template-columns: 42px minmax(190px, 1fr) minmax(280px, 330px);
+    gap: 11px;
+    padding-inline: 11px;
+  }
+
+  .session-pairing-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .fact-copy strong,
+  .investigation-option strong {
+    font-size: 14px;
+  }
+
+  .map-legend {
+    gap: 12px;
+    font-size: 11px;
+  }
+
+  .react-flow__node-world {
+    width: 180px;
+  }
+
+  .consultation-stage {
+    padding-inline: 26px;
+  }
+
+  .hypothesis-option {
+    font-size: 15px;
+  }
+
+  .consultation-actions {
+    gap: 12px;
+  }
+
+  .consultation-actions .primary-action,
+  .consultation-actions .secondary-action {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .event-strip {
+    grid-template-columns: 130px minmax(0, 1fr) 230px;
+    padding-inline: 16px;
+  }
+}
+
+@media (max-width: 900px) {
+  :root {
+    --header-height: 108px;
+  }
+
+  .app-header {
+    position: sticky;
+    top: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 56px 52px;
+    height: var(--header-height);
+  }
+
+  .brand-lockup {
+    gap: 8px;
+    padding: 0 14px;
+  }
+
+  .brand-lockup > svg {
+    width: 29px;
+    height: 29px;
+  }
+
+  .brand-name {
+    font-size: 20px;
+  }
+
+  .brand-divider,
+  .brand-lab {
+    display: none;
+  }
+
+  .primary-nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    gap: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .nav-tab {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--body);
+    font-size: 15px;
+  }
+
+  .nav-tab svg {
+    width: 23px;
+    height: 23px;
+  }
+
+  .end-session-button {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 10px;
+    margin-right: 8px;
+  }
+
+  .experience-label {
+    display: none;
+  }
+
+  .end-session-button span {
+    display: none;
+  }
+
+  .map-screen,
+  .consultation-screen {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100dvh - var(--header-height));
+  }
+
+  .map-screen .known-facts,
+  .consultation-screen .known-facts {
+    order: 1;
+  }
+
+  .map-screen .investigation-rail {
+    order: 2;
+  }
+
+  .map-screen .map-stage {
+    order: 3;
+  }
+
+  .map-screen--browse .map-stage {
+    order: 2;
+  }
+
+  .map-screen--browse .investigation-rail {
+    order: 3;
+  }
+
+  .consultation-stage {
+    order: 2;
+  }
+
+  .hint-rail {
+    order: 3;
+  }
+
+  .event-strip {
+    order: 4;
+  }
+
+  .known-facts,
+  .investigation-rail,
+  .hint-rail {
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    border-left: 0;
+  }
+
+  .known-facts {
+    padding: 26px 22px;
+  }
+
+  .known-facts--detailed .fact-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .known-facts--detailed .fact-item {
+    grid-template-columns: 20px 46px minmax(0, 1fr);
+    padding: 8px;
+  }
+
+  .known-facts--detailed .fact-icon {
+    width: 46px;
+    height: 46px;
+  }
+
+  .rail-card,
+  .direct-connection {
+    display: none;
+  }
+
+  .map-stage,
+  .consultation-stage {
+    overflow: visible;
+  }
+
+  .map-stage {
+    padding: 28px 22px 30px;
+  }
+
+  .session-pairing {
+    grid-template-columns: 46px minmax(0, 1fr);
+  }
+
+  .session-pairing form {
+    grid-column: 1 / -1;
+  }
+
+  .map-canvas {
+    display: none;
+  }
+
+  .mobile-map {
+    display: grid;
+    gap: 10px;
+    padding: 0;
+    margin: 10px 0 0;
+    list-style: none;
+  }
+
+  .mobile-map-node {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) 24px;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+    min-height: 70px;
+    padding: 12px 14px;
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--success);
+    border-radius: 5px;
+  }
+
+  .mobile-map-node--selected,
+  .mobile-map-node[aria-pressed="true"] {
+    border: 2px solid var(--primary);
+  }
+
+  .mobile-map-node--undiscovered {
+    color: var(--muted-text);
+    border-color: var(--muted-text);
+    border-style: dashed;
+  }
+
+  .mobile-map-node > svg {
+    width: 25px;
+    height: 25px;
+  }
+
+  .mobile-map-node > svg:last-child {
+    color: var(--success);
+  }
+
+  .mobile-map-node--selected > svg:last-child,
+  .mobile-map-node[aria-pressed="true"] > svg:last-child {
+    color: var(--primary);
+  }
+
+  .mobile-map-node strong,
+  .mobile-map-node small {
+    display: block;
+  }
+
+  .mobile-map-node small {
+    margin-top: 3px;
+    color: var(--muted-text);
+    font-size: 11px;
+  }
+
+  .investigation-rail,
+  .hint-rail {
+    padding: 28px 22px;
+  }
+
+  .investigation-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .investigation-option {
+    grid-template-columns: 34px minmax(0, 1fr);
+    min-height: 132px;
+  }
+
+  .investigation-option > svg:last-child {
+    display: none;
+  }
+
+  .event-strip {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    min-height: 0;
+    padding: 20px 22px;
+  }
+
+  .event-list {
+    grid-template-columns: 1fr;
+  }
+
+  .event-list li {
+    min-height: 52px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .telemetry-note {
+    grid-column: 1 / -1;
+    padding: 16px 0 0;
+  }
+
+  .consultation-stage {
+    padding: 32px 22px;
+  }
+
+  .consultation-intro {
+    padding-inline: 0;
+  }
+
+  .consultation-actions {
+    max-width: 640px;
+  }
+
+  .hint-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .hint-content {
+    min-height: 116px;
+  }
+}
+
+@media (max-width: 600px) {
+  .known-facts {
+    padding: 22px 16px;
+  }
+
+  .rail-heading {
+    margin-bottom: 16px;
+    font-size: 18px;
+  }
+
+  .known-facts--detailed .fact-list,
+  .investigation-list,
+  .hint-list {
+    grid-template-columns: 1fr;
+  }
+
+  .known-facts--detailed .fact-item {
+    min-height: 78px;
+  }
+
+  .map-stage,
+  .consultation-stage,
+  .investigation-rail,
+  .hint-rail {
+    padding: 24px 16px;
+  }
+
+  .session-pairing {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .session-pairing-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .session-pairing-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .session-pairing .primary-action {
+    width: 100%;
+  }
+
+  .stage-intro h1,
+  .consultation-intro h1 {
+    font-size: 27px;
+    line-height: 1.45;
+  }
+
+  .map-toolbar {
+    display: block;
+    margin-top: 18px;
+  }
+
+  .map-toolbar h2 {
+    margin-bottom: 14px;
+  }
+
+  .map-legend {
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 10px;
+  }
+
+  .investigation-option {
+    grid-template-columns: 38px minmax(0, 1fr) 20px;
+    min-height: 100px;
+  }
+
+  .investigation-option > svg:last-child {
+    display: block;
+  }
+
+  .event-strip {
+    display: block;
+    padding: 22px 16px;
+  }
+
+  .event-strip > h2 {
+    margin-bottom: 16px;
+  }
+
+  .event-list li {
+    padding: 12px 0;
+    border-left: 0;
+  }
+
+  .telemetry-note {
+    padding-top: 16px;
+  }
+
+  .connection-banner {
+    grid-template-columns: 25px minmax(0, 1fr);
+  }
+
+  .connection-banner button {
+    grid-column: 1 / -1;
+  }
+
+  .hypothesis-fieldset {
+    padding-top: 22px;
+  }
+
+  .hypothesis-fieldset legend {
+    padding-inline: 0;
+    font-size: 17px;
+  }
+
+  .hypothesis-option {
+    grid-template-columns: 34px minmax(0, 1fr) 24px;
+    gap: 10px;
+    min-height: 68px;
+    padding-inline: 12px;
+    font-size: 14px;
+  }
+
+  .hypothesis-option > svg:first-child {
+    width: 30px;
+    height: 30px;
+  }
+
+  .hypothesis-explanation {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 13px;
+    padding: 16px;
+  }
+
+  .hypothesis-explanation > svg {
+    width: 42px;
+    height: 42px;
+    padding: 9px;
+  }
+
+  .hypothesis-explanation h2 {
+    font-size: 16px;
+  }
+
+  .consultation-actions,
+  .dialog-actions {
+    display: grid;
+    gap: 10px;
+  }
+
+  .consultation-actions .primary-action,
+  .consultation-actions .secondary-action {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .hint-step > button {
+    min-height: 64px;
+  }
+
+  .hint-content {
+    min-height: 0;
+  }
+
+  .manual-flag-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .end-session-dialog {
+    padding: 30px 20px 22px;
+  }
+}

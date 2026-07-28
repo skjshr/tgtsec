@@ -22,8 +22,23 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Run Node tests
-        run: npm --prefix labs/site-takeover test
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/lab-guide/package-lock.json
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.13"
+
+      - name: Install guide dependencies
+        run: npm ci --prefix apps/lab-guide
+
+      - name: Run repository checks
+        run: npm run check
 
       - name: Check Bash syntax
         shell: bash
@@ -35,7 +50,7 @@ jobs:
               bash -n "${file}"
               checked=$((checked + 1))
             fi
-          done < <(find labs/site-takeover -type f -print0)
+          done < <(find labs/open-world-target -type f -print0)
           ((checked > 0))
           printf 'Checked %d shell scripts.\n' "${checked}"
 
@@ -48,40 +63,18 @@ jobs:
           while IFS= read -r -d '' file; do
             php -l "${file}"
             checked=$((checked + 1))
-          done < <(find labs/site-takeover -type f -name '*.php' -print0)
+          done < <(find labs/open-world-target -type f -name '*.php' -print0)
           ((checked > 0))
           printf 'Checked %d PHP files.\n' "${checked}"
 
-      - name: Parse PowerShell scripts
-        shell: pwsh
+      - name: Check C fixture syntax
+        shell: bash
         run: |
-          $failed = $false
-          $files = @(Get-ChildItem -LiteralPath 'labs/site-takeover' -Recurse -File -Filter '*.ps1')
-          if ($files.Count -eq 0) {
-            throw 'No PowerShell scripts were found.'
-          }
-
-          foreach ($file in $files) {
-            $tokens = $null
-            $errors = $null
-            [System.Management.Automation.Language.Parser]::ParseFile(
-              $file.FullName,
-              [ref]$tokens,
-              [ref]$errors
-            ) | Out-Null
-
-            foreach ($parseError in @($errors)) {
-              Write-Error "$($file.FullName):$($parseError.Extent.StartLineNumber): $($parseError.Message)"
-              $failed = $true
-            }
-          }
-
-          if ($failed) {
-            exit 1
-          }
-
-          Write-Host "Checked $($files.Count) PowerShell scripts."
-
-      - name: Run safe Windows bootstrap self-test
-        shell: pwsh
-        run: ./labs/site-takeover/operator/company-bootstrap.ps1 -SelfTest
+          set -Eeuo pipefail
+          checked=0
+          while IFS= read -r -d '' file; do
+            cc -Wall -Wextra -Werror -fsyntax-only "${file}"
+            checked=$((checked + 1))
+          done < <(find labs/open-world-target -type f -name '*.c' -print0)
+          ((checked > 0))
+          printf 'Checked %d C files.\n' "${checked}"

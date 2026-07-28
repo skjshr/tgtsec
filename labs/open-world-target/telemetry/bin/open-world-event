@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+
+if [ -z "${LAB_SESSION_ID:-}" ] &&
+   [ -r /run/examserver-open-world/session-id ]
+then
+  IFS= read -r LAB_SESSION_ID < /run/examserver-open-world/session-id
+  export LAB_SESSION_ID
+fi
+
+exec /usr/bin/node \
+  /opt/examserver/open-world/telemetry/bin/emit-event.mjs \
+  "$@"

@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+
+payload=/opt/kazekiri/maintenance/nightly.sh
+golden=/usr/local/share/open-world/nightly.sh.golden
+
+if [ -f "$payload" ] && ! /usr/bin/cmp -s "$payload" "$golden"
+then
+  /usr/bin/head -c 1 /root/route-flags/TIMER.flag >/dev/null
+fi
+
+exit 0

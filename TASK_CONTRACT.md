@@ -1,64 +1,83 @@
-# Task Contract: Live USB Web Site Takeover Lab v2
+# Task Contract: ExamServer Open World Lab v1
 
 ## Goal
 
-1〜3人のIT完全初心者が90分の技術部会で、Live USBから起動した実機Webサーバへ直結LANで侵入し、トップページを自分のチーム名へ書き換え、その因果を説明できる教材を作る。
+常時閲覧できるExamServerの公開ラボと、Kali Bridge経由でDebianの許可済み教材イベントに追従するライブ演習を、3入口、3root経路、14 flags、信頼済み復旧と一つの再現可能な体験として実装し、補助情報はユーザーがラベル付きの引き手を操作した時だけ一枚ずつ見せる。
 
 ## Inputs
 
-- Target: Windowsとデータを残す8GB RAMノートPC、Ethernetあり、UEFIで内蔵SSDを無効化でき、BitLocker回復手段を本人が確認済み
-- Attacker: Kali入り借用PC、またはKali VMを動かす自分のPC
-- Network: 2台をLANケーブルで直結
-- Session: 90分、参加者1〜3人、IT/ターミナル未経験
-- Media: 64GB BUFFALO USB、現状はexFATの`Full Repair Needed`。全容量検査でエラー0件の場合だけ採用
-- Build station: 標的ノートのWindows、個人テザリング、GitHub CLI、Codex CLI
+- Target: UEFI/GPT、Windowsとのデュアルブート、Debian用80GB以上の未割当領域を確保できるノートPC
+- Attacker: Kali実機、またはUSB Ethernetを専有し他NICを外したKali VM
+- Network: target `10.13.37.10/24`、直結Ethernet、target DHCP、Debianは外部経路なし。ライブ利用時だけKaliは別NICからVercelへ外向きHTTPS接続する。
+- Audience: IT/ターミナル初心者、1チーム1〜3人
+- Session: 標準経路30〜60分、別ルート再挑戦あり
+- Recovery: 演習中は外して保管する信頼済みUSBとbare-metal backup
 
-## Removals and rejected alternatives
+## Removals
 
-- 山本製作所/Drupal/既存OVAはv2の素材にせず、比較用の旧教材として凍結する。
-- DVWAは脆弱性名を先に選ぶ構造が今回の発見体験と合わないため採用しない。
-- 受付PCやサイネージ設定は、CLI実機との説明差が増えるため採用しない。
-- ターゲットのデスクトップGUIは、故障点と再構築時間を増やすため採用しない。
-- Debian DVDによるクリーンインストール、SSD分割、デュアルブートはWindows保護と再構築時間に反するため採用しない。
-- Ventoyによる複数ISO運用は、起動時の選択と書き換え可能なデータ領域を増やすため採用しない。
-- GitHub Pagesは借用PCと回線に依存するため、演習中の必須経路にしない。
-- 侵入後のcleanupスクリプトや永続領域は信頼できる初期化にならないため、リセット手段にしない。
-- root取得は初回の必須ゴールにしない。
+- 旧`labs/site-takeover`を現行導線、構築、設計正本から外す。
+- Live USBを通常起動方式として使わない。
+- vanilla guideの出力貼付け中心モデルを削除する。
+- Drupal、DVWA、既存OVAを新世界へ移植しない。
 
-## Constraints
+## World contract
 
-- 演習サービスはターゲットの直結Ethernetでだけ公開する。
-- Live OSは`toram nopersistence`で起動し、USBを抜いた後にだけ演習を開始する。
-- 内蔵SSDまたは外付けディスクが見える場合は、脆弱サービスをfail closedで起動しない。
-- 演習中はWi-Fi、DNS、デフォルトルート、外部接続を無効にする。
-- Codex CLIは保守モードだけで使用し、認証情報と履歴を再起動後へ残さない。
-- 脆弱性は教材コード内に限定し、第三者製品の古い脆弱版へ依存しない。
-- ターゲットへ個人情報、会社情報、本物の資格情報を置かない。
-- 参加者向けガイドにoperator用の完全解答、root秘密、保守認証情報を含めない。
-- GitHub、Codex、SSHの認証情報をLive ISOへ含めない。
-- USBへ書き込む前に全容量の読み書き検査を行い、ISOのSHA-256を照合する。
+- Theme: 架空の中古バイク販売・整備チェーン「風切モータース」
+- Entrances:
+  1. Web staff diagnostics command injection → `www-data`
+  2. Anonymous SMB backup disclosure + credential reuse → `sales`
+  3. Misconfigured NFS share → `mechanic` SSH foothold
+- Root paths:
+  1. Misconfigured `sudo` maintenance helper
+  2. Group-writable root systemd timer payload
+  3. Training-only SUID helper with unsafe PATH resolution
+- All three footholds can reach all three root paths.
+- Flags: entry 3、foothold 3、root clue 3、root route 3、common root 1、Windows 1。
+
+## Telemetry contract
+
+- Record only allowlisted lab event kinds, node IDs, source IDs, evidence codes, and timestamps.
+- Never record raw commands, raw HTTP parameters, file contents, credentials, tokens, or arbitrary terminal history.
+- Services emit to a root-owned Unix socket; the event daemon validates source/event combinations.
+- Debian telemetry exposes only discovered facts, unlocked hypotheses, graph projection, hint state, progress, and sanitized recent events to the direct LAN.
+- Kali Bridge reads that public projection and sends monotonic snapshots to the cloud over outbound HTTPS. It never forwards a target port or arbitrary target traffic.
+- The public website has a no-session browse mode. A short-lived pairing flow switches it to the paired live projection.
+- SSE is the normal browser update path; state polling is the fallback.
+- Manual flag submission remains local-only and is not sent through the public cloud.
+- Root completion is the last trustworthy automatic event.
+
+## Platform contract
+
+- Exercise mode exposes only required lab services on wired Ethernet and gives Debian no external route.
+- Public guide URL is `https://exam-server-one.vercel.app/lab`; its live API namespace is `/api/lab`. The reserved `.test` domain is not used publicly. The target is reached from Kali at `10.13.37.10` and is never the guide host.
+- Kali may use Wi-Fi for the Bridge, but IPv4/IPv6 forwarding, NAT, and cross-interface forwarding must remain disabled.
+- Maintenance mode keeps vulnerable services stopped before Wi-Fi or update tooling is enabled.
+- Windows is offline, sacrificial, and contains only fixture data and its hidden flag.
+- Disk-writing setup/recovery commands are dry-run or fail closed until exact disk identity, partition UUID, confirmation phrase, and image hash are supplied.
+- Root-acquired Debian is never reset from itself.
 
 ## Done criteria
 
-- ターゲットサイト、段階型ガイド、意図したコマンドインジェクションを実装する。
-- 限定ユーザーでトップページの「お知らせ」を書き換えられる。
-- 限定ユーザーでダミーの非公開メモを読める。
-- ボーナス経路で管理者権限の証拠を取得できる。
-- Debian Live ISOを一つの構築コマンドとGitHub Actionsの両方から再現できる。
-- ディスクなし環境では起動し、物理ディスクが見える環境では演習サービスを拒否する。
-- exercise/maintenanceのモード切替と、exercise状態の外部経路遮断を自動確認できる。
-- 借用Kali向けにUSB不要の事前確認表を用意する。
-- Firefoxで参加者フローをE2E確認し、デスクトップと狭幅のスクリーンショットを残す。
-- 会社のWindowsだけでclone、Codex修正、Actionsビルド、ISO取得、USB作成を完了できる。
-- USB検査、Live起動、USB取り外し、終了後の再起動をoperator文書へ残す。
-- 構築、USB、起動、Kali、必須攻略、root、復旧、検証の全手法をprivate GitHub上の一つの索引から辿れ、運営用の必須攻略だけは完全解答として残す。
-- privateブランチ、draft PR、検証済みdraft prereleaseをGitHubへ作る。
+- New contracts and active README describe only the open-world lab.
+- Guide implements browse, waiting, live, loading, reconnecting, selected, hint, success, and local-only fallback states.
+- A visitor can understand the lab and view its public world without a target or session.
+- A Kali Bridge can create a short-lived session, upload a sanitized projection, and make a paired browser update without reload.
+- PLAY、OPS、FOCUSの3テーマはruntimeで切替・保存でき、テーマ変更で教材状態を失わない。
+- 初期画面は現在目標、世界／仮説、主要操作だけを表示し、接続、事実、調査／ヒント、履歴、見た目は名称の分かる引き手からだけ開く。
+- 補助情報は同時に一枚だけ表示し、Escape、背景操作、閉じる操作で収納でき、元の引き手へfocusが戻る。
+- Telemetry state machine and API pass unit/integration tests without leaking forbidden data.
+- Static target fixtures implement all 3 entrances, 3 root paths, and 14 logical flags.
+- Nine route combinations have automated contract tests and operator verification procedures.
+- Platform includes deterministic install/config generation, exercise/maintenance mode controls, network isolation checks, and recovery media workflow.
+- Browser verification passes Firefox-compatible desktop/narrow flows with no console errors or horizontal overflow.
+- `design-qa.md` compares source and implementation at matching viewport and ends with `final result: passed`.
+- Physical dual-boot, actual exploit execution, actual Windows boot, and actual recovery remain explicitly incomplete until recorded on the target notebook.
 
 ## Surprise ledger
 
-- USBの主用途をOVA保管やOS再インストールから、読み取り専用Live OSの起動へ変更する。
-- 演習ガイドもターゲットPC内から配信し、当日のインターネット依存をなくす。
-- v2は既存リポジトリ内の独立した`labs/site-takeover`として追加し、旧教材を上書きしない。
-- 標的ノートのWindowsを会社での開発・USB作成環境として残す。
-- workflow_dispatchがdefault branchへ入る前は表示されないため、未mergeの初回だけ`feat/live-usb-b2r`へのpushでdraft prereleaseビルドを起動する。
-- 運営用の完全解答はGitHubへ置くが、参加者向けガイドには混ぜず、発見と因果説明の体験を維持する。
+- The old single-route lab is removed from active use instead of being migrated.
+- Root is real Debian host root; Windows safety comes from sacrificial contents and trusted external recovery, not containment.
+- The guide is hosted publicly; only sanitized state projections and connection metadata reach the cloud.
+- Automatic detection is event-based and privacy-bounded, not full command monitoring.
+- Live mode requires Kali internet access while Debian remains isolated. Fully offline sessions use the local telemetry API without Vercel.
+- 旧三列レイアウトとモバイルでの全パネル縦積みは廃止し、desktopはside drawer、narrow画面はbottom sheetへ統一する。
