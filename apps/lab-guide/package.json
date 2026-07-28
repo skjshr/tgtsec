@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:sites": "vite build --base /",
     "preview": "vite preview",
     "test": "vitest run && node --test tests/target-server.test.mjs tests/cloud-*.test.mjs",
     "test:server": "node --test tests/target-server.test.mjs",
