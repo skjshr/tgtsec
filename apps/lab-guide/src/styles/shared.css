@@ -334,6 +334,7 @@
 }
 
 .connection-banner {
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) auto;
   gap: 12px;
@@ -553,8 +554,7 @@
 }
 
 .is-live-update .fact-list .fact-item:last-child,
-.is-live-update .event-list li:last-child,
-.is-live-update .selected-node-brief {
+.is-live-update .event-list li:last-child {
   animation: state-arrive 220ms var(--ease-out) both;
 }
 

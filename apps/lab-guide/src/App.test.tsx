@@ -13,6 +13,7 @@ import { ManualFlagForm } from "./components/ManualFlagForm";
 import {
   fallbackPositionFor,
   WORLD_POSITIONS,
+  worldEdgeFor,
 } from "./components/MapCanvas";
 import { SituationConsultation } from "./components/SituationConsultation";
 import { createFixtureClient } from "./fixtures";
@@ -99,7 +100,7 @@ describe("Lab guide", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "風切モータースの世界を先に歩く",
+        name: "風切モータースへ接続する",
       }),
     ).toBeVisible();
     expect(screen.queryByLabelText(/接続コード/)).not.toBeInTheDocument();
@@ -287,6 +288,72 @@ describe("Lab guide", () => {
     expect(subset[3]).not.toEqual(fallbackPositionFor("map-04"));
   });
 
+  it("keeps desktop map selection keyboard-operable without focusable graph chrome", async () => {
+    const user = userEvent.setup();
+    render(
+      <App
+        client={createBrowseClient()}
+        initialExperience="browse"
+      />,
+    );
+
+    const desktopNode = (id: string) => {
+      const node = screen
+        .getByTestId(`rf__node-${id}`)
+        .querySelector("button.world-node");
+      if (!(node instanceof HTMLButtonElement)) {
+        throw new Error(`desktop world node ${id} is not a button`);
+      }
+      return node;
+    };
+
+    const nodeWrapper = await screen.findByTestId("rf__node-browse-kali");
+    const kaliNode = desktopNode("browse-kali");
+    const targetNode = desktopNode("browse-target");
+    const nextAction = screen.getByTestId("next-action-map");
+
+    expect(kaliNode).toHaveAttribute(
+      "aria-label",
+      "Kali、観察と攻撃を行う側",
+    );
+    expect(kaliNode).toHaveAttribute("aria-pressed", "false");
+    expect(targetNode).toHaveAttribute("aria-pressed", "true");
+    expect(nodeWrapper).not.toHaveAttribute("tabindex");
+    expect(nodeWrapper).not.toHaveAttribute("role");
+    expect(kaliNode.querySelector("button")).toBeNull();
+    expect(
+      worldEdgeFor({
+        id: "keyboard-route",
+        from: "browse-kali",
+        to: "browse-link",
+        state: "known",
+      }),
+    ).toMatchObject({
+      selectable: false,
+      focusable: false,
+      deletable: false,
+    });
+    expect(nextAction.closest("button")).toBe(nextAction);
+    expect(nextAction.closest(".world-node")).toBeNull();
+
+    kaliNode.focus();
+    await user.keyboard("{Enter}");
+
+    await waitFor(() =>
+      expect(desktopNode("browse-kali")).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      ),
+    );
+    expect(desktopNode("browse-target")).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.getByTestId("next-action-map").closest("button")).toBe(
+      screen.getByTestId("next-action-map"),
+    );
+  });
+
   it("exercises all fourteen telemetry map IDs in the success fixture", async () => {
     const projection = await createFixtureClient("success").getState();
     expect(projection.graph.nodes.map((node) => node.id)).toEqual(
@@ -340,7 +407,7 @@ describe("Lab guide", () => {
     ).toBeVisible();
     expect(screen.queryByLabelText("見つけたflag")).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "次の一手" }));
+    await user.click(screen.getByTestId("next-action-map"));
 
     expect(
       screen.getByRole("heading", { name: "次に確かめることを選ぶ" }),
@@ -361,7 +428,7 @@ describe("Lab guide", () => {
     const user = userEvent.setup();
     render(<App client={createFixtureClient("live")} />);
 
-    await user.click(await screen.findByRole("button", { name: "次の一手" }));
+    await user.click(await screen.findByTestId("next-action-map"));
     await user.click(
       screen.getByRole("button", {
         name: /公開ファイルに別の手掛かりがないか探す/,
@@ -385,7 +452,7 @@ describe("Lab guide", () => {
     const user = userEvent.setup();
     render(<App client={createFixtureClient("live")} />);
 
-    await user.click(await screen.findByRole("button", { name: "次の一手" }));
+    await user.click(await screen.findByTestId("next-action-map"));
     await user.click(
       screen.getByRole("button", { name: "相談ツールを開く" }),
     );

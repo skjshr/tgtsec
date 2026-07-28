@@ -1,5 +1,5 @@
 ---
-version: "2.1"
+version: "2.3"
 name: "ExamServer Open World — Calm Playable Map"
 description: "A beginner cyber range that reveals complexity only after the learner asks for it."
 colors:
@@ -59,6 +59,48 @@ components:
     textColor: "{colors.text}"
     rounded: "{rounded.sm}"
     height: "44px"
+missionStage:
+  breakpoint: "900px"
+  typography:
+    state: "0.4375rem"
+    micro: "0.5rem"
+    detail: "0.5625rem"
+    action: "0.625rem"
+    objective-mobile: "0.6875rem"
+    compact: "0.75rem"
+    objective-desktop: "0.8125rem"
+    node-mobile: "0.875rem"
+    node-desktop: "0.9375rem"
+    display-desktop: "clamp(30px, 3.25vw, 46px)"
+    display-tablet: "clamp(23px, 6.5vw, 30px)"
+    display-mobile: "clamp(22px, 6.4vw, 27px)"
+  geometry:
+    control: "44px"
+    action: "46px"
+    node-desktop: "220px × 90px"
+    unknown-desktop: "152px × 68px"
+    node-mobile: "66px"
+    selected-mobile: "78px"
+    route-grid-play: "42px"
+    route-grid-ops: "40px"
+    route-grid-focus: "44px"
+  palettes:
+    play:
+      routeInk: "#171611"
+      selectedBackground: "#11110E"
+      unknown: "#777166"
+      possibleEdge: "#716C62"
+    ops:
+      nodeBorder: "#31545B"
+      unknown: "#49636A"
+      routeEdge: "#71DDC4"
+      possibleEdge: "#879893"
+    focus:
+      unknown: "#817E75"
+      routeEdge: "#4B4944"
+  alphaLayers:
+    texture: [0.022, 0.028, 0.03, 0.04, 0.05, 0.07, 0.08]
+    shadow: [0.12, 0.18, 0.26, 0.28, 0.34, 0.35, 0.42]
 ---
 
 # ExamServer Open World Design Contract
@@ -70,6 +112,18 @@ components:
 認知負荷はユーザーが求めた時だけ上げる。初期画面には現在の状況、現在の目標、地図／仮説、次の主要操作だけを残す。補助情報への入口は、各画面に一本だけある「ツール」というラベル付きの引き手である。引いた後のdrawer内で初めて接続、事実、次の調査／ヒント、履歴の名称と件数を見せ、選んだ一種類だけ本文を表示する。
 
 三つの見た目は配色プリセットではない。情報の意味、操作、状態を共有しながら、異なる構図・書体・境界・動きで同じ世界を演出する。
+
+### Mission stage refinement
+
+簡素化後の初期画面を、見出し、目標、地図、選択地点が別々の帯に分かれた管理画面にしない。これらは一枚の `mission stage` として読み、上から `mission / objective / route / action` の一方向へ因果をつなぐ。
+
+- mission: 画面種別と世界名を短く示す。長い説明文や独立したheroを置かない。
+- objective: mission直下の一文として置き、カード化しない。
+- route: 最大面積を渡し、ノード群が横幅の65%以上を使う。作業面全体を囲うだけの矩形を使わない。
+- action: 選択地点と `次の一手` を一つの操作単位にする。地図と無関係な全幅footerに見せない。
+- tools: 一本の引き手をmission stageの縁へ接続し、独立したボタンが空中に浮いたように見せない。
+
+最初の10秒は「風切モータースの準備経路が見える → Debian標的が選択中だと分かる → 次の一手を押せる」の順に進む。説明を探す、凡例を読む、メニューを開く行為は含めない。
 
 ## Visual targets
 
@@ -169,7 +223,7 @@ components:
 - 主基準: 1366×768。検証: 1672×941、1280×720、360×800。
 - 900px未満でも初期画面へ補助情報を縦積みしない。一本の `ツール` だけを残し、選んだ情報をbottom sheetとして表示する。
 - 狭いheaderもブランドと `メニュー` の一段だけにし、公開状態、画面移動、テーマ、演習終了は開いた後に表示する。
-- モバイルでは選択地点と `次の一手` を地図より前へ置き、地図一覧は残りの画面内でスクロールできる。
+- モバイルでは地図を一本の縦経路として始め、選択地点と `次の一手` を同じ行へ統合する。初期画面内に先頭二地点と選択地点を入れ、残りの経路だけを作業面内でスクロールさせる。
 - 横スクロール、sticky headerによるfocus隠れ、44px未満の主要操作を許さない。
 
 ## Rejected directions
@@ -177,6 +231,9 @@ components:
 - generic dashboard、KPI、ranking、streak、trophy、card soup
 - 事実、行動、履歴、接続、設定をすべて常時表示するcontrol-room layout
 - glassmorphism、巨大な角丸container、無意味なgradient
+- 見出し、目標、地図、選択地点をそれぞれ独立した帯やcardへ分割すること
+- 巨大な矩形の中央へ小さなgraphをfitさせ、空白を作業面に見せること
+- mission/mapのcomponent規則へ色やfont-sizeを直書きすること。`missionStage` のsemantic token宣言を唯一の入口にする
 - fake terminal、code rain、stock hacker photography
 - chat人格、自由文AI prompt、仮説より先に完全commandを見せること
 - runtimeで生成画像を背景として読み込み、offline bundleを重くすること

@@ -81,3 +81,36 @@
 - Automatic detection is event-based and privacy-bounded, not full command monitoring.
 - Live mode requires Kali internet access while Debian remains isolated. Fully offline sessions use the local telemetry API without Vercel.
 - 旧三列レイアウトとモバイルでの全パネル縦積みは廃止し、desktopはside drawer、narrow画面はbottom sheetへ統一する。
+
+## UI refinement contract — 2026-07-29
+
+### Goal
+
+- User request: 整理後も微妙に見えるUIを、情報量を戻さず完成品らしい作戦盤へ仕上げる。
+- Real problem being solved: 見出し、目標、地図、選択地点が別々の帯として並び、中央の広い枠に小さなノードが浮くため、簡素だが弱い画面に見える。
+- Core mechanism affected: 発見した経路が一本につながり、次の一手を自分で選ぶ瞬間。
+
+### Approach
+
+- Chosen approach: `mission / route / action` を一枚のステージへ再構成し、地図ノードと経路を拡大する。補助情報は既存の一本のツールに残す。
+- Rejected alternative 1: 画像heroや装飾カードを追加する。地図より装飾が主役になり、認知負荷を戻すため。
+- Rejected alternative 2: 旧Mission Deckの三列・下段イベント構成へ戻す。情報は豊かでも、最初の判断が散るため。
+- Why this is coherent: 新しい機能や状態を増やさず、既存の因果関係だけを視覚的に強くする。
+
+### Change shape
+
+- Add: 地図上の段階ラベル、選択地点とCTAを一体化する視覚構造、控えめな座標／紙面テクスチャ。
+- Remove: 地図全体を囲う重い矩形、別帯として重複する見出し・目標・選択地点の境界、過剰な空白。
+- Merge: 見出しと目標をmission headerへ、選択地点と主CTAをroute actionへ統合する。
+- Rename: UI上の主要操作名は変更しない。
+- Leave unchanged: データモデル、公開／ライブ状態、drawer、テーマ切替、focus管理、API、安全境界。
+
+### Observable acceptance
+
+- 1280×720の初見5秒で「準備経路を見て、選択地点から次の一手へ進む画面」と説明できる。
+- 1280×720で地図ノード群が作業面の横幅の65%以上を使い、巨大な空の枠に見えない。
+- 初期表示の強い面は地図ステージと主CTAだけで、補助カテゴリ名や本文を表示しない。
+- 390×844でheader、mission、現在目標、選択地点、主CTA、地図の最初の2地点が初期画面に入る。
+- PLAY、OPS、FOCUSは同じ情報順と操作を保ち、色を外しても選択中／発見済み／未発見を区別できる。
+- 主要操作は44px以上、横スクロールなし、keyboard、Escape、focus return、reduced motionを維持する。
+- 新規runtime依存、外部font、背景写真、偽データを追加しない。

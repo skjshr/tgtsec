@@ -2,6 +2,7 @@ import {
   Background,
   Handle,
   MarkerType,
+  NodeToolbar,
   Position,
   ReactFlow,
   type Edge,
@@ -9,6 +10,7 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import {
+  IconChevronRight,
   IconCircleCheck,
   IconCircleDashed,
   IconCircleDot,
@@ -20,6 +22,8 @@ import { AppIcon } from "./AppIcon";
 interface WorldNodeData extends Record<string, unknown> {
   node: GraphNode;
   index: number;
+  onSelect: () => void;
+  onOpen: () => void;
 }
 
 type WorldFlowNode = Node<WorldNodeData, "world">;
@@ -64,28 +68,111 @@ export function fallbackPositionFor(nodeId: string) {
   };
 }
 
+function displayPositionFor(node: GraphNode, nodeCount: number) {
+  const position = node.position ?? fallbackPositionFor(node.id);
+  if (nodeCount <= 6) return position;
+
+  return {
+    x: Math.round(position.x * 1.65),
+    y: position.y,
+  };
+}
+
+export function worldEdgeFor(
+  edge: LabProjection["graph"]["edges"][number],
+): Edge {
+  return {
+    id: edge.id,
+    source: edge.from,
+    target: edge.to,
+    type: "smoothstep",
+    className: `world-edge world-edge--${edge.state ?? "known"}`,
+    selectable: false,
+    focusable: false,
+    deletable: false,
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      width: 16,
+      height: 16,
+    },
+  };
+}
+
 function WorldNode({ data, selected }: NodeProps<WorldFlowNode>) {
   const node = data.node;
+  const discovered = node.state !== "undiscovered";
+  const stateLabel =
+    selected
+      ? "選択中"
+      : node.state === "discovered"
+        ? "発見済み"
+        : "未発見";
+
   return (
-    <div
-      className={`world-node world-node--${node.state} ${selected ? "is-focused" : ""}`}
-    >
+    <>
       <Handle type="target" position={Position.Left} />
-      <span className="world-node-index" aria-hidden="true">
-        {String(data.index + 1).padStart(2, "0")}
-      </span>
-      {node.state !== "undiscovered" ? (
-        <span className="world-node-icon">
-          <AppIcon name={node.icon} stroke={1.7} />
-        </span>
-      ) : null}
-      <span className="world-node-copy">
-        <strong>{node.label}</strong>
-        {node.detail ? <small>{node.detail}</small> : null}
-        {node.progress ? <em>{node.progress}</em> : null}
-      </span>
+      {discovered ? (
+        <button
+          type="button"
+          className={`world-node world-node--${node.state} ${selected ? "is-focused" : ""}`}
+          aria-label={`${node.label}${node.detail ? `、${node.detail}` : ""}`}
+          aria-pressed={selected}
+          onClick={(event) => {
+            event.stopPropagation();
+            data.onSelect();
+          }}
+        >
+          <span className="world-node-index" aria-hidden="true">
+            {String(data.index + 1).padStart(2, "0")}
+          </span>
+          <span className="world-node-state" aria-hidden="true">
+            {stateLabel}
+          </span>
+          <span className="world-node-icon" aria-hidden="true">
+            <AppIcon name={node.icon} stroke={1.7} />
+          </span>
+          <span className="world-node-copy">
+            <strong>{node.label}</strong>
+            {node.detail ? <small>{node.detail}</small> : null}
+            {node.progress ? <em>{node.progress}</em> : null}
+          </span>
+        </button>
+      ) : (
+        <div className="world-node world-node--undiscovered">
+          <span className="world-node-index" aria-hidden="true">
+            {String(data.index + 1).padStart(2, "0")}
+          </span>
+          <span className="world-node-state" aria-hidden="true">
+            {stateLabel}
+          </span>
+          <span className="world-node-copy">
+            <strong>{node.label}</strong>
+          </span>
+        </div>
+      )}
+      <NodeToolbar
+        className="world-node-toolbar"
+        isVisible={selected && discovered}
+        position={Position.Bottom}
+        offset={12}
+      >
+        <button
+          type="button"
+          className="world-node-action"
+          data-testid="next-action-map"
+          onClick={(event) => {
+            event.stopPropagation();
+            data.onOpen();
+          }}
+        >
+          次の一手
+          <span aria-hidden="true">
+            <IconChevronRight />
+          </span>
+        </button>
+      </NodeToolbar>
       <Handle type="source" position={Position.Right} />
-    </div>
+    </>
   );
 }
 
@@ -95,46 +182,38 @@ interface MapCanvasProps {
   projection: LabProjection;
   selectedNodeId?: string;
   onSelectNode: (nodeId: string) => void;
+  onOpenNode: () => void;
 }
 
 export function MapCanvas({
   projection,
   selectedNodeId,
   onSelectNode,
+  onOpenNode,
 }: MapCanvasProps) {
   const nodes = useMemo<WorldFlowNode[]>(
     () =>
       projection.graph.nodes.map((node, index) => ({
         id: node.id,
         type: "world",
-        position: node.position ?? fallbackPositionFor(node.id),
-        data: { node, index },
+        position: displayPositionFor(node, projection.graph.nodes.length),
+        data: {
+          node,
+          index,
+          onSelect: () => onSelectNode(node.id),
+          onOpen: onOpenNode,
+        },
         selected: selectedNodeId === node.id,
-        selectable: node.state !== "undiscovered",
+        selectable: false,
         draggable: false,
-        focusable: node.state !== "undiscovered",
-        ariaLabel:
-          node.state === "undiscovered"
-            ? "未発見の地点"
-            : `${node.label}${node.detail ? `、${node.detail}` : ""}`,
+        deletable: false,
+        focusable: false,
       })),
-    [projection.graph.nodes, selectedNodeId],
+    [onOpenNode, onSelectNode, projection.graph.nodes, selectedNodeId],
   );
 
   const edges = useMemo<Edge[]>(
-    () =>
-      projection.graph.edges.map((edge) => ({
-        id: edge.id,
-        source: edge.from,
-        target: edge.to,
-        type: "smoothstep",
-        className: `world-edge world-edge--${edge.state ?? "known"}`,
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          width: 16,
-          height: 16,
-        },
-      })),
+    () => projection.graph.edges.map(worldEdgeFor),
     [projection.graph.edges],
   );
 
@@ -146,22 +225,20 @@ export function MapCanvas({
           edges={edges}
           nodeTypes={nodeTypes}
           fitView
-          fitViewOptions={{ padding: 0.08, minZoom: 0.45, maxZoom: 1 }}
-          minZoom={0.45}
-          maxZoom={1}
+          fitViewOptions={{ padding: 0.04, minZoom: 0.42, maxZoom: 1.05 }}
+          minZoom={0.42}
+          maxZoom={1.05}
           nodesConnectable={false}
           nodesDraggable={false}
-          elementsSelectable
+          nodesFocusable={false}
+          edgesFocusable={false}
+          elementsSelectable={false}
           panOnDrag={false}
           zoomOnDoubleClick={false}
           zoomOnPinch={false}
           zoomOnScroll={false}
           preventScrolling={false}
           proOptions={{ hideAttribution: true }}
-          onNodeClick={(_, node) => {
-            const graphNode = node.data.node;
-            if (graphNode.state !== "undiscovered") onSelectNode(node.id);
-          }}
         >
           <Background color="transparent" gap={40} />
         </ReactFlow>
@@ -176,23 +253,40 @@ export function MapCanvas({
                 <span>未発見</span>
               </div>
             ) : (
-              <button
-                type="button"
-                className={`mobile-map-node mobile-map-node--${node.state}`}
-                aria-pressed={selectedNodeId === node.id}
-                onClick={() => onSelectNode(node.id)}
+              <div
+                className={`mobile-map-node mobile-map-node--${node.state} ${
+                  selectedNodeId === node.id ? "is-focused" : ""
+                }`}
               >
-                <AppIcon name={node.icon} stroke={1.7} />
-                <span>
-                  <strong>{node.label}</strong>
-                  {node.detail ? <small>{node.detail}</small> : null}
-                </span>
-                {node.state === "selected" ? (
-                  <IconCircleDot aria-hidden="true" />
-                ) : (
-                  <IconCircleCheck aria-hidden="true" />
-                )}
-              </button>
+                <button
+                  type="button"
+                  className="mobile-map-select"
+                  aria-pressed={selectedNodeId === node.id}
+                  onClick={() => onSelectNode(node.id)}
+                >
+                  <AppIcon name={node.icon} stroke={1.7} />
+                  <span>
+                    <strong>{node.label}</strong>
+                    {node.detail ? <small>{node.detail}</small> : null}
+                  </span>
+                  {selectedNodeId === node.id ? (
+                    <IconCircleDot aria-hidden="true" />
+                  ) : (
+                    <IconCircleCheck aria-hidden="true" />
+                  )}
+                </button>
+                {selectedNodeId === node.id ? (
+                  <button
+                    type="button"
+                    className="mobile-map-action"
+                    data-testid="next-action-mobile"
+                    onClick={onOpenNode}
+                  >
+                    次の一手
+                    <IconChevronRight aria-hidden="true" />
+                  </button>
+                ) : null}
+              </div>
             )}
           </li>
         ))}
