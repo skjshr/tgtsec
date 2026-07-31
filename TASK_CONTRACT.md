@@ -2,15 +2,15 @@
 
 ## Goal
 
-常時閲覧できるExamServerの公開ラボと、Kali Bridge経由でDebianの許可済み教材イベントに追従するライブ演習を、3入口、3root経路、14 flags、信頼済み復旧と一つの再現可能な体験として実装し、補助情報はユーザーがラベル付きの引き手を操作した時だけ一枚ずつ見せる。
+公開GitHubとCodex CLIから再構築できる専用Debian Boot2Root標的と、Kali上のFirefoxでDebianの許可済み教材イベントに追従する状態駆動のライブ攻略サイトを、3入口、3root経路、任意flags、二つの信頼済み復旧経路まで一つの再現可能な完成品として提供する。
 
 ## Inputs
 
-- Target: UEFI/GPT、Windowsとのデュアルブート、Debian用80GB以上の未割当領域を確保できるノートPC
+- Target: 全diskを消去・復旧できる専用ノートPC、Debian 13 amd64
 - Attacker: Kali実機、またはUSB Ethernetを専有し他NICを外したKali VM
 - Network: target `10.13.37.10/24`、直結Ethernet、target DHCP、Debianは外部経路なし。ライブ利用時だけKaliは別NICからVercelへ外向きHTTPS接続する。
 - Audience: IT/ターミナル初心者、1チーム1〜3人
-- Session: 標準経路30〜60分、別ルート再挑戦あり
+- Session: 標準経路約90分、別ルート再挑戦あり
 - Recovery: 演習中は外して保管する信頼済みUSBとbare-metal backup
 
 ## Removals
@@ -19,6 +19,9 @@
 - Live USBを通常起動方式として使わない。
 - vanilla guideの出力貼付け中心モデルを削除する。
 - Drupal、DVWA、既存OVAを新世界へ移植しない。
+- Windows、dual boot、Windows fixture、Windows flag、Windows mountをv1から削除する。
+- 個人プロフィール、メール、ニックネーム、復旧コード、管理画面、ランキングを追加しない。
+- クイズ、自由文AI相談、攻略自動実行を追加しない。
 
 ## World contract
 
@@ -32,7 +35,7 @@
   2. Group-writable root systemd timer payload
   3. Training-only SUID helper with unsafe PATH resolution
 - All three footholds can reach all three root paths.
-- Flags: entry 3、foothold 3、root clue 3、root route 3、common root 1、Windows 1。
+- Flags: entry 3、foothold 3、root clue 3、root route 3、common root 1。すべて任意収集で進行条件ではない。
 
 ## Telemetry contract
 
@@ -43,8 +46,11 @@
 - Kali Bridge reads that public projection and sends monotonic snapshots to the cloud over outbound HTTPS. It never forwards a target port or arbitrary target traffic.
 - The public website has a no-session browse mode. A short-lived pairing flow switches it to the paired live projection.
 - SSE is the normal browser update path; state polling is the fallback.
-- Manual flag submission remains local-only and is not sent through the public cloud.
+- Flags are optional local collectibles. There is no manual submission route, and flag text never enters the guide or public cloud.
 - Root completion is the last trustworthy automatic event.
+- Difficulty, hint disclosure, and optional flag collection are session state, not a person profile.
+- EASY is the default. The learner may change next-choice, tool, syntax, example, failure-explanation, and explanation-detail visibility during a session without losing progress.
+- Categories may be visible before discovery, but undiscovered names, facts, commands, and answers are absent from the browser projection and DOM.
 
 ## Platform contract
 
@@ -52,9 +58,13 @@
 - Public guide URL is `https://exam-server-one.vercel.app/lab`; its live API namespace is `/api/lab`. The reserved `.test` domain is not used publicly. The target is reached from Kali at `10.13.37.10` and is never the guide host.
 - Kali may use Wi-Fi for the Bridge, but IPv4/IPv6 forwarding, NAT, and cross-interface forwarding must remain disabled.
 - Maintenance mode keeps vulnerable services stopped before Wi-Fi or update tooling is enabled.
-- Windows is offline, sacrificial, and contains only fixture data and its hidden flag.
-- Disk-writing setup/recovery commands are dry-run or fail closed until exact disk identity, partition UUID, confirmation phrase, and image hash are supplied.
+- The dedicated target disk contains Debian only. Disk-writing setup/recovery commands are dry-run or fail closed until exact disk identity, Debian filesystem identity, confirmation phrase, and image hash are supplied.
 - Root-acquired Debian is never reset from itself.
+- Codex CLI and GitHub access are allowed only in fresh maintenance connectivity before exercise.
+- Codex uses an isolated temporary `CODEX_HOME`, and the public repository is cloned anonymously under a disposable build root.
+- Codex runs with `--ephemeral --sandbox workspace-write --ask-for-approval on-request`; bypassing approvals or the sandbox is forbidden.
+- Before the golden state is sealed, Codex auth, session, history, secret environment variables, and the repository checkout must be absent and `open-world-build-hygiene` must pass.
+- The convenience reset may be used only before root from a trusted maintenance state. After root, supported recovery is either external trusted-media restore or a clean Debian install followed by a pinned public GitHub/Codex reconstruction.
 
 ## Done criteria
 
@@ -62,24 +72,31 @@
 - Guide implements browse, waiting, live, loading, reconnecting, selected, hint, success, and local-only fallback states.
 - A visitor can understand the lab and view its public world without a target or session.
 - A Kali Bridge can create a short-lived session, upload a sanitized projection, and make a paired browser update without reload.
-- PLAY、OPS、FOCUSの3テーマはruntimeで切替・保存でき、テーマ変更で教材状態を失わない。
+- PLAY、OPS、FOCUSの3テーマはruntimeで切替でき、テーマ変更で教材状態を失わない。
 - 初期画面は現在目標、世界／仮説、主要操作だけを表示し、接続、事実、調査／ヒント、履歴、見た目は名称の分かる引き手からだけ開く。
 - 補助情報は同時に一枚だけ表示し、Escape、背景操作、閉じる操作で収納でき、元の引き手へfocusが戻る。
 - Telemetry state machine and API pass unit/integration tests without leaking forbidden data.
-- Static target fixtures implement all 3 entrances, 3 root paths, and 14 logical flags.
+- Static target fixtures implement all 3 entrances, 3 root paths, and 13 optional Debian flags.
 - Nine route combinations have automated contract tests and operator verification procedures.
-- Platform includes deterministic install/config generation, exercise/maintenance mode controls, network isolation checks, and recovery media workflow.
+- Platform includes deterministic non-secret install/config generation plus fresh build-time flags and synthetic credentials, exercise/maintenance mode controls, network isolation checks, and recovery media workflow. Secret-bearing bundle hashes are unique per build.
+- A second operator can follow `CODEX-BOOTSTRAP.md` from a fresh maintenance state, anonymously clone a pinned public release/commit, regenerate the verified overlay and target bundle, review the dry-run plan, and pass the post-build hygiene check.
+- The supported learner surface is Firefox on Kali. Public pairing and Kali loopback offline mode expose the same current state, next-step choices, and explanations without exposing target credentials to browser JavaScript.
+- No account or profile is created. Identical target progress, difficulty, and hint state produce an identical browser projection.
+- EASY is the default; all guidance controls can change mid-session; unknown route nodes expose only category and silhouette until automatic target evidence unlocks them.
+- Optional flags never block the objective, route selection, explanation, or root completion.
+- Kazekiri Motors and the guide use separate design contracts. Every visible target-site navigation and form path works without external requests, and photoreal local imagery contains no real logo, readable plate, real address, or identifying person.
 - Browser verification passes Firefox-compatible desktop/narrow flows with no console errors or horizontal overflow.
 - `design-qa.md` compares source and implementation at matching viewport and ends with `final result: passed`.
-- Physical dual-boot, actual exploit execution, actual Windows boot, and actual recovery remain explicitly incomplete until recorded on the target notebook.
+- The product is not complete until actual exploit execution, Kali live-guide operation, and trusted recovery are recorded on the target notebook. Any remaining physical gate stays explicitly incomplete.
 
 ## Surprise ledger
 
 - The old single-route lab is removed from active use instead of being migrated.
-- Root is real Debian host root; Windows safety comes from sacrificial contents and trusted external recovery, not containment.
+- Root is real Debian host root; safety comes from a dedicated disposable machine, network isolation, and trusted external recovery, not containment.
 - The guide is hosted publicly; only sanitized state projections and connection metadata reach the cloud.
 - Automatic detection is event-based and privacy-bounded, not full command monitoring.
 - Live mode requires Kali internet access while Debian remains isolated. Fully offline sessions use the local telemetry API without Vercel.
+- The public repository makes route source inspectable. Runtime credentials, flags, tokens, and answer-bearing operator artifacts are generated or excluded, but source secrecy is not a product promise.
 - 旧三列レイアウトとモバイルでの全パネル縦積みは廃止し、desktopはside drawer、narrow画面はbottom sheetへ統一する。
 
 ## UI refinement contract — 2026-07-29

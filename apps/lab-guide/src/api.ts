@@ -2,8 +2,8 @@ import type {
   ConnectionStatus,
   ExperienceMode,
   Fact,
-  FlagSubmissionResult,
   GraphEdge,
+  GuidanceConfig,
   GraphNode,
   Hint,
   Hypothesis,
@@ -14,6 +14,8 @@ import type {
   RecentEvent,
   SessionStatus,
 } from "./types";
+import { EASY_GUIDANCE } from "./guidance";
+import { isRouteAchievementId } from "./route-achievements";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -21,6 +23,15 @@ const RECENT_EVENT_LIMIT = 4;
 const LIVE_SESSION_MARKER = "examserver.lab.live-session.v1";
 const STREAM_RECONNECT_GRACE_MS = 3_500;
 const API_ROOT = "/api/lab";
+const PUBLIC_CATEGORIES = new Set([
+  "Web",
+  "共有",
+  "整備",
+  "権限獲得",
+  "権限昇格",
+  "root経路",
+  "最終地点",
+]);
 
 function apiPath(path: string): string {
   return `${API_ROOT}/${path.replace(/^\/+/, "")}`;
@@ -64,6 +75,10 @@ function asId(value: unknown, fallback: string): string {
 
 function asNumber(value: unknown, fallback = 0): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function asBoolean(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
 }
 
 function asIcon(value: unknown, fallback: IconKey = "file"): IconKey {
@@ -110,13 +125,18 @@ function normalizeNode(value: unknown, index: number): GraphNode {
   const position = asRecord(node.position);
   const hasPosition =
     typeof position.x === "number" && typeof position.y === "number";
+  const categoryCandidate = asText(node.category, "", 32);
+  const category = PUBLIC_CATEGORIES.has(categoryCandidate)
+    ? categoryCandidate
+    : undefined;
 
   return {
     id: asId(node.id, `node-${index + 1}`),
     label:
       state === "undiscovered"
-        ? "未発見"
+        ? category ?? "未発見"
         : asText(node.label, "確認済みの地点"),
+    category,
     detail:
       state === "undiscovered" ? undefined : asText(node.detail) || undefined,
     icon:
@@ -186,7 +206,8 @@ function normalizeInvestigation(
 
 function normalizeHint(value: unknown, index: number): Hint {
   const hint = asRecord(value);
-  const step = hint.step === 2 || hint.step === 3 ? hint.step : 1;
+  const step =
+    hint.step === 2 || hint.step === 3 || hint.step === 4 ? hint.step : 1;
   const state =
     hint.state === "unlocked" || hint.state === "available"
       ? hint.state
@@ -197,7 +218,13 @@ function normalizeHint(value: unknown, index: number): Hint {
     step,
     title:
       asText(hint.title) ||
-      (step === 1 ? "見る場所" : step === 2 ? "使う道具" : "操作例"),
+      (step === 1
+        ? "確かめること"
+        : step === 2
+          ? "使う道具"
+          : step === 3
+            ? "組み立て方"
+            : "操作例"),
     state,
     body:
       state === "unlocked" ? asText(hint.body, "", 500) || undefined : undefined,
@@ -210,6 +237,35 @@ function normalizeHint(value: unknown, index: number): Hint {
               ? "仮説を選ぶと開けます"
               : "前のヒントを確認すると開けます",
           ),
+  };
+}
+
+function normalizeGuidance(value: unknown): GuidanceConfig {
+  const guidance = asRecord(value);
+  return {
+    showNextChoices: asBoolean(
+      guidance.showNextChoices,
+      EASY_GUIDANCE.showNextChoices,
+    ),
+    showToolNames: asBoolean(
+      guidance.showToolNames,
+      EASY_GUIDANCE.showToolNames,
+    ),
+    showCommandSyntax: asBoolean(
+      guidance.showCommandSyntax,
+      EASY_GUIDANCE.showCommandSyntax,
+    ),
+    showCommandExamples: asBoolean(
+      guidance.showCommandExamples,
+      EASY_GUIDANCE.showCommandExamples,
+    ),
+    explainNoProgress: asBoolean(
+      guidance.explainNoProgress,
+      EASY_GUIDANCE.explainNoProgress,
+    ),
+    explanationDepth:
+      guidance.explanationDepth === "brief" ? "brief" : "full",
+    silhouetteDepth: guidance.silhouetteDepth === 0 ? 0 : 1,
   };
 }
 
@@ -245,7 +301,9 @@ export function normalizeProjection(value: unknown): LabProjection {
   const telemetry = asRecord(raw.telemetry);
   const progress = asRecord(raw.progress);
   const capabilities = asRecord(raw.capabilities);
+  const completion = asRecord(raw.completion);
   const hypotheses = asArray(raw.hypotheses).map(normalizeHypothesis);
+  const hasSuppliedInvestigations = Array.isArray(raw.investigations);
   const suppliedInvestigations = asArray(raw.investigations);
 
   return {
@@ -253,7 +311,7 @@ export function normalizeProjection(value: unknown): LabProjection {
     sessionId: asId(raw.sessionId, "local-session"),
     revision: Math.max(0, asNumber(raw.revision)),
     status: asSessionStatus(raw.status),
-    heading: asText(raw.heading, "中古バイク店の業務サーバを調べる"),
+    heading: asText(raw.heading, "風切モータースの業務環境を調べる"),
     lede: asText(
       raw.lede,
       "見つけた事実をつなぎ、管理者権限までの道を探します。",
@@ -266,7 +324,7 @@ export function normalizeProjection(value: unknown): LabProjection {
     facts: asArray(raw.facts).map(normalizeFact),
     hypotheses,
     investigations:
-      suppliedInvestigations.length > 0
+      hasSuppliedInvestigations
         ? suppliedInvestigations.slice(0, 3).map(normalizeInvestigation)
         : hypotheses.slice(0, 3).map((hypothesis, index) => ({
             id: `investigation-${hypothesis.id}`,
@@ -288,9 +346,10 @@ export function normalizeProjection(value: unknown): LabProjection {
     hints: asArray(raw.hints)
       .map(normalizeHint)
       .sort((left, right) => left.step - right.step),
+    guidance: normalizeGuidance(raw.guidance),
     progress: {
       discovered: Math.max(0, asNumber(progress.discovered)),
-      total: Math.max(1, asNumber(progress.total, 14)),
+      total: Math.max(1, asNumber(progress.total, 13)),
     },
     recentEvents: normalizeRecentEvents(raw.recentEvents),
     telemetry: {
@@ -300,6 +359,9 @@ export function normalizeProjection(value: unknown): LabProjection {
     capabilities: {
       manualFlagSubmission: capabilities.manualFlagSubmission === true,
     },
+    ...(isRouteAchievementId(completion.routeId)
+      ? { completion: { routeId: completion.routeId } }
+      : {}),
   };
 }
 
@@ -461,26 +523,16 @@ export class ApiLabClient implements LabClient {
     return payload === undefined ? undefined : normalizeProjection(payload);
   }
 
-  async submitFlag(flag: string): Promise<FlagSubmissionResult> {
-    const raw = asRecord(
-      await request(apiPath("session/flags/submit"), {
-        method: "POST",
-        body: JSON.stringify({ flag }),
-      }),
-    );
-    const projection = raw.projection ?? raw.state;
-
-    return {
-      accepted: raw.accepted === true,
-      message: asText(
-        raw.message,
-        raw.accepted === true
-          ? "flagを確認しました。"
-          : "flagを確認できませんでした。",
+  async applyGuidance(
+    commandId: string,
+  ): Promise<LabProjection | undefined> {
+    const payload = await request(
+      apiPath(
+        `session/guidance/${encodeURIComponent(commandId)}/apply`,
       ),
-      projection:
-        projection === undefined ? undefined : normalizeProjection(projection),
-    };
+      { method: "POST" },
+    );
+    return payload === undefined ? undefined : normalizeProjection(payload);
   }
 }
 

@@ -15,6 +15,7 @@ from .model import (
     ContractError,
     load_json,
     sha256_file,
+    validate_exact_disk_identity,
     validate_exact_identity,
     validate_profile,
 )
@@ -26,7 +27,6 @@ class RecoveryRequest:
     disk_by_id: str
     debian_partuuid: str
     esp_partuuid: str
-    windows_partuuid: str
     image_sha256: str
     efi_sha256: str | None
     confirmation: str
@@ -39,9 +39,8 @@ class RecoveryContext:
     image_path: Path
     efi_archive_path: Path | None
     target_disk_device: str
-    debian_device: str
-    esp_device: str
-    windows_device: str
+    debian_device: str | None
+    esp_device: str | None
 
 
 def _require_under(path: Path, parent: Path, label: str) -> Path:
@@ -101,7 +100,7 @@ def _expected_confirmation(profile: dict[str, Any], operation: str) -> str:
     if operation == "normal":
         return f"RESTORE DEBIAN {disk_by_id}"
     if operation == "full":
-        return f"RESTORE FULL DISK INCLUDING WINDOWS {disk_by_id}"
+        return f"RESTORE FULL DISK {disk_by_id}"
     raise ContractError(f"unsupported recovery operation: {operation}")
 
 
@@ -147,16 +146,28 @@ def validate_recovery_request(
         or target_source in root_backing_devices
     ):
         raise ContractError("recovery system root is backed by the target disk")
-    identity_errors = validate_exact_identity(profile, inventory)
+    identity_errors = (
+        validate_exact_identity(profile, inventory)
+        if request.operation == "normal"
+        else validate_exact_disk_identity(profile, inventory)
+    )
     if identity_errors:
         raise ContractError("; ".join(identity_errors))
+    if request.operation == "full":
+        descendant_mountpoints = inventory.get("targetDisk", {}).get(
+            "descendantMountpoints"
+        )
+        if descendant_mountpoints != []:
+            raise ContractError(
+                "full recovery requires every target-disk descendant "
+                "to be unmounted"
+            )
 
     expected_target = profile["target"]
     supplied = {
         "diskById": request.disk_by_id,
         "debianPartuuid": request.debian_partuuid,
         "espPartuuid": request.esp_partuuid,
-        "windowsPartuuid": request.windows_partuuid,
     }
     for key, value in supplied.items():
         if value != expected_target[key]:
@@ -244,9 +255,16 @@ def validate_recovery_request(
         image_path=image_path,
         efi_archive_path=efi_path,
         target_disk_device=target_disk,
-        debian_device=_partition_device(inventory, "debian"),
-        esp_device=_partition_device(inventory, "esp"),
-        windows_device=_partition_device(inventory, "windows"),
+        debian_device=(
+            _partition_device(inventory, "debian")
+            if request.operation == "normal"
+            else None
+        ),
+        esp_device=(
+            _partition_device(inventory, "esp")
+            if request.operation == "normal"
+            else None
+        ),
     )
 
 
@@ -256,6 +274,10 @@ def recovery_plan(
     context: RecoveryContext,
 ) -> dict[str, Any]:
     if request.operation == "normal":
+        if context.debian_device is None or context.esp_device is None:
+            raise ContractError(
+                "normal recovery requires exact Debian and ESP partitions"
+            )
         actions = [
             {
                 "action": "format-btrfs-with-golden-uuid",
@@ -264,7 +286,7 @@ def recovery_plan(
                     "goldenBtrfsStream"
                 ]["filesystemUuid"],
                 "verifyReadback": True,
-                "preserves": ["partition-table", "ESP", "Windows"],
+                "preserves": ["partition-table", "ESP"],
             },
             {
                 "action": "receive-golden-subvolume",
@@ -285,17 +307,9 @@ def recovery_plan(
                 "forbiddenRootIdentifier": "UUID",
             },
             {
-                "action": "verify-microsoft-efi-before",
-                "expectedSha256": profile["recovery"]["microsoftEfiTreeSha256"],
-            },
-            {
                 "action": "replace-debian-efi-only",
                 "source": str(context.efi_archive_path),
                 "target": f"{context.esp_device}:EFI/debian",
-            },
-            {
-                "action": "verify-microsoft-efi-after",
-                "expectedSha256": profile["recovery"]["microsoftEfiTreeSha256"],
             },
         ]
     else:
@@ -306,7 +320,7 @@ def recovery_plan(
                 "target": context.target_disk_device,
                 "expectedBytes": profile["target"]["diskSizeBytes"],
                 "validatedImageBytes": context.image_path.stat().st_size,
-                "overwrites": ["Debian", "ESP", "Windows", "partition-table"],
+                "overwrites": ["Debian", "ESP", "partition-table"],
             }
         ]
     return {
@@ -316,8 +330,7 @@ def recovery_plan(
         "actions": actions,
         "physicalVerificationRequired": [
             "target boots Debian exercise mode",
-            "Windows boots offline",
-            "all 14 flags and session residue are back at golden state",
+            "all 13 optional flags and session residue are back at golden state",
         ],
     }
 
@@ -560,6 +573,10 @@ def apply_recovery(
 
     if context.efi_archive_path is None:
         raise ContractError("normal recovery requires the Debian EFI archive")
+    if context.debian_device is None or context.esp_device is None:
+        raise ContractError(
+            "normal recovery requires exact Debian and ESP partitions"
+        )
     mount_root = Path("/run/open-world-recovery")
     mount_root.mkdir(mode=0o700, parents=True, exist_ok=True)
     temporary = Path(tempfile.mkdtemp(prefix="restore-", dir=mount_root))
@@ -598,13 +615,7 @@ def apply_recovery(
 
         _run(["mount", context.esp_device, str(esp_mount)], runner=runner)
         esp_mounted = True
-        microsoft = esp_mount / "EFI" / "Microsoft"
-        expected_microsoft = profile["recovery"]["microsoftEfiTreeSha256"].lower()
-        if tree_sha256(microsoft) != expected_microsoft:
-            raise ContractError("Microsoft EFI tree differs before Debian EFI restore")
         _extract_debian_efi(context.efi_archive_path, esp_mount)
-        if tree_sha256(microsoft) != expected_microsoft:
-            raise ContractError("Microsoft EFI tree changed during Debian EFI restore")
         _run(["sync"], runner=runner)
         _run(["umount", str(esp_mount)], runner=runner)
         esp_mounted = False
@@ -639,6 +650,5 @@ def apply_recovery(
         "applied": True,
         "operation": "normal",
         "debianFilesystemUuidPreserved": True,
-        "microsoftEfiPreserved": True,
         "physicalVerificationRequired": True,
     }

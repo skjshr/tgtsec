@@ -8,7 +8,7 @@
 
 ## Goal
 
-Implement the fictional business target fixtures, 14-flag world definition, privacy-bounded event/state engine, local HTTP/SSE API, and automated tests under `labs/open-world-target/world` and `labs/open-world-target/telemetry`.
+Implement the fictional business target fixtures, optional 13-flag world definition, privacy-bounded event/state engine, local HTTP/SSE API, and automated tests under `labs/open-world-target/world` and `labs/open-world-target/telemetry`.
 
 ## Non-goals
 
@@ -25,8 +25,8 @@ Implement the fictional business target fixtures, 14-flag world definition, priv
 
 ## Done
 
-- World graph validates 3 entrances, 3 footholds, 3 root paths, 14 flags, and nine viable combinations.
-- Event allowlist, idempotent state transitions, sanitized projection, SSE, reconnect/state fallback, and manual flag fallback are covered by executable tests.
+- World graph validates 3 entrances, 3 footholds, 3 root paths, 13 flags, and nine viable combinations.
+- Event allowlist, idempotent state transitions, sanitized projection, SSE, and reconnect/state fallback are covered by executable tests; flags never gate progress and have no manual submission route.
 - Static service fixtures/config examples express the intended Web, SMB, NFS, sudo, timer, and SUID training boundaries.
 
 ## Report

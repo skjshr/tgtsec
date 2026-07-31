@@ -7,7 +7,6 @@ disable apache2.service
 disable auditd.service
 disable dnsmasq.service
 disable nfs-server.service
-disable mnt-windows.mount
 disable open-world-nfs-watch.service
 disable open-world-file-watch.service
 disable open-world-root-timer.timer

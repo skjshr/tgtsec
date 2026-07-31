@@ -15,9 +15,9 @@ export function projection(overrides = {}) {
     ],
     graph: {
       nodes: [
-        { id: "map-01", state: "undiscovered" },
-        { id: "map-02", state: "undiscovered" },
-        { id: "map-03", state: "undiscovered" },
+        { id: "map-01", state: "undiscovered", category: "Web" },
+        { id: "map-02", state: "undiscovered", category: "共有" },
+        { id: "map-03", state: "undiscovered", category: "整備" },
       ],
       edges: [],
     },
@@ -37,13 +37,28 @@ export function projection(overrides = {}) {
       {
         id: "hyp-service-inventory:3",
         step: 3,
+        title: "組み立て方",
+        state: "locked",
+      },
+      {
+        id: "hyp-service-inventory:4",
+        step: 4,
         title: "操作例",
         state: "locked",
       },
     ],
+    guidance: {
+      showNextChoices: true,
+      showToolNames: true,
+      showCommandSyntax: true,
+      showCommandExamples: true,
+      explainNoProgress: true,
+      explanationDepth: "full",
+      silhouetteDepth: 1,
+    },
     progress: {
       discovered: 0,
-      total: 14,
+      total: 13,
     },
     recentEvents: [],
     telemetry: {

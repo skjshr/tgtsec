@@ -1,43 +1,56 @@
-# Offline package bootstrap
+# Clean-install package bootstrap
 
-Platform overlayがまだないclean Debianでは、maintenance targetもquarantine tableも存在しません。
-この段階でtetheringやLANを使う手順はsupportedではありません。公式Debian 13 amd64の完全な
-DVD set、または同じsigned Debian repositoryから組織内で作ったread-only offline apt mediaだけを
-使います。DVD 1枚だけに全packageがあるとは仮定しません。
+これは専用diskへ公式Debian 13 amd64を新規installした直後だけに使う経路です。既存targetの更新は
+[CODEX-BOOTSTRAP.md](CODEX-BOOTSTRAP.md)の「maintenance update」を使います。exerciseを一度でも
+開始したOSをそのままupdateしてはいけません。先に信頼済みUSBで復旧します。
 
-## Media gate
+## 1. Debianを専用diskへ入れる
 
-運営用workstationでDebian公式のchecksum/signatureを検証し、必要なDVDをすべて用意します。
-対象ノートではinstaller時からnetwork mirrorを選ばず、Ethernetを抜き、Wi-Fi/WWAN/Bluetoothを
-offにします。会社LAN、家庭LAN、tetheringへ接続しません。
+公式Debian 13 amd64 installerで対象disk全体を使います。profile対象以外のdiskは取り外し、
+installerの変更予定に対象by-id/serial/sizeだけが含まれることを二者で確認します。
+最小構成でinstallし、root filesystemはBtrfs、UEFI用ESPを作ります。この段階ではworld fixture、
+認証情報、実dataを入れません。
 
-## Daemon autostart guard
+## 2. Package install中のdaemon起動を止める
 
-`/usr/sbin/policy-rc.d`が既に存在する場合は上書きせず中止し、由来を調査します。存在しない場合だけ、
-このdirectoryの`policy-rc.d`を対象へcopyし、内容を目視してから次を実行します。
+`/usr/sbin/policy-rc.d`が既に存在する場合は上書きせず中止します。存在しない場合だけ、review済み
+releaseと同じread-only operator mediaからこのdirectoryの配布版を目視して導入します。
 
 ```text
 sudo install -o root -g root -m 0755 policy-rc.d /usr/sbin/policy-rc.d
 ```
 
-各公式DVDを`apt-cdrom add`で登録し、platform overlay内の
-`usr/local/share/open-world-lab/packages.txt`にあるpackageをoffline mediaから導入します。
-aptがnetwork sourceを要求したら接続せず中止し、次の署名済みDVD/mediaを用意します。
-
-package導入後もcable/radioはoffのまま、package serviceをすべて停止します。特にApache、SSH、
-Samba (`smbd`/`nmbd`)、NFS、dnsmasq、rpcbind/statd、NetworkManager、wpa_supplicant、
-systemd-resolved、`open-world-file-watch.service`がactiveでないことを確認します。overlay適用前に
-競合するnetwork ownerとraw audit consumerも一時停止します。`auditd.service`が導入済みの場合だけ
-`service`経由で停止し、次の確認がすべて`inactive`（または未導入の`auditd`だけ`not-found`）になるまで
-inventoryへ進みません。overlay適用時にこれらはmaskされます。
+clean installにはまだvulnerable serviceもplatform quarantineもありません。この一回だけ、
+公式Debian repositoryへのmaintenance networkを使えます。対象へ保存credentialを作らず、
+必要packageを導入したら直ちに切断します。offlineの署名済みDebian mediaを使っても構いません。
 
 ```text
-sudo systemctl stop systemd-networkd.service systemd-journald-audit.socket
-if systemctl cat auditd.service >/dev/null 2>&1; then sudo service auditd stop; fi
-systemctl is-active systemd-networkd.service systemd-journald-audit.socket auditd.service
+sudo apt-get update
+sudo apt-get install --no-install-recommends \
+  ca-certificates git nodejs npm python3 jq
 ```
 
-全非loopback NICをdownにし、default route、外部DNS、非loopback listenerがない状態をinventoryへ保存します。
+repositoryをanonymous cloneした後、`manifest.json`のpackage一覧も同じ`policy-rc.d`下で導入します。
+aptが非公式sourceや認証を要求したら中止します。
+
+導入中はApache、SSH、Samba、NFS、dnsmasq、rpcbind/statdを含むlab service/socketが一つもactiveに
+なっていないことを別consoleから確認します。起動した場合はnetwork cableを抜き、そのbuildを
+golden候補にしません。
+
+## 3. Clean-install reconstructionへ引き渡す
+
+[CODEX-BOOTSTRAP.md](CODEX-BOOTSTRAP.md)の「共通のpinned anonymous clone」へ進み、
+workflowを`clean-install`として記録します。Codexが作るのは検証結果とdry-run planまでです。
+disk変更は[PREPARE-TARGET.md](PREPARE-TARGET.md)の二者確認後にoperatorが行います。
+
+platform overlay適用後、boot quarantineとmaintenance targetがactive、全lab/connectivity serviceが
+inactiveであることをlive inventoryで確認します。その後だけ、配布した`policy-rc.d`と元fileの
+hashを照合して削除します。失敗時はnetworkを再接続せず、fileと証跡を保全します。
+
+platform install直前にはmaintenance networkを物理的に外し、全非loopback NICをdown、radioをblock、
+default route/外部DNS/非loopback listenerをゼロにします。
+
+初回inventoryは次の契約です。
 
 ```text
 sudo python -m open_world_platform.cli inventory \
@@ -46,14 +59,6 @@ sudo python -m open_world_platform.cli inventory \
   --output ACTUAL_BOOTSTRAP_INVENTORY.json
 ```
 
-inventoryの`packages`がmanifest全件`true`でなければplatform installは拒否します。初回だけは
-`bootEnvironment=installed-debian`を許しますが、exact disk/root/PARTUUIDに加えて上記offline状態を
-すべてlive確認できる場合に限ります。さらにinventoryの`platformIdentity`が
-`ID=debian`、`VERSION_ID=13`、`dpkgArchitecture=amd64`、`kernelMachine=x86_64`でなければ拒否します。
-まずdry-runを確認し、その後に完全な確認文と`--apply`を使います。
-適用は最初にquarantineを起動し、以後の通常操作は`installed-debian-maintenance`だけを許します。
-
-overlay適用が成功し、boot quarantineとmaintenance targetがactive、全lab/connectivity serviceが
-inactiveであることを確認した後だけ、一時`policy-rc.d`が配布版とbyte-for-byte同じことを比較して
-削除します。比較できない、途中で失敗した、serviceが起動した場合は削除せず、networkを接続せずに
-記録を保全します。
+exact disk/root/PARTUUID、Debian 13 amd64/x86_64、manifest package全件、default routeなし、
+外部DNSなし、非loopback listenerなし、radio blocked、service inactiveが揃わなければ
+platform installは拒否されます。

@@ -147,6 +147,16 @@ describe("cloud projection boundary", () => {
     assert.equal(response.status, 422);
 
     unsafe = projection();
+    unsafe.hints.pop();
+    response = await upload(harness, created.body, unsafe);
+    assert.equal(response.status, 422);
+
+    unsafe = projection();
+    unsafe.graph.nodes[1].category = "秘密のroot経路名";
+    response = await upload(harness, created.body, unsafe);
+    assert.equal(response.status, 422);
+
+    unsafe = projection();
     unsafe.facts[0].detail = "FLAG{must_never_reach_redis}";
     response = await upload(harness, created.body, unsafe);
     assert.equal(response.status, 422);
@@ -178,6 +188,10 @@ describe("cloud projection boundary", () => {
     assert.equal(state.capabilities.manualFlagSubmission, false);
     assert.equal(state.revision, 1);
     assert.equal(state.objective, "最初の入口を確認する");
+    assert.equal(state.guidance.showCommandExamples, true);
+    assert.equal(state.guidance.explanationDepth, "full");
+    assert.ok(!Object.hasOwn(state, "profile"));
+    assert.ok(!Object.hasOwn(state, "account"));
     assert.doesNotMatch(JSON.stringify(state), /uploadToken|pairingCode/);
   });
 

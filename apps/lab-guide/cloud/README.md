@@ -36,8 +36,11 @@ one second, so no long-lived function or in-memory room is required.
 
 Redis conditional updates keep revisions monotonic, and pairing codes are deleted
 before a session is returned so they remain single-use. Browser actions are
-limited to hypothesis selection and hint unlock. Manual flag submission is not
-a cloud route.
+limited to hypothesis selection, hint unlock, and exact allowlisted guidance
+settings. No manual flag submission route exists; flag text stays outside the
+projection and cloud relay. The relay stores no
+profile, account, or personal progress record; the current projection is the
+only browser-visible location.
 
 Run the repository checks before deployment:
 

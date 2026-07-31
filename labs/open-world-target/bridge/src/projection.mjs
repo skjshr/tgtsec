@@ -14,6 +14,26 @@ const ICONS = new Set([
   "terminal",
   "user",
 ]);
+const PUBLIC_CATEGORIES = new Set([
+  "Web",
+  "共有",
+  "整備",
+  "権限獲得",
+  "権限昇格",
+  "root経路",
+  "最終地点",
+]);
+const ROUTE_IDS = new Set([
+  "web-sudo",
+  "web-timer",
+  "web-suid",
+  "smb-sudo",
+  "smb-timer",
+  "smb-suid",
+  "nfs-sudo",
+  "nfs-timer",
+  "nfs-suid",
+]);
 const SECRET_TEXT = [
   /\b(?:FLAG|LAB)\{[^}\r\n]{0,512}\}/i,
   /-----BEGIN (?:RSA |OPENSSH |EC )?PRIVATE KEY-----/i,
@@ -189,7 +209,7 @@ function validateGraphNode(value, index) {
     input,
     path,
     ["id", "state"],
-    ["label", "detail", "icon", "kind", "progress", "position"],
+    ["category", "label", "detail", "icon", "kind", "progress", "position"],
   );
   const state = input.state;
   if (!["discovered", "selected", "undiscovered"].includes(state)) {
@@ -204,9 +224,21 @@ function validateGraphNode(value, index) {
     fail(path, "must not reveal undiscovered node material");
   }
 
+  const category =
+    input.category === undefined
+      ? undefined
+      : text(input.category, `${path}.category`, { maximum: 32 });
+  if (
+    (state === "undiscovered" && category === undefined) ||
+    (category !== undefined && !PUBLIC_CATEGORIES.has(category))
+  ) {
+    fail(`${path}.category`, "is not an allowlisted public category");
+  }
+
   const projected = {
     id: identifier(input.id, `${path}.id`),
     state,
+    ...(category === undefined ? {} : { category }),
   };
   if (state !== "undiscovered") {
     projected.label = text(input.label, `${path}.label`);
@@ -273,8 +305,8 @@ function validateHint(value, index) {
     ["id", "step", "title", "state"],
     ["body", "condition"],
   );
-  if (![1, 2, 3].includes(input.step)) {
-    fail(`${path}.step`, "must be 1, 2, or 3");
+  if (![1, 2, 3, 4].includes(input.step)) {
+    fail(`${path}.step`, "must be 1, 2, 3, or 4");
   }
   if (!["unlocked", "available", "locked"].includes(input.state)) {
     fail(`${path}.state`, "is not a public hint state");
@@ -318,6 +350,55 @@ function validateRecentEvent(value, index) {
   };
 }
 
+function validateGuidance(value) {
+  const path = "projection.guidance";
+  const input = plainObject(value, path);
+  exactKeys(input, path, [
+    "showNextChoices",
+    "showToolNames",
+    "showCommandSyntax",
+    "showCommandExamples",
+    "explainNoProgress",
+    "explanationDepth",
+    "silhouetteDepth",
+  ]);
+  for (const field of [
+    "showNextChoices",
+    "showToolNames",
+    "showCommandSyntax",
+    "showCommandExamples",
+    "explainNoProgress",
+  ]) {
+    boolean(input[field], `${path}.${field}`);
+  }
+  if (!["brief", "full"].includes(input.explanationDepth)) {
+    fail(`${path}.explanationDepth`, "is not a public explanation depth");
+  }
+  if (![0, 1].includes(input.silhouetteDepth)) {
+    fail(`${path}.silhouetteDepth`, "must be 0 or 1");
+  }
+  return {
+    showNextChoices: input.showNextChoices,
+    showToolNames: input.showToolNames,
+    showCommandSyntax: input.showCommandSyntax,
+    showCommandExamples: input.showCommandExamples,
+    explainNoProgress: input.explainNoProgress,
+    explanationDepth: input.explanationDepth,
+    silhouetteDepth: input.silhouetteDepth,
+  };
+}
+
+function validateCompletion(value) {
+  const path = "projection.completion";
+  const input = plainObject(value, path);
+  exactKeys(input, path, ["routeId"]);
+  const routeId = identifier(input.routeId, `${path}.routeId`);
+  if (!ROUTE_IDS.has(routeId)) {
+    fail(`${path}.routeId`, "is not a public route id");
+  }
+  return { routeId };
+}
+
 export function validateProjection(value) {
   let serialized;
   try {
@@ -344,6 +425,7 @@ export function validateProjection(value) {
       "hypotheses",
       "graph",
       "hints",
+      "guidance",
       "progress",
       "recentEvents",
       "telemetry",
@@ -356,6 +438,7 @@ export function validateProjection(value) {
       "consultationQuestion",
       "investigations",
       "capabilities",
+      "completion",
     ],
   );
 
@@ -367,7 +450,7 @@ export function validateProjection(value) {
     fail("projection.status", "is not a public session status");
   }
 
-  const facts = array(input.facts, "projection.facts", 14).map(validateFact);
+  const facts = array(input.facts, "projection.facts", 13).map(validateFact);
   const hypotheses = array(
     input.hypotheses,
     "projection.hypotheses",
@@ -389,7 +472,16 @@ export function validateProjection(value) {
   const edges = array(graph.edges, "projection.graph.edges", 96).map(
     validateGraphEdge,
   );
-  const hints = array(input.hints, "projection.hints", 3).map(validateHint);
+  const hints = array(input.hints, "projection.hints", 4).map(validateHint);
+  if (
+    hints.length !== 4 ||
+    hints.some((hint, index) => hint.step !== index + 1)
+  ) {
+    fail(
+      "projection.hints",
+      "must contain the four ordered explanation steps",
+    );
+  }
   const recentEvents = array(
     input.recentEvents,
     "projection.recentEvents",
@@ -411,8 +503,8 @@ export function validateProjection(value) {
   const progress = plainObject(input.progress, "projection.progress");
   exactKeys(progress, "projection.progress", ["discovered", "total"]);
   const total = integer(progress.total, "projection.progress.total", {
-    minimum: 14,
-    maximum: 14,
+    minimum: 13,
+    maximum: 13,
   });
   const discovered = integer(
     progress.discovered,
@@ -440,6 +532,14 @@ export function validateProjection(value) {
       capabilities.manualFlagSubmission,
       "projection.capabilities.manualFlagSubmission",
     );
+  }
+  const guidance = validateGuidance(input.guidance);
+  const completion =
+    input.completion === undefined
+      ? undefined
+      : validateCompletion(input.completion);
+  if (completion && input.status !== "complete") {
+    fail("projection.completion", "requires complete status");
   }
 
   return {
@@ -474,7 +574,9 @@ export function validateProjection(value) {
     ...(investigations === undefined ? {} : { investigations }),
     graph: { nodes, edges },
     hints,
+    guidance,
     progress: { discovered, total },
+    ...(completion === undefined ? {} : { completion }),
     recentEvents,
     telemetry: {
       status: telemetry.status,

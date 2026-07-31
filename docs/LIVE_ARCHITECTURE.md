@@ -14,11 +14,11 @@ without exposing the target network or collecting terminal history.
 | `waiting` | cloud session record | A valid pairing exists, but the Bridge has not uploaded a projection. |
 | `live` | latest Bridge snapshot | Show the latest confirmed projection and accept newer revisions. |
 | `reconnecting` | last confirmed snapshot | Keep the screen intact when the Bridge heartbeat is stale. |
-| `unavailable` | target telemetry status | Automatic detection is down. Cloud manual flag entry stays disabled. |
+| `unavailable` | target telemetry status | Automatic detection is down. Show the reconnect path; no flag-submission route exists. |
 | `complete` | latest Bridge snapshot | Show the confirmed route to root and the recovery warning. |
 | `expired` | session TTL | Remove the live association and return to `browse`. |
 
-Loading, empty facts, errors, zero discoveries, and the 14-flag limit are
+Loading, empty facts, errors, zero discoveries, and the 13-flag limit are
 orthogonal display states. An old revision must never replace a newer one.
 
 ## Trust boundaries
@@ -98,8 +98,8 @@ ExamServer `/lab` browser
 - `GET /api/lab/bridge/actions` returns the pending allowlisted actions.
 - The Bridge applies each action to Debian telemetry and acknowledges it with
   the resulting snapshot.
-- Manual flag submission is local-only because flag text must not cross the
-  public cloud.
+- Flags are optional local collectibles. The guide has no manual submission
+  route, and flag text must not cross the projection or public cloud.
 
 ## Rejected alternatives
 
@@ -126,5 +126,5 @@ ExamServer `/lab` browser
   `create 200 → pair 200 → replay 404 → waiting state 200 → snapshot 204 →
   live state 200 → SSE 200` at
   <https://exam-server-one.vercel.app/lab>.
-- Physical Kali-to-Debian operation, the dual-boot target, and real Ethernet
-  isolation remain separate evidence gates.
+- Physical Kali-to-Debian operation, the dedicated Debian target, and real
+  Ethernet isolation remain separate evidence gates.

@@ -85,7 +85,6 @@ class RecoveryGuardTests(unittest.TestCase):
             disk_by_id=profile_value["target"]["diskById"],
             debian_partuuid=profile_value["target"]["debianPartuuid"],
             esp_partuuid=profile_value["target"]["espPartuuid"],
-            windows_partuuid=profile_value["target"]["windowsPartuuid"],
             image_sha256=profile_value["recovery"]["goldenBtrfsStream"]["sha256"],
             efi_sha256=profile_value["recovery"]["debianEfiArchive"]["sha256"],
             confirmation=(
@@ -115,9 +114,7 @@ class RecoveryGuardTests(unittest.TestCase):
                     "receive-golden-subvolume",
                     "make-received-root-writable",
                     "verify-stable-root-boot-contract",
-                    "verify-microsoft-efi-before",
                     "replace-debian-efi-only",
-                    "verify-microsoft-efi-after",
                 ],
             )
             self.assertEqual(
@@ -161,9 +158,6 @@ class RecoveryGuardTests(unittest.TestCase):
             ),
             "mounted target": lambda p, i, r: i["partitions"]["debian"].update(
                 {"mountpoints": ["/mnt/target"]}
-            ),
-            "mounted Windows": lambda p, i, r: i["partitions"]["windows"].update(
-                {"mountpoints": ["/mnt/windows"]}
             ),
             "same recovery disk": lambda p, i, r: i["recoveryMedia"].update(
                 {"sourceDevice": "/dev/nvme0n1p4"}
@@ -270,16 +264,16 @@ class RecoveryGuardTests(unittest.TestCase):
     def test_full_image_uses_stricter_confirmation(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             profile_value, inventory, _, mount, marker = self._fixture(Path(temp))
+            inventory["partitions"] = {}
             request = RecoveryRequest(
                 operation="full",
                 disk_by_id=profile_value["target"]["diskById"],
                 debian_partuuid=profile_value["target"]["debianPartuuid"],
                 esp_partuuid=profile_value["target"]["espPartuuid"],
-                windows_partuuid=profile_value["target"]["windowsPartuuid"],
                 image_sha256=profile_value["recovery"]["bareMetalImage"]["sha256"],
                 efi_sha256=None,
                 confirmation=(
-                    "RESTORE FULL DISK INCLUDING WINDOWS "
+                    "RESTORE FULL DISK "
                     + profile_value["target"]["diskById"]
                 ),
             )
@@ -290,9 +284,14 @@ class RecoveryGuardTests(unittest.TestCase):
                 recovery_mount=mount,
                 marker_path=marker,
             )
+            self.assertIsNone(context.debian_device)
+            self.assertIsNone(context.esp_device)
             plan = recovery_plan(profile_value, request, context)
             self.assertEqual(plan["actions"][0]["action"], "write-full-disk-image")
-            self.assertIn("Windows", plan["actions"][0]["overwrites"])
+            self.assertEqual(
+                plan["actions"][0]["overwrites"],
+                ["Debian", "ESP", "partition-table"],
+            )
             self.assertEqual(
                 plan["actions"][0]["expectedBytes"],
                 profile_value["target"]["diskSizeBytes"],
@@ -316,16 +315,44 @@ class RecoveryGuardTests(unittest.TestCase):
                 disk_by_id=profile_value["target"]["diskById"],
                 debian_partuuid=profile_value["target"]["debianPartuuid"],
                 esp_partuuid=profile_value["target"]["espPartuuid"],
-                windows_partuuid=profile_value["target"]["windowsPartuuid"],
                 image_sha256=digest,
                 efi_sha256=None,
                 confirmation=(
-                    "RESTORE FULL DISK INCLUDING WINDOWS "
+                    "RESTORE FULL DISK "
                     + profile_value["target"]["diskById"]
                 ),
             )
             with self.assertRaisesRegex(
                 ContractError, "logical size must exactly match"
+            ):
+                validate_recovery_request(
+                    profile_value,
+                    inventory,
+                    request,
+                    recovery_mount=mount,
+                    marker_path=marker,
+                )
+
+    def test_full_image_rejects_any_mounted_target_descendant(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            profile_value, inventory, _, mount, marker = self._fixture(
+                Path(temp)
+            )
+            inventory["targetDisk"]["descendantMountpoints"] = ["/mnt/target"]
+            request = RecoveryRequest(
+                operation="full",
+                disk_by_id=profile_value["target"]["diskById"],
+                debian_partuuid=profile_value["target"]["debianPartuuid"],
+                esp_partuuid=profile_value["target"]["espPartuuid"],
+                image_sha256=profile_value["recovery"]["bareMetalImage"]["sha256"],
+                efi_sha256=None,
+                confirmation=(
+                    "RESTORE FULL DISK "
+                    + profile_value["target"]["diskById"]
+                ),
+            )
+            with self.assertRaisesRegex(
+                ContractError, "every target-disk descendant"
             ):
                 validate_recovery_request(
                     profile_value,

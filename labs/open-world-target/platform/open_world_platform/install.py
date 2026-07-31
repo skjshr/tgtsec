@@ -38,7 +38,6 @@ class InstallRequest:
     disk_by_id: str
     debian_partuuid: str
     esp_partuuid: str
-    windows_partuuid: str
     overlay_sha256: str
     confirmation: str
 
@@ -81,7 +80,6 @@ def validate_install_request(
         "diskById": request.disk_by_id,
         "debianPartuuid": request.debian_partuuid,
         "espPartuuid": request.esp_partuuid,
-        "windowsPartuuid": request.windows_partuuid,
     }
     for key, value in supplied.items():
         if value != expected[key]:
@@ -99,7 +97,7 @@ def validate_install_request(
         overlay / "usr/local/share/open-world-lab/install-manifest.json"
     )
     install_manifest = load_json(install_manifest_path)
-    if install_manifest.get("schemaVersion") != 1:
+    if install_manifest.get("schemaVersion") != 2:
         raise ContractError("generated install manifest schema is invalid")
     files = install_manifest.get("files")
     if not isinstance(files, list) or not files:
@@ -403,7 +401,6 @@ def apply_install(
         "dnsmasq.service",
         "nfs-server.service",
         "nmbd.service",
-        "mnt-windows.mount",
         "open-world-exercise.target",
         "open-world-vulnerable.target",
         "open-world-vulnerable-failure.service",
@@ -418,7 +415,6 @@ def apply_install(
             "systemd-tmpfiles",
             "--create",
             "/etc/tmpfiles.d/open-world-dnsmasq.conf",
-            "/etc/tmpfiles.d/open-world-windows.conf",
         ],
         ["systemctl", "daemon-reload"],
         ["systemctl", "start", "open-world-boot-quarantine.service"],

@@ -1,13 +1,12 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "target": {
     "diskById": "/dev/disk/by-id/REPLACE_WITH_STABLE_ID",
     "diskSerial": "REPLACE_WITH_SERIAL",
     "diskWwn": "REPLACE_WITH_WWN",
     "diskSizeBytes": 0,
     "debianPartuuid": "REPLACE_WITH_DEBIAN_PARTUUID",
-    "espPartuuid": "REPLACE_WITH_ESP_PARTUUID",
-    "windowsPartuuid": "REPLACE_WITH_WINDOWS_PARTUUID"
+    "espPartuuid": "REPLACE_WITH_ESP_PARTUUID"
   },
   "network": {
     "wiredInterface": "REPLACE_WITH_INTERFACE",
@@ -26,7 +25,6 @@
       "path": "assets/debian-efi.tar",
       "sha256": "REPLACE_WITH_SHA256"
     },
-    "microsoftEfiTreeSha256": "REPLACE_WITH_SHA256",
     "bareMetalImage": {
       "path": "assets/full-disk.img",
       "sha256": "REPLACE_WITH_SHA256"

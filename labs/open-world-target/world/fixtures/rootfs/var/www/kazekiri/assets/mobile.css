@@ -1,0 +1,416 @@
+@media (max-width: 700px) {
+  .utility-bar__links > span {
+    display: none;
+  }
+
+  .section-heading {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .section-heading--compact {
+    grid-template-columns: 1fr auto;
+  }
+
+  .service-proof__grid {
+    grid-template-columns: 1fr;
+    padding-block: 7px;
+  }
+
+  .service-proof__item,
+  .service-proof__item:last-child {
+    min-height: auto;
+    padding: 16px 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    border-left: 0;
+  }
+
+  .service-proof__item:last-child {
+    border-bottom: 0;
+  }
+
+  .stock-card,
+  .stock-card--lead {
+    grid-template-columns: 1fr;
+  }
+
+  .stock-card__media,
+  .stock-card--lead .stock-card__photo {
+    min-height: 0;
+    aspect-ratio: 4 / 3;
+  }
+
+  .news-line {
+    padding: 17px 0;
+    grid-template-columns: 6rem 1fr;
+    gap: 5px 16px;
+  }
+
+  .news-line p {
+    grid-column: 2;
+  }
+
+  .closing-cta__inner {
+    grid-template-columns: 1fr;
+    gap: 26px;
+  }
+
+  .inventory-filter {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-filter__heading,
+  .inventory-filter__actions {
+    grid-column: auto;
+  }
+
+  .inventory-card {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-card__media,
+  .inventory-card__photo {
+    min-height: 0;
+    aspect-ratio: 4 / 3;
+  }
+
+  .vehicle-detail__content {
+    grid-template-columns: 1fr;
+  }
+
+  .delivery-note {
+    grid-column: auto;
+  }
+
+  .related-stock {
+    grid-template-columns: 1fr;
+  }
+
+  .service-entry {
+    grid-template-columns: 1fr;
+  }
+
+  .service-entry:nth-child(even) .service-entry__media {
+    order: initial;
+  }
+
+  .service-entry__media,
+  .service-entry__photo {
+    min-height: 0;
+    aspect-ratio: 3 / 2;
+  }
+
+  .space-stories {
+    grid-template-columns: 1fr;
+  }
+
+  .space-story--wide {
+    grid-column: auto;
+  }
+
+  .article-index {
+    grid-template-columns: 1fr;
+  }
+
+  .article-card--lead {
+    grid-column: auto;
+  }
+
+  .faq-group dl div {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .form-split {
+    grid-template-columns: 1fr;
+  }
+
+  .staff-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-hours {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  :root {
+    --content: calc(100% - 28px);
+    --page-gutter: 14px;
+  }
+
+  .utility-bar__inner {
+    min-height: 42px;
+  }
+
+  .utility-bar {
+    font-size: 0.67rem;
+  }
+
+  .site-header__inner {
+    padding-top: 10px;
+  }
+
+  .brand__mark {
+    width: 34px;
+    height: 34px;
+  }
+
+  .brand__mark::before,
+  .brand__mark::after {
+    left: 6px;
+    width: 19px;
+  }
+
+  .brand__name {
+    font-size: 0.93rem;
+  }
+
+  .brand__tagline {
+    font-size: 0.55rem;
+  }
+
+  .site-nav {
+    gap: 19px;
+  }
+
+  .site-nav a {
+    min-height: 44px;
+    font-size: 0.72rem;
+  }
+
+  .hero__copy {
+    padding: 44px 0 38px;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.25rem, 10.6vw, 2.8rem);
+  }
+
+  .hero__lead {
+    margin-top: 20px;
+    font-size: 0.86rem;
+  }
+
+  .hero__actions {
+    margin-top: 26px;
+  }
+
+  .hero__actions .button,
+  .closing-cta .button {
+    width: 100%;
+  }
+
+  .hero__photo {
+    aspect-ratio: 4 / 3;
+    object-position: 63% center;
+  }
+
+  .section {
+    padding-block: 66px;
+  }
+
+  .section--tight {
+    padding-top: 38px;
+  }
+
+  .section-heading {
+    margin-bottom: 28px;
+  }
+
+  .section-heading__title {
+    font-size: 2rem;
+  }
+
+  .service-feature__copy h2,
+  .shop-preview__copy h2 {
+    font-size: 2.25rem;
+  }
+
+  .news-line {
+    grid-template-columns: 1fr;
+  }
+
+  .news-line p {
+    grid-column: auto;
+  }
+
+  .page-intro {
+    padding-block: 25px 42px;
+  }
+
+  .page-intro .breadcrumb {
+    margin-bottom: 22px;
+  }
+
+  .page-intro h1 {
+    font-size: 2.8rem;
+  }
+
+  .page-intro__copy h1 {
+    font-size: 2.75rem;
+  }
+
+  .inventory-filter {
+    padding: 21px;
+  }
+
+  .inventory-filter__actions {
+    display: grid;
+  }
+
+  .vehicle-facts,
+  .vehicle-specs {
+    grid-template-columns: 1fr;
+  }
+
+  .vehicle-facts div,
+  .vehicle-specs div,
+  .vehicle-facts div:first-child,
+  .vehicle-specs div:first-child {
+    padding: 10px 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .vehicle-detail__summary h1 {
+    font-size: 2.7rem;
+  }
+
+  .work-log li {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .related-stock article > a {
+    grid-template-columns: 120px 1fr;
+  }
+
+  .related-stock p {
+    margin-left: 142px;
+  }
+
+  .service-entry ul {
+    grid-template-columns: 1fr;
+  }
+
+  .service-help__links {
+    display: grid;
+  }
+
+  .shop-hero__copy {
+    padding: 38px 0 32px;
+  }
+
+  .shop-hero__copy h1 {
+    font-size: clamp(1.95rem, 9vw, 2.6rem);
+  }
+
+  .shop-hero__media,
+  .shop-hero__photo {
+    min-height: 0;
+    aspect-ratio: 4 / 3;
+  }
+
+  .space-story__photo,
+  .space-story--wide .space-story__photo {
+    min-height: 0;
+    aspect-ratio: 3 / 2;
+  }
+
+  .article-detail__header h1 {
+    font-size: 2.7rem;
+  }
+
+  .faq-index {
+    grid-template-columns: 1fr;
+  }
+
+  .faq-index p {
+    grid-column: auto;
+  }
+
+  .faq-index a {
+    justify-content: flex-start;
+    border-right: 0;
+  }
+
+  .contact-form .button {
+    width: 100%;
+  }
+
+  .staff-masthead__inner {
+    min-height: 70px;
+  }
+
+  .staff-masthead .brand__tagline {
+    display: none;
+  }
+
+  .staff-environment {
+    gap: 10px;
+  }
+
+  .staff-environment__status {
+    font-size: 0;
+  }
+
+  .staff-environment__status::after {
+    font-size: 0.62rem;
+    content: "ONLINE";
+  }
+
+  .staff-shell {
+    padding-block: 24px 46px;
+  }
+
+  .staff-title {
+    margin-top: 17px;
+  }
+
+  .staff-title h1 {
+    font-size: 2.15rem;
+  }
+
+  .diagnostic-panel__header,
+  .diagnostic-form {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .field-control {
+    grid-template-columns: 1fr;
+  }
+
+  .field-control button {
+    width: 100%;
+  }
+
+  .result-panel {
+    margin-right: 18px;
+    margin-left: 18px;
+  }
+
+  .footer-grid {
+    padding-block: 42px 34px;
+  }
+
+  .footer-nav {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

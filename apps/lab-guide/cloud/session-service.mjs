@@ -15,7 +15,30 @@ import {
   verifySessionCookie,
 } from "./security.mjs";
 
-const ACTION_TYPES = new Set(["selectHypothesis", "unlockHint"]);
+const ACTION_TYPES = new Set([
+  "selectHypothesis",
+  "unlockHint",
+  "setGuidance",
+]);
+const GUIDANCE_COMMAND_IDS = new Set([
+  "preset.easy",
+  "preset.normal",
+  "preset.hard",
+  "showNextChoices.on",
+  "showNextChoices.off",
+  "showToolNames.on",
+  "showToolNames.off",
+  "showCommandSyntax.on",
+  "showCommandSyntax.off",
+  "showCommandExamples.on",
+  "showCommandExamples.off",
+  "explainNoProgress.on",
+  "explainNoProgress.off",
+  "explanationDepth.brief",
+  "explanationDepth.full",
+  "silhouetteDepth.0",
+  "silhouetteDepth.1",
+]);
 const MAX_PENDING_ACTIONS = 32;
 const MAX_CAS_ATTEMPTS = 8;
 
@@ -163,6 +186,12 @@ function ensureActionTarget(record, type, targetId) {
     );
     if (!hypothesis || hypothesis.available === false) {
       fail(409, "action_unavailable", "この選択肢は現在利用できません。");
+    }
+    return;
+  }
+  if (type === "setGuidance") {
+    if (!GUIDANCE_COMMAND_IDS.has(targetId)) {
+      fail(409, "action_unavailable", "この表示設定は利用できません。");
     }
     return;
   }

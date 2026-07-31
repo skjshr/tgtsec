@@ -14,6 +14,26 @@ const ICONS = new Set([
   "terminal",
   "user",
 ]);
+const PUBLIC_CATEGORIES = new Set([
+  "Web",
+  "共有",
+  "整備",
+  "権限獲得",
+  "権限昇格",
+  "root経路",
+  "最終地点",
+]);
+const ROUTE_IDS = new Set([
+  "web-sudo",
+  "web-timer",
+  "web-suid",
+  "smb-sudo",
+  "smb-timer",
+  "smb-suid",
+  "nfs-sudo",
+  "nfs-timer",
+  "nfs-suid",
+]);
 const SECRET_TEXT = [
   /\b(?:FLAG|LAB)\{[^}\r\n]{0,512}\}/i,
   /-----BEGIN (?:RSA |OPENSSH |EC )?PRIVATE KEY-----/i,
@@ -180,6 +200,7 @@ function validateGraphNode(value, index) {
   const path = `projection.graph.nodes[${index}]`;
   const input = plainObject(value, path);
   exactKeys(input, path, ["id", "state"], [
+    "category",
     "label",
     "detail",
     "icon",
@@ -199,9 +220,21 @@ function validateGraphNode(value, index) {
     boundary(path, "must not reveal undiscovered node material");
   }
 
+  const category =
+    input.category === undefined
+      ? undefined
+      : safeText(input.category, `${path}.category`, { maximum: 32 });
+  if (
+    (input.state === "undiscovered" && category === undefined) ||
+    (category !== undefined && !PUBLIC_CATEGORIES.has(category))
+  ) {
+    boundary(`${path}.category`, "is not an allowlisted public category");
+  }
+
   const output = {
     id: identifier(input.id, `${path}.id`),
     state: input.state,
+    ...(category === undefined ? {} : { category }),
   };
   if (input.state !== "undiscovered") {
     output.label = safeText(input.label, `${path}.label`);
@@ -266,8 +299,8 @@ function validateHint(value, index) {
     "body",
     "condition",
   ]);
-  if (![1, 2, 3].includes(input.step)) {
-    boundary(`${path}.step`, "must be 1, 2, or 3");
+  if (![1, 2, 3, 4].includes(input.step)) {
+    boundary(`${path}.step`, "must be 1, 2, 3, or 4");
   }
   if (!["unlocked", "available", "locked"].includes(input.state)) {
     boundary(`${path}.state`, "is not a public hint state");
@@ -313,6 +346,58 @@ function validateRecentEvent(value, index) {
   };
 }
 
+function validateGuidance(value) {
+  const path = "projection.guidance";
+  const input = plainObject(value, path);
+  exactKeys(input, path, [
+    "showNextChoices",
+    "showToolNames",
+    "showCommandSyntax",
+    "showCommandExamples",
+    "explainNoProgress",
+    "explanationDepth",
+    "silhouetteDepth",
+  ]);
+  for (const field of [
+    "showNextChoices",
+    "showToolNames",
+    "showCommandSyntax",
+    "showCommandExamples",
+    "explainNoProgress",
+  ]) {
+    boolean(input[field], `${path}.${field}`);
+  }
+  if (!["brief", "full"].includes(input.explanationDepth)) {
+    boundary(
+      `${path}.explanationDepth`,
+      "is not a public explanation depth",
+    );
+  }
+  if (![0, 1].includes(input.silhouetteDepth)) {
+    boundary(`${path}.silhouetteDepth`, "must be 0 or 1");
+  }
+  return {
+    showNextChoices: input.showNextChoices,
+    showToolNames: input.showToolNames,
+    showCommandSyntax: input.showCommandSyntax,
+    showCommandExamples: input.showCommandExamples,
+    explainNoProgress: input.explainNoProgress,
+    explanationDepth: input.explanationDepth,
+    silhouetteDepth: input.silhouetteDepth,
+  };
+}
+
+function validateCompletion(value) {
+  const path = "projection.completion";
+  const input = plainObject(value, path);
+  exactKeys(input, path, ["routeId"]);
+  const routeId = identifier(input.routeId, `${path}.routeId`);
+  if (!ROUTE_IDS.has(routeId)) {
+    boundary(`${path}.routeId`, "is not a public route id");
+  }
+  return { routeId };
+}
+
 export function validatePublicProjection(value) {
   let serialized;
   try {
@@ -339,6 +424,7 @@ export function validatePublicProjection(value) {
       "hypotheses",
       "graph",
       "hints",
+      "guidance",
       "progress",
       "recentEvents",
       "telemetry",
@@ -351,6 +437,7 @@ export function validatePublicProjection(value) {
       "consultationQuestion",
       "investigations",
       "capabilities",
+      "completion",
     ],
   );
   if (input.experience !== undefined && input.experience !== "live") {
@@ -360,7 +447,7 @@ export function validatePublicProjection(value) {
     boundary("projection.status", "is not a public session status");
   }
 
-  const facts = array(input.facts, "projection.facts", 14).map(validateFact);
+  const facts = array(input.facts, "projection.facts", 13).map(validateFact);
   const hypotheses = array(
     input.hypotheses,
     "projection.hypotheses",
@@ -380,7 +467,16 @@ export function validatePublicProjection(value) {
   const edges = array(graph.edges, "projection.graph.edges", 96).map(
     validateGraphEdge,
   );
-  const hints = array(input.hints, "projection.hints", 3).map(validateHint);
+  const hints = array(input.hints, "projection.hints", 4).map(validateHint);
+  if (
+    hints.length !== 4 ||
+    hints.some((hint, index) => hint.step !== index + 1)
+  ) {
+    boundary(
+      "projection.hints",
+      "must contain the four ordered explanation steps",
+    );
+  }
   const recentEvents = array(
     input.recentEvents,
     "projection.recentEvents",
@@ -401,8 +497,8 @@ export function validatePublicProjection(value) {
   const progress = plainObject(input.progress, "projection.progress");
   exactKeys(progress, "projection.progress", ["discovered", "total"]);
   const total = integer(progress.total, "projection.progress.total", {
-    minimum: 14,
-    maximum: 14,
+    minimum: 13,
+    maximum: 13,
   });
   const discovered = integer(
     progress.discovered,
@@ -430,6 +526,14 @@ export function validatePublicProjection(value) {
       capabilities.manualFlagSubmission,
       "projection.capabilities.manualFlagSubmission",
     );
+  }
+  const guidance = validateGuidance(input.guidance);
+  const completion =
+    input.completion === undefined
+      ? undefined
+      : validateCompletion(input.completion);
+  if (completion && input.status !== "complete") {
+    boundary("projection.completion", "requires complete status");
   }
 
   return {
@@ -470,7 +574,9 @@ export function validatePublicProjection(value) {
     ...(investigations === undefined ? {} : { investigations }),
     graph: { nodes, edges },
     hints,
+    guidance,
     progress: { discovered, total },
+    ...(completion === undefined ? {} : { completion }),
     recentEvents,
     telemetry: {
       status: telemetry.status,

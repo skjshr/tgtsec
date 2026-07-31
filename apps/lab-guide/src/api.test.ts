@@ -34,7 +34,7 @@ describe("ExamServer lab API namespace", () => {
     );
   });
 
-  it("sends learning actions through /api/lab", async () => {
+  it("sends state actions through /api/lab", async () => {
     const fetchMock = vi.fn(
       async (_input: RequestInfo | URL, _init?: RequestInit) => jsonResponse(),
     );
@@ -43,10 +43,12 @@ describe("ExamServer lab API namespace", () => {
 
     await client.selectHypothesis("hyp-web");
     await client.unlockHint("hint-web-1");
+    await client.applyGuidance("preset.hard");
 
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
       "/api/lab/session/hypotheses/hyp-web/select",
       "/api/lab/session/hints/hint-web-1/unlock",
+      "/api/lab/session/guidance/preset.hard/apply",
     ]);
   });
 });

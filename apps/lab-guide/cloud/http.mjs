@@ -352,6 +352,21 @@ export function createCloudHandler({ service, now = Date.now }) {
           );
         }
 
+        const guidance =
+          /^\/api\/session\/guidance\/([^/]+)\/apply$/.exec(path);
+        if (guidance) {
+          method(request, "POST");
+          await requireEmptyBody(request);
+          return jsonResponse(
+            await service.queueAction({
+              cookieValue: sessionCookie(request),
+              type: "setGuidance",
+              targetId: decodedTargetId(guidance[1]),
+            }),
+            202,
+          );
+        }
+
         throw new CloudError(404, "not_found", "このAPIはありません。");
       } catch (error) {
         return errorResponse(error);

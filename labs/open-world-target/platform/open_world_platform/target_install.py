@@ -26,7 +26,6 @@ from .model import (
     validate_platform_identity,
     validate_profile,
     validate_required_packages,
-    WINDOWS_MOUNT_UNIT,
 )
 from .target_bundle import validate_target_bundle
 
@@ -59,7 +58,6 @@ LAB_UNITS = [
     "ssh.service",
     "systemd-resolved.service",
     "wpa_supplicant.service",
-    WINDOWS_MOUNT_UNIT,
 ]
 
 
@@ -68,7 +66,6 @@ class TargetInstallRequest:
     disk_by_id: str
     debian_partuuid: str
     esp_partuuid: str
-    windows_partuuid: str
     bundle_manifest_sha256: str
     confirmation: str
 
@@ -111,7 +108,6 @@ def validate_target_install_request(
         "diskById": request.disk_by_id,
         "debianPartuuid": request.debian_partuuid,
         "espPartuuid": request.esp_partuuid,
-        "windowsPartuuid": request.windows_partuuid,
     }
     for key, value in supplied.items():
         if value != expected[key]:
@@ -125,10 +121,6 @@ def validate_target_install_request(
         != validation["bundleManifestSha256"]
     ):
         raise ContractError("supplied target-bundle manifest hash does not match")
-    manifest = validation["manifest"]
-    if any(entry.get("role") == "windows-offline" and entry.get("target", "").startswith("/")
-           for entry in manifest["files"]):
-        raise ContractError("Windows offline fixture must not have a Debian target")
     return validation
 
 
@@ -147,7 +139,7 @@ def target_install_plan(
         "bundleManifestSha256": validation["bundleManifestSha256"],
         "copyPolicy": {
             "includedRole": "debian",
-            "excludedRoles": ["windows-offline", "installer-private"],
+            "excludedRoles": ["installer-private"],
         },
         "flagOwnership": manifest["flagFiles"],
         "actions": [
@@ -238,7 +230,6 @@ def target_install_plan(
             "reboot enters Debian maintenance quarantine",
             "exercise preflight passes with direct cable only",
             "all 13 Debian flags have intended runtime readability",
-            "Windows offline flag is placed manually and Windows boots",
         ],
     }
 
@@ -808,7 +799,6 @@ def apply_target_install(
         "bundleManifestSha256": current["bundleManifestSha256"],
         "debianFilesInstalled": len(debian_entries),
         "eventKeysGenerated": len(activation["eventKeys"]),
-        "windowsOfflineCopiedToDebian": False,
         "servicesEnabled": [
             "open-world-boot-quarantine.service",
             "open-world-maintenance.target",

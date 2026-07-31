@@ -1,0 +1,250 @@
+@media (max-width: 1080px) {
+  .site-header__inner {
+    display: block;
+    padding-top: 12px;
+  }
+
+  .site-nav {
+    margin-top: 7px;
+    overflow-x: auto;
+    border-top: 1px solid var(--line);
+    scrollbar-width: thin;
+  }
+
+  .site-nav a {
+    flex: 0 0 auto;
+  }
+
+  .inventory-filter {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .inventory-filter__heading,
+  .inventory-filter__actions {
+    grid-column: 1 / -1;
+  }
+
+  .inventory-filter__actions {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .hours-section {
+    grid-template-columns: minmax(260px, 0.8fr) minmax(280px, 1fr);
+  }
+
+  .hours-section .button {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 900px) {
+  :root {
+    --content: min(100% - 32px, 720px);
+    --page-gutter: 16px;
+  }
+
+  .hero__grid,
+  .page-intro__media-grid,
+  .vehicle-detail__hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero__copy {
+    max-width: 42rem;
+    padding: 62px 0 50px;
+  }
+
+  .hero h1 {
+    font-size: clamp(3rem, 8vw, 4.5rem);
+  }
+
+  .hero__media,
+  .page-intro__media,
+  .vehicle-detail__media {
+    min-width: 100%;
+    min-height: 0;
+    margin: 0;
+  }
+
+  .hero__photo,
+  .page-intro__photo,
+  .vehicle-detail__photo {
+    min-height: 0;
+    aspect-ratio: 3 / 2;
+  }
+
+  .service-proof__item {
+    padding-inline: 18px;
+  }
+
+  .featured-stock {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+  }
+
+  .stock-card--lead {
+    min-height: 0;
+    grid-row: auto;
+    grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.1fr);
+    grid-template-rows: none;
+  }
+
+  .stock-card--lead .stock-card__photo {
+    min-height: 258px;
+  }
+
+  .service-feature,
+  .shop-preview,
+  .visit-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .service-feature__media,
+  .shop-preview__media,
+  .visit-grid__media {
+    min-height: 0;
+    margin: 0;
+  }
+
+  .service-feature__photo,
+  .shop-preview__photo,
+  .visit-grid__photo {
+    min-height: 0;
+    aspect-ratio: 3 / 2;
+  }
+
+  .service-feature__copy {
+    padding-bottom: 8px;
+  }
+
+  .shop-preview__copy {
+    order: 2;
+  }
+
+  .page-intro__grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .page-intro__copy {
+    padding-bottom: 44px;
+  }
+
+  .inventory-card {
+    grid-template-columns: minmax(240px, 0.78fr) minmax(0, 1.22fr);
+    gap: 28px;
+  }
+
+  .vehicle-detail__summary {
+    padding-block: 42px;
+  }
+
+  .vehicle-detail__content {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .delivery-note {
+    grid-column: 1 / -1;
+  }
+
+  .service-entry {
+    grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.2fr);
+    gap: 34px;
+  }
+
+  .workshop-flow,
+  .service-help {
+    grid-template-columns: 1fr;
+  }
+
+  .service-help__links {
+    grid-column: auto;
+  }
+
+  .space-story--wide {
+    grid-template-columns: 1fr;
+  }
+
+  .space-story--wide > div {
+    padding: 28px;
+  }
+
+  .hours-section {
+    grid-template-columns: 1fr;
+  }
+
+  .hours-section .button {
+    grid-column: auto;
+  }
+
+  .article-card,
+  .article-card--lead {
+    grid-template-columns: 1fr;
+  }
+
+  .article-card__media,
+  .article-card--lead .article-card__media,
+  .article-card__photo,
+  .article-card--lead .article-card__photo {
+    min-height: 260px;
+  }
+
+  .article-detail__media,
+  .article-detail__photo {
+    min-height: 0;
+    aspect-ratio: 3 / 2;
+  }
+
+  .faq-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .faq-index {
+    position: static;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .faq-index p {
+    grid-column: 1 / -1;
+  }
+
+  .faq-index a {
+    justify-content: center;
+    border-right: 1px solid var(--line);
+  }
+
+  .contact-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-aside {
+    max-width: 560px;
+  }
+
+  .staff-title {
+    grid-template-columns: 1fr;
+  }
+
+  .staff-title__id {
+    text-align: left;
+  }
+
+  .staff-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .staff-rail {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .footer-grid {
+    grid-template-columns: minmax(240px, 1fr) minmax(260px, 1fr);
+  }
+
+  .footer-hours {
+    grid-column: 2;
+  }
+}

@@ -113,6 +113,13 @@ missionStage:
 
 三つの見た目は配色プリセットではない。情報の意味、操作、状態を共有しながら、異なる構図・書体・境界・動きで同じ世界を演出する。
 
+画面は人物を追跡しない。標的の確定進行、参加者が選んだguidance設定、開放済みhintを
+canonical stateとし、同じcanonical stateは常に同じ地図、現在地、選択肢、説明を生成する。
+時刻、event到着順、browser identity、themeは攻略位置を変えない。
+
+安全と許可範囲は接続前とquiet help/legal surfaceに一度だけ置く。通常のmission、node、
+説明、完了表示へ「演習」「トレーニング」を反復せず、調査世界への没入をノイズで壊さない。
+
 ### Mission stage refinement
 
 簡素化後の初期画面を、見出し、目標、地図、選択地点が別々の帯に分かれた管理画面にしない。これらは一枚の `mission stage` として読み、上から `mission / objective / route / action` の一方向へ因果をつなぐ。
@@ -196,6 +203,11 @@ missionStage:
 - 補助情報のdrawerは同時に一枚だけ開く。`Escape` と背景操作で閉じ、閉じた後は元の引き手へfocusを戻す。
 - drawer内へkeyboard focusを閉じ込め、見えていない補助情報をtab順へ残さない。
 - 新しい教材イベントを受けてもdrawerを勝手に開かない。閉じている間は主画面の目標と進捗だけを更新し、件数はdrawerを開いた後に見せる。
+- 個人プロフィール、ニックネーム、復旧コード、ランキング、管理画面を作らない。
+- EASYを初期値とし、Header menu内でEASY / NORMAL / HARD / CUSTOMを変更できる。専用settings画面は増やさない。
+- CUSTOMは次候補、道具、構文、実行例、不成功時の説明、技術説明量を個別に切り替える。途中変更で確定事実、選択、地図、hintを失わない。
+- 未発見nodeは公開可能なカテゴリと名前のないシルエットだけを描き、隠れた名称、本文、commandをDOM、accessibility tree、bundle fixtureへ先出ししない。
+- flagは任意の発見として静かに記録できるが、objective、route unlock、root完了を妨げない。
 
 ## State language
 
@@ -208,7 +220,8 @@ missionStage:
 - Selected: border、icon、label、地点briefの4点で示す。
 - Locked hint: 開放条件を日常語で示す。
 - Success: rootまでの一本の経路と権限変化の振り返りを主役にする。
-- Telemetry unavailable: 自動検出不能を明示する。flag手動提出は標的直結のローカル表示だけに出し、クラウド表示には出さない。
+- Telemetry unavailable: 自動検出不能を明示し、有線接続、Bridge、再読込の確認手順だけを出す。flagは任意の収集物であり、手動提出や進行判定には使わない。
+- No progress: 正誤判定やquizにせず、選択中の仮説について「まだ確定した変化がない」と示す。EASY/CUSTOMで許可された場合だけ観察を見直す説明を開く。
 
 ## Live transition contract
 
@@ -217,6 +230,7 @@ missionStage:
 - 複数イベントを受けてもrevision順だけを採用し、古いsnapshotで画面を巻き戻さない。
 - `prefers-reduced-motion`では同じ情報を即時更新し、色だけに頼らずラベルと形状も変える。
 - BrowseからLiveへの切替は同じ世界へ接続したと理解できる連続した遷移にし、別アプリへ飛んだ印象を作らない。
+- 同じevent集合を異なる到着順で受けてもworld順へ正規化し、同じcanonical stateと同じ表示を作る。
 
 ## Responsive contract
 
@@ -236,4 +250,5 @@ missionStage:
 - mission/mapのcomponent規則へ色やfont-sizeを直書きすること。`missionStage` のsemantic token宣言を唯一の入口にする
 - fake terminal、code rain、stock hacker photography
 - chat人格、自由文AI prompt、仮説より先に完全commandを見せること
+- account/profile、復旧コード、leaderboard、admin dashboard、理解確認quiz
 - runtimeで生成画像を背景として読み込み、offline bundleを重くすること

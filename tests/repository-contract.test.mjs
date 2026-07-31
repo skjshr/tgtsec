@@ -13,9 +13,9 @@ test("active contracts describe the open-world lab", () => {
 
   for (const required of [
     "3つの入口",
-    "3つの実機root経路",
-    "14個のflag",
-    "30〜60分",
+    "3 root経路",
+    "任意の13個のflag",
+    "約90分",
   ]) {
     assert.match(
       `${constitution}\n${task}\n${readme}`,

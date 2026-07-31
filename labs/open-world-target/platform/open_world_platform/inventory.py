@@ -13,7 +13,6 @@ from .model import (
     ALWAYS_MASKED_UNITS,
     ContractError,
     TRANSIENT_LAB_UNITS,
-    WINDOWS_MOUNT_UNIT,
     validate_manifest,
     validate_profile,
 )
@@ -423,7 +422,6 @@ def _collect_services(manifest: dict[str, Any]) -> dict[str, str]:
                 "open-world-maintenance.target",
                 "open-world-telemetry.socket",
                 "open-world-vulnerable.target",
-                WINDOWS_MOUNT_UNIT,
                 *ALWAYS_MASKED_UNITS,
                 *TRANSIENT_LAB_UNITS,
             ]
@@ -545,39 +543,6 @@ def _normalize_mount_source(value: Any) -> str | None:
     return re.sub(r"\[/[^\]]*\]$", "", value)
 
 
-def _collect_windows_mount(
-    windows_partition: dict[str, Any],
-) -> dict[str, Any]:
-    mountpoint = Path("/mnt/windows")
-    unmounted = {
-        "sourceDevice": None,
-        "target": str(mountpoint),
-        "filesystemType": None,
-        "options": [],
-        "partuuid": windows_partition.get("partuuid"),
-    }
-    if not mountpoint.exists():
-        return unmounted
-    try:
-        observed = _find_mount(mountpoint)
-    except ContractError:
-        return unmounted
-    if observed.get("target") != str(mountpoint):
-        return unmounted
-    options = observed.get("options")
-    return {
-        "sourceDevice": _normalize_mount_source(observed.get("source")),
-        "target": observed.get("target"),
-        "filesystemType": observed.get("fstype"),
-        "options": (
-            sorted(set(options.split(",")))
-            if isinstance(options, str)
-            else []
-        ),
-        "partuuid": windows_partition.get("partuuid"),
-    }
-
-
 def _block_source_evidence(source: str) -> dict[str, Any]:
     if not source.startswith("/dev/"):
         return {
@@ -670,18 +635,30 @@ def _collect_disk(profile: dict[str, Any]) -> tuple[dict[str, Any], dict[str, An
     disk = _find_lsblk_node(nodes, resolved_disk)
     if not isinstance(disk, dict) or disk.get("type") != "disk":
         raise ContractError(f"target by-id did not resolve to a disk: {stable_path}")
+    descendant_mountpoints: set[str] = set()
+    pending = [disk]
+    while pending:
+        current = pending.pop()
+        for mountpoint in current.get("mountpoints") or []:
+            if isinstance(mountpoint, str) and mountpoint:
+                descendant_mountpoints.add(mountpoint)
+        pending.extend(
+            child
+            for child in current.get("children", [])
+            if isinstance(child, dict)
+        )
     target_disk = {
         "diskById": str(stable_path),
         "resolvedDevice": resolved_disk,
         "diskSerial": disk.get("serial"),
         "diskWwn": disk.get("wwn"),
         "diskSizeBytes": disk.get("size"),
+        "descendantMountpoints": sorted(descendant_mountpoints),
     }
     partitions: dict[str, Any] = {}
     expected = {
         "debian": profile["target"]["debianPartuuid"],
         "esp": profile["target"]["espPartuuid"],
-        "windows": profile["target"]["windowsPartuuid"],
     }
     for label, partuuid in expected.items():
         match = None
@@ -849,7 +826,6 @@ def collect_live_inventory(
         "rootFilesystem": root_filesystem,
         "targetDisk": target_disk,
         "partitions": partitions,
-        "windowsMount": _collect_windows_mount(partitions["windows"]),
         "network": network,
         "services": services,
         "packages": _collect_packages(manifest["packages"]),

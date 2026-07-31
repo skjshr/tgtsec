@@ -1,8 +1,5 @@
 import { EventEmitter } from "node:events";
 
-import {
-  verifyFlagAnswer,
-} from "../../world/flag-verifiers.mjs";
 import { WORLD } from "../../world/world-definition.mjs";
 import {
   buildEventRouteIndex,
@@ -17,6 +14,141 @@ const TELEMETRY_STATUSES = new Set([
   "unavailable",
 ]);
 const MAX_RECENT_EVENTS = 20;
+const GUIDANCE_BOOLEAN_FIELDS = Object.freeze([
+  "showNextChoices",
+  "showToolNames",
+  "showCommandSyntax",
+  "showCommandExamples",
+  "explainNoProgress",
+]);
+
+export const GUIDANCE_PRESETS = Object.freeze({
+  easy: Object.freeze({
+    showNextChoices: true,
+    showToolNames: true,
+    showCommandSyntax: true,
+    showCommandExamples: true,
+    explainNoProgress: true,
+    explanationDepth: "full",
+    silhouetteDepth: 1,
+  }),
+  normal: Object.freeze({
+    showNextChoices: true,
+    showToolNames: true,
+    showCommandSyntax: true,
+    showCommandExamples: false,
+    explainNoProgress: true,
+    explanationDepth: "full",
+    silhouetteDepth: 1,
+  }),
+  hard: Object.freeze({
+    showNextChoices: false,
+    showToolNames: false,
+    showCommandSyntax: false,
+    showCommandExamples: false,
+    explainNoProgress: false,
+    explanationDepth: "brief",
+    silhouetteDepth: 0,
+  }),
+});
+
+export const GUIDANCE_COMMAND_IDS = Object.freeze([
+  "preset.easy",
+  "preset.normal",
+  "preset.hard",
+  ...GUIDANCE_BOOLEAN_FIELDS.flatMap((field) => [
+    `${field}.on`,
+    `${field}.off`,
+  ]),
+  "explanationDepth.brief",
+  "explanationDepth.full",
+  "silhouetteDepth.0",
+  "silhouetteDepth.1",
+]);
+
+function cloneGuidance(value) {
+  return {
+    showNextChoices: value.showNextChoices,
+    showToolNames: value.showToolNames,
+    showCommandSyntax: value.showCommandSyntax,
+    showCommandExamples: value.showCommandExamples,
+    explainNoProgress: value.explainNoProgress,
+    explanationDepth: value.explanationDepth,
+    silhouetteDepth: value.silhouetteDepth,
+  };
+}
+
+function exactObjectKeys(value, expected, label) {
+  if (
+    value === null ||
+    typeof value !== "object" ||
+    Array.isArray(value)
+  ) {
+    throw new Error(`${label} must be an object`);
+  }
+  const actual = Object.keys(value).sort();
+  const wanted = [...expected].sort();
+  if (
+    actual.length !== wanted.length ||
+    actual.some((key, index) => key !== wanted[index])
+  ) {
+    throw new Error(`${label} contains unsupported fields`);
+  }
+}
+
+function validateGuidance(value) {
+  const keys = [
+    ...GUIDANCE_BOOLEAN_FIELDS,
+    "explanationDepth",
+    "silhouetteDepth",
+  ];
+  exactObjectKeys(value, keys, "stored guidance");
+  if (GUIDANCE_BOOLEAN_FIELDS.some((field) => typeof value[field] !== "boolean")) {
+    throw new Error("stored guidance contains a non-boolean option");
+  }
+  if (!["brief", "full"].includes(value.explanationDepth)) {
+    throw new Error("stored guidance explanation depth is invalid");
+  }
+  if (![0, 1].includes(value.silhouetteDepth)) {
+    throw new Error("stored guidance silhouette depth is invalid");
+  }
+  return cloneGuidance(value);
+}
+
+export function guidancePresetFor(value) {
+  const serialized = JSON.stringify(validateGuidance(value));
+  for (const [preset, guidance] of Object.entries(GUIDANCE_PRESETS)) {
+    if (JSON.stringify(guidance) === serialized) return preset;
+  }
+  return "custom";
+}
+
+export function applyGuidanceCommand(current, commandId) {
+  if (
+    typeof commandId !== "string" ||
+    !GUIDANCE_COMMAND_IDS.includes(commandId)
+  ) {
+    throw new LabError(
+      "invalid_guidance",
+      "この表示設定は利用できません。",
+      400,
+    );
+  }
+  if (commandId.startsWith("preset.")) {
+    return cloneGuidance(GUIDANCE_PRESETS[commandId.slice(7)]);
+  }
+
+  const [field, value] = commandId.split(".");
+  const next = validateGuidance(current);
+  if (GUIDANCE_BOOLEAN_FIELDS.includes(field)) {
+    next[field] = value === "on";
+  } else if (field === "explanationDepth") {
+    next.explanationDepth = value;
+  } else if (field === "silhouetteDepth") {
+    next.silhouetteDepth = Number(value);
+  }
+  return validateGuidance(next);
+}
 
 function uniqueKnown(values, knownIds, label) {
   if (!Array.isArray(values) || values.some((value) => !knownIds.has(value))) {
@@ -25,28 +157,64 @@ function uniqueKnown(values, knownIds, label) {
   return [...new Set(values)];
 }
 
+function orderedKnown(values, orderedIds) {
+  const selected = new Set(values);
+  return orderedIds.filter((id) => selected.has(id));
+}
+
+function unlockedHypothesisIdsFor(world, discoveredNodeIds) {
+  const unlocked = new Set(world.initialHypothesisIds);
+  const discovered = new Set(discoveredNodeIds);
+  for (const node of world.nodes) {
+    if (!discovered.has(node.id)) continue;
+    node.unlockHypothesisIds.forEach((id) => unlocked.add(id));
+  }
+  return world.hypotheses
+    .map((hypothesis) => hypothesis.id)
+    .filter((id) => unlocked.has(id));
+}
+
+function routeAchievementFor(world, footholdId, rootPathId) {
+  return (
+    world.routeAchievements.find(
+      (route) =>
+        route.footholdId === footholdId && route.rootPathId === rootPathId,
+    )?.id ?? null
+  );
+}
+
 function createInitialState(world, sessionId, telemetryStatus) {
   return {
-    version: 1,
+    version: 2,
     sessionId,
     revision: 0,
     discoveredNodeIds: [],
-    capturedFlagIds: [],
-    unlockedHypothesisIds: [...world.initialHypothesisIds],
     selectedHypothesisId: world.initialHypothesisIds[0] ?? null,
     hintUnlocks: Object.fromEntries(
       world.initialHypothesisIds.map((hypothesisId) => [hypothesisId, 0]),
     ),
+    guidance: cloneGuidance(GUIDANCE_PRESETS.easy),
+    activeFootholdId: null,
+    completedRootPathId: null,
+    completedRouteId: null,
     seenEventFingerprints: [],
     recentEvents: [],
     telemetryStatus,
   };
 }
 
+function validIso(value) {
+  return (
+    typeof value === "string" &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value) &&
+    !Number.isNaN(Date.parse(value))
+  );
+}
+
 function restoreState(world, sessionId, telemetryStatus, storedState) {
   if (!storedState) return createInitialState(world, sessionId, telemetryStatus);
   if (
-    storedState.version !== 1 ||
+    ![1, 2].includes(storedState.version) ||
     storedState.sessionId !== sessionId ||
     !Number.isSafeInteger(storedState.revision) ||
     storedState.revision < 0
@@ -54,32 +222,52 @@ function restoreState(world, sessionId, telemetryStatus, storedState) {
     throw new Error("stored state does not match this session");
   }
 
-  const nodeIds = new Set(world.nodes.map((node) => node.id));
-  const flagIds = new Set(world.flags.map((flag) => flag.id));
+  const orderedNodeIds = world.nodes.map((node) => node.id);
+  const nodeIds = new Set(orderedNodeIds);
   const hypothesisIds = new Set(
     world.hypotheses.map((hypothesis) => hypothesis.id),
   );
-  const routeIds = new Set([
-    ...world.eventRoutes.map((route) => route.id),
-    "manual.flag.accepted",
-  ]);
-  const unlockedHypothesisIds = uniqueKnown(
-    storedState.unlockedHypothesisIds,
-    hypothesisIds,
-    "hypotheses",
+  const routeIds = new Set(world.eventRoutes.map((route) => route.id));
+  const discoveredInput = uniqueKnown(
+    storedState.discoveredNodeIds,
+    nodeIds,
+    "nodes",
+  );
+  const discoveredNodeIds = orderedKnown(discoveredInput, orderedNodeIds);
+  const unlockedHypothesisIds = unlockedHypothesisIdsFor(
+    world,
+    discoveredNodeIds,
   );
   const selectedHypothesisId = storedState.selectedHypothesisId;
   if (
     selectedHypothesisId !== null &&
-    !unlockedHypothesisIds.includes(selectedHypothesisId)
+    (!hypothesisIds.has(selectedHypothesisId) ||
+      !unlockedHypothesisIds.includes(selectedHypothesisId))
   ) {
     throw new Error("stored selected hypothesis is not unlocked");
   }
 
+  if (
+    storedState.hintUnlocks === null ||
+    typeof storedState.hintUnlocks !== "object" ||
+    Array.isArray(storedState.hintUnlocks) ||
+    Object.keys(storedState.hintUnlocks).some(
+      (hypothesisId) => !hypothesisIds.has(hypothesisId),
+    )
+  ) {
+    throw new Error("stored hint state is invalid");
+  }
   const hintUnlocks = {};
   for (const hypothesisId of unlockedHypothesisIds) {
-    const value = storedState.hintUnlocks?.[hypothesisId] ?? 0;
-    if (!Number.isInteger(value) || value < 0 || value > 3) {
+    const hypothesis = world.hypotheses.find(
+      (candidate) => candidate.id === hypothesisId,
+    );
+    const value = storedState.hintUnlocks[hypothesisId] ?? 0;
+    if (
+      !Number.isInteger(value) ||
+      value < 0 ||
+      value > hypothesis.hints.length
+    ) {
       throw new Error("stored hint state is invalid");
     }
     hintUnlocks[hypothesisId] = value;
@@ -103,34 +291,67 @@ function restoreState(world, sessionId, telemetryStatus, storedState) {
         !nodeIds.has(event.nodeId) ||
         typeof event.id !== "string" ||
         !/^event-\d+$/.test(event.id) ||
-        typeof event.at !== "string" ||
-        !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(
-          event.at,
-        ) ||
-        Number.isNaN(Date.parse(event.at)),
+        !validIso(event.at),
     )
   ) {
     throw new Error("stored recent events are invalid");
   }
 
+  const discoveredOrder = storedState.discoveredNodeIds;
+  const migratedActiveFoothold =
+    storedState.version === 1
+      ? [...discoveredOrder]
+          .reverse()
+          .find((id) => world.footholdIds.includes(id)) ?? null
+      : storedState.activeFootholdId;
+  const migratedRootPath =
+    storedState.version === 1
+      ? [...discoveredOrder]
+          .reverse()
+          .find((id) => world.rootPathIds.includes(id)) ?? null
+      : storedState.completedRootPathId;
+
+  if (
+    migratedActiveFoothold !== null &&
+    !world.footholdIds.includes(migratedActiveFoothold)
+  ) {
+    throw new Error("stored active foothold is invalid");
+  }
+  if (
+    migratedRootPath !== null &&
+    !world.rootPathIds.includes(migratedRootPath)
+  ) {
+    throw new Error("stored completed root path is invalid");
+  }
+  const derivedRouteId = routeAchievementFor(
+    world,
+    migratedActiveFoothold,
+    migratedRootPath,
+  );
+  if (
+    storedState.version === 2 &&
+    storedState.completedRouteId !== derivedRouteId
+  ) {
+    throw new Error("stored completed route does not match its path");
+  }
+
   return {
-    version: 1,
+    version: 2,
     sessionId,
     revision: storedState.revision,
-    discoveredNodeIds: uniqueKnown(
-      storedState.discoveredNodeIds,
-      nodeIds,
-      "nodes",
-    ),
-    capturedFlagIds: uniqueKnown(
-      storedState.capturedFlagIds,
-      flagIds,
-      "flags",
-    ),
-    unlockedHypothesisIds,
+    discoveredNodeIds,
     selectedHypothesisId,
     hintUnlocks,
-    seenEventFingerprints: [...new Set(storedState.seenEventFingerprints)],
+    guidance:
+      storedState.version === 2
+        ? validateGuidance(storedState.guidance)
+        : cloneGuidance(GUIDANCE_PRESETS.easy),
+    activeFootholdId: migratedActiveFoothold,
+    completedRootPathId: migratedRootPath,
+    completedRouteId: derivedRouteId,
+    seenEventFingerprints: [
+      ...new Set(storedState.seenEventFingerprints),
+    ].sort(),
     recentEvents: storedState.recentEvents.slice(-MAX_RECENT_EVENTS).map(
       ({ id, at, routeId, nodeId }) => ({ id, at, routeId, nodeId }),
     ),
@@ -160,7 +381,6 @@ export class SessionEngine extends EventEmitter {
     this.now = now;
     this.routeIndex = buildEventRouteIndex(world);
     this.nodeIndex = new Map(world.nodes.map((node) => [node.id, node]));
-    this.flagIndex = new Map(world.flags.map((flag) => [flag.id, flag]));
     this.hypothesisIndex = new Map(
       world.hypotheses.map((hypothesis) => [hypothesis.id, hypothesis]),
     );
@@ -184,41 +404,79 @@ export class SessionEngine extends EventEmitter {
     this.emit("change", this.getProjection());
   }
 
-  #captureNode(nodeId, { at, routeId }) {
-    const node = this.nodeIndex.get(nodeId);
-    if (!node) throw new Error(`unknown node: ${nodeId}`);
-    let changed = false;
+  #commitEvent(route, at) {
+    const nodesToDiscover = [route.nodeId];
+    if (
+      route.kind === "root_path.completed" &&
+      !nodesToDiscover.includes("root-common")
+    ) {
+      nodesToDiscover.push("root-common");
+    }
 
-    if (!this.state.discoveredNodeIds.includes(nodeId)) {
-      this.state.discoveredNodeIds.push(nodeId);
+    let changed = false;
+    for (const nodeId of nodesToDiscover) {
+      if (!this.nodeIndex.has(nodeId)) {
+        throw new Error(`unknown node: ${nodeId}`);
+      }
+      if (!this.state.discoveredNodeIds.includes(nodeId)) {
+        this.state.discoveredNodeIds.push(nodeId);
+        changed = true;
+      }
+    }
+    this.state.discoveredNodeIds = orderedKnown(
+      this.state.discoveredNodeIds,
+      this.world.nodes.map((node) => node.id),
+    );
+
+    if (
+      route.kind === "foothold.acquired" &&
+      this.state.activeFootholdId !== route.nodeId
+    ) {
+      this.state.activeFootholdId = route.nodeId;
       changed = true;
     }
-    if (!this.state.capturedFlagIds.includes(node.flagId)) {
-      this.state.capturedFlagIds.push(node.flagId);
+    if (
+      route.kind === "root_path.completed" &&
+      this.state.completedRootPathId !== route.nodeId
+    ) {
+      this.state.completedRootPathId = route.nodeId;
       changed = true;
     }
-    for (const hypothesisId of node.unlockHypothesisIds) {
-      if (!this.state.unlockedHypothesisIds.includes(hypothesisId)) {
-        this.state.unlockedHypothesisIds.push(hypothesisId);
+
+    const nextRouteId = routeAchievementFor(
+      this.world,
+      this.state.activeFootholdId,
+      this.state.completedRootPathId,
+    );
+    if (this.state.completedRouteId !== nextRouteId) {
+      this.state.completedRouteId = nextRouteId;
+      changed = true;
+    }
+
+    const unlocked = unlockedHypothesisIdsFor(
+      this.world,
+      this.state.discoveredNodeIds,
+    );
+    for (const hypothesisId of unlocked) {
+      if (!Object.hasOwn(this.state.hintUnlocks, hypothesisId)) {
         this.state.hintUnlocks[hypothesisId] = 0;
         changed = true;
       }
     }
 
-    if (changed) {
-      this.state.revision += 1;
-      this.state.recentEvents.push({
-        id: `event-${this.state.revision}`,
-        at,
-        routeId,
-        nodeId,
-      });
-      this.state.recentEvents = this.state.recentEvents.slice(
-        -MAX_RECENT_EVENTS,
-      );
-      this.#announceChange();
-    }
-    return changed;
+    if (!changed) return false;
+    this.state.revision += 1;
+    this.state.recentEvents.push({
+      id: `event-${this.state.revision}`,
+      at,
+      routeId: route.id,
+      nodeId: route.nodeId,
+    });
+    this.state.recentEvents = this.state.recentEvents.slice(
+      -MAX_RECENT_EVENTS,
+    );
+    this.#announceChange();
+    return true;
   }
 
   applyEvent(input) {
@@ -230,26 +488,31 @@ export class SessionEngine extends EventEmitter {
     if (this.state.telemetryStatus === "unavailable") {
       return { accepted: true, changed: false, projection: this.getProjection() };
     }
-    if (this.state.capturedFlagIds.includes("flag-root-common")) {
+    if (this.state.discoveredNodeIds.includes("root-common")) {
       return { accepted: true, changed: false, projection: this.getProjection() };
     }
     if (this.state.seenEventFingerprints.includes(fingerprint)) {
       return { accepted: true, changed: false, projection: this.getProjection() };
     }
-    if (this.state.discoveredNodeIds.includes(route.nodeId)) {
-      return { accepted: true, changed: false, projection: this.getProjection() };
-    }
 
     this.state.seenEventFingerprints.push(fingerprint);
-    const changed = this.#captureNode(route.nodeId, {
-      at: event.occurredAt,
-      routeId: route.id,
-    });
+    this.state.seenEventFingerprints.sort();
+    const changed = this.#commitEvent(route, event.occurredAt);
+    if (!changed) {
+      this.state.seenEventFingerprints =
+        this.state.seenEventFingerprints.filter(
+          (storedFingerprint) => storedFingerprint !== fingerprint,
+        );
+    }
     return { accepted: true, changed, projection: this.getProjection() };
   }
 
   selectHypothesis(hypothesisId) {
-    if (!this.state.unlockedHypothesisIds.includes(hypothesisId)) {
+    const unlocked = unlockedHypothesisIdsFor(
+      this.world,
+      this.state.discoveredNodeIds,
+    );
+    if (!unlocked.includes(hypothesisId)) {
       throw new LabError(
         "hypothesis_locked",
         "この仮説は、現在の事実からはまだ選べません。",
@@ -289,12 +552,23 @@ export class SessionEngine extends EventEmitter {
     if (hintIndex !== currentCount) {
       throw new LabError(
         "hint_order",
-        "hintは見る場所、使う道具、操作例の順で開きます。",
+        "hintは目的、道具、組み立て方、操作例の順で開きます。",
         409,
       );
     }
 
     this.state.hintUnlocks[selectedId] = currentCount + 1;
+    this.state.revision += 1;
+    this.#announceChange();
+    return { changed: true, projection: this.getProjection() };
+  }
+
+  applyGuidance(commandId) {
+    const next = applyGuidanceCommand(this.state.guidance, commandId);
+    if (JSON.stringify(next) === JSON.stringify(this.state.guidance)) {
+      return { changed: false, projection: this.getProjection() };
+    }
+    this.state.guidance = next;
     this.state.revision += 1;
     this.#announceChange();
     return { changed: true, projection: this.getProjection() };
@@ -309,57 +583,5 @@ export class SessionEngine extends EventEmitter {
     this.state.revision += 1;
     this.#announceChange();
     return true;
-  }
-
-  submitManualFlag(candidate) {
-    const rootWasCaptured =
-      this.state.capturedFlagIds.includes("flag-root-common");
-    if (
-      this.state.telemetryStatus !== "unavailable" &&
-      !rootWasCaptured
-    ) {
-      throw new LabError(
-        "manual_fallback_inactive",
-        "自動検出が利用できるため、手動提出は現在使いません。",
-        409,
-      );
-    }
-
-    const flagId = verifyFlagAnswer(candidate);
-    if (!flagId) {
-      return {
-        accepted: false,
-        changed: false,
-        projection: this.getProjection(),
-      };
-    }
-
-    const flag = this.flagIndex.get(flagId);
-    if (
-      this.state.telemetryStatus !== "unavailable" &&
-      flag.manualOnly !== true
-    ) {
-      return {
-        accepted: false,
-        changed: false,
-        projection: this.getProjection(),
-      };
-    }
-    if (
-      flag.manualOnly === true &&
-      !rootWasCaptured
-    ) {
-      return {
-        accepted: false,
-        changed: false,
-        projection: this.getProjection(),
-      };
-    }
-
-    const changed = this.#captureNode(flag.nodeId, {
-      at: this.now(),
-      routeId: "manual.flag.accepted",
-    });
-    return { accepted: true, changed, projection: this.getProjection() };
   }
 }

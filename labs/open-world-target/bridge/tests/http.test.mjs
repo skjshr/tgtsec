@@ -124,6 +124,9 @@ test("target client authenticates state, events, and fixed actions", async () =>
   await target.applyAction(
     "/api/session/hypotheses/hyp-service-inventory/select",
   );
+  await target.applyAction(
+    "/api/session/guidance/preset.easy/apply",
+  );
 
   assert.deepEqual(
     calls.map(({ path }) => path),
@@ -131,6 +134,7 @@ test("target client authenticates state, events, and fixed actions", async () =>
       "/api/session/state",
       "/api/session/events",
       "/api/session/hypotheses/hyp-service-inventory/select",
+      "/api/session/guidance/preset.easy/apply",
     ],
   );
   for (const { init } of calls) {

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "targetProfileSha256": null,
   "targetBundleManifestSha256": null,
   "recoveryKitManifestSha256": null,
@@ -8,19 +8,19 @@
       "status": "not-run",
       "evidence": []
     },
-    "debianWindowsDualBoot": {
+    "publicPinnedCodexRebuild": {
       "status": "not-run",
       "evidence": []
     },
-    "windowsVolumeFullyDecrypted": {
+    "kaliFirefoxLiveGuide": {
       "status": "not-run",
       "evidence": []
     },
-    "windowsHibernationFastStartupDisabled": {
+    "secondOperatorReproduction": {
       "status": "not-run",
       "evidence": []
     },
-    "windowsReadOnlyPartuuidMount": {
+    "dedicatedDebianFullDiskInstall": {
       "status": "not-run",
       "evidence": []
     },
@@ -52,10 +52,6 @@
       "status": "not-run",
       "evidence": []
     },
-    "windowsFlagAbsentFromDebianRoot": {
-      "status": "not-run",
-      "evidence": []
-    },
     "eventKeyInstalledIdentityAccess": {
       "status": "not-run",
       "evidence": []
@@ -80,7 +76,7 @@
       "status": "not-run",
       "evidence": []
     },
-    "fourteenFlagsReset": {
+    "thirteenFlagsReset": {
       "status": "not-run",
       "evidence": []
     },
@@ -89,14 +85,6 @@
       "evidence": []
     },
     "goldenDebianBtrfsUuidPreserved": {
-      "status": "not-run",
-      "evidence": []
-    },
-    "microsoftEfiUnchanged": {
-      "status": "not-run",
-      "evidence": []
-    },
-    "offlineWindowsBoot": {
       "status": "not-run",
       "evidence": []
     },

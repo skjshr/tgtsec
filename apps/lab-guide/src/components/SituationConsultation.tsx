@@ -8,6 +8,7 @@ import {
   IconCircleNumber1,
   IconCircleNumber2,
   IconCircleNumber3,
+  IconCircleNumber4,
   IconInfoCircle,
   IconListCheck,
   IconListDetails,
@@ -19,7 +20,6 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   ConnectionStatus,
-  FlagSubmissionResult,
   Hint,
   LabProjection,
 } from "../types";
@@ -32,7 +32,7 @@ import {
 } from "./DisclosureDrawer";
 import { EventStrip } from "./EventStrip";
 import { KnownFacts } from "./KnownFacts";
-import { ManualFlagForm } from "./ManualFlagForm";
+import { RouteUnlock } from "./RouteUnlock";
 
 interface SituationConsultationProps {
   projection: LabProjection;
@@ -42,37 +42,27 @@ interface SituationConsultationProps {
   onRefresh: () => void;
   onSelectHypothesis: (id: string) => Promise<boolean>;
   onUnlockHint: (id: string) => Promise<boolean>;
-  onSubmitFlag: (
-    flag: string,
-  ) => Promise<FlagSubmissionResult | undefined>;
   onBackToMap: () => void;
 }
 
 function stepIcon(step: Hint["step"]) {
   if (step === 2) return <IconCircleNumber2 aria-hidden="true" />;
   if (step === 3) return <IconCircleNumber3 aria-hidden="true" />;
+  if (step === 4) return <IconCircleNumber4 aria-hidden="true" />;
   return <IconCircleNumber1 aria-hidden="true" />;
 }
 
 interface HintRailProps {
   hints: Hint[];
   pending: boolean;
-  manualFlagMode: false | "fallback" | "bonus";
   onUnlock: (id: string) => Promise<boolean>;
-  onSubmitFlag: (
-    flag: string,
-  ) => Promise<FlagSubmissionResult | undefined>;
-  flagPending: boolean;
   showTitle?: boolean;
 }
 
 function HintRail({
   hints,
   pending,
-  manualFlagMode,
   onUnlock,
-  onSubmitFlag,
-  flagPending,
   showTitle = true,
 }: HintRailProps) {
   const firstUnlocked = hints.find((hint) => hint.state === "unlocked")?.id;
@@ -136,13 +126,6 @@ function HintRail({
         ヒントは上から順に開放されます
       </p>
 
-      {manualFlagMode ? (
-        <ManualFlagForm
-          pending={flagPending}
-          onSubmit={onSubmitFlag}
-          mode={manualFlagMode}
-        />
-      ) : null}
     </aside>
   );
 }
@@ -157,7 +140,6 @@ export function SituationConsultation({
   onRefresh,
   onSelectHypothesis,
   onUnlockHint,
-  onSubmitFlag,
   onBackToMap,
 }: SituationConsultationProps) {
   const defaultHypothesisId = useMemo(
@@ -221,14 +203,6 @@ export function SituationConsultation({
     await onSelectHypothesis(selectedHypothesisId);
   };
 
-  const manualFlagMode: false | "fallback" | "bonus" =
-    projection.capabilities.manualFlagSubmission
-      ? projection.status === "complete"
-        ? "bonus"
-        : connectionStatus === "unavailable"
-          ? "fallback"
-          : false
-      : false;
   const drawerId = "consultation-disclosure-drawer";
   const shelfItems: ToolShelfItem<ConsultationDisclosure>[] = [
     {
@@ -264,12 +238,12 @@ export function SituationConsultation({
         ) : null}
         <div className="stage-heading-row">
           <header className="consultation-intro">
-            <span className="stage-eyebrow">状況相談</span>
+            <span className="stage-eyebrow">次の手順</span>
             <h1>次に確かめることを選ぶ</h1>
           </header>
           <nav className="disclosure-pulls" aria-label="必要な情報を開く">
             <DisclosurePull
-              label="相談ツール"
+              label="手掛かり"
               icon={<IconBulb />}
               controls={drawerId}
               open={activeDisclosure !== null}
@@ -285,6 +259,10 @@ export function SituationConsultation({
             <strong>{projection.objective}</strong>
           </div>
         </section>
+
+        {projection.completion ? (
+          <RouteUnlock routeId={projection.completion.routeId} />
+        ) : null}
 
         {projection.hypotheses.length > 0 ? (
           <>
@@ -370,7 +348,7 @@ export function SituationConsultation({
       <DisclosureDrawer
         id={drawerId}
         open={activeDisclosure !== null}
-        title="相談ツール"
+        title="手掛かり"
         onClose={() => setActiveDisclosure(null)}
       >
         {activeDisclosure ? (
@@ -395,10 +373,7 @@ export function SituationConsultation({
           <HintRail
             hints={projection.hints}
             pending={pendingAction === "hint"}
-            manualFlagMode={manualFlagMode}
             onUnlock={onUnlockHint}
-            onSubmitFlag={onSubmitFlag}
-            flagPending={pendingAction === "flag"}
             showTitle={false}
           />
         ) : null}

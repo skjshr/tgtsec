@@ -34,7 +34,6 @@ ALWAYS_MASKED_UNITS = (
     + RAW_AUDIT_UNITS
 )
 TRANSIENT_LAB_UNITS = ("open-world-root-timer.service",)
-WINDOWS_MOUNT_UNIT = "mnt-windows.mount"
 
 
 class ContractError(ValueError):
@@ -85,14 +84,28 @@ def _require_sha256(value: Any, label: str) -> str:
 
 
 def validate_manifest(manifest: dict[str, Any]) -> None:
-    if manifest.get("schemaVersion") != 1:
-        raise ContractError("manifest schemaVersion must be 1")
+    if manifest.get("schemaVersion") != 2:
+        raise ContractError("manifest schemaVersion must be 2")
     if manifest.get("labId") != "examserver-open-world-v1":
         raise ContractError("unexpected labId")
 
     packages = manifest.get("packages")
     if not isinstance(packages, list) or packages != sorted(set(packages)):
         raise ContractError("manifest packages must be unique and sorted")
+    required_rebuild_packages = {
+        "ca-certificates",
+        "git",
+        "nodejs",
+        "npm",
+    }
+    if not required_rebuild_packages.issubset(packages):
+        raise ContractError(
+            "manifest is missing public reconstruction packages"
+        )
+    if "gh" in packages:
+        raise ContractError(
+            "GitHub CLI is forbidden; public reconstruction must be anonymous"
+        )
 
     network = manifest.get("network")
     if not isinstance(network, dict):
@@ -184,13 +197,21 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
 
 
 def validate_profile(profile: dict[str, Any]) -> None:
-    if profile.get("schemaVersion") != 1:
-        raise ContractError("profile schemaVersion must be 1")
+    if profile.get("schemaVersion") != 2:
+        raise ContractError("profile schemaVersion must be 2")
     target = profile.get("target")
     network = profile.get("network")
     recovery = profile.get("recovery")
     if not all(isinstance(item, dict) for item in (target, network, recovery)):
         raise ContractError("profile target, network, and recovery must be objects")
+    if "windowsPartuuid" in target:
+        raise ContractError(
+            "profile schemaVersion 2 must not contain windowsPartuuid"
+        )
+    if "microsoftEfiTreeSha256" in recovery:
+        raise ContractError(
+            "profile schemaVersion 2 must not contain microsoftEfiTreeSha256"
+        )
 
     disk_by_id = _require_string(target.get("diskById"), "target.diskById")
     if not disk_by_id.startswith("/dev/disk/by-id/"):
@@ -199,7 +220,7 @@ def validate_profile(profile: dict[str, Any]) -> None:
     _require_string(target.get("diskWwn"), "target.diskWwn")
     if not isinstance(target.get("diskSizeBytes"), int) or target["diskSizeBytes"] <= 0:
         raise ContractError("target.diskSizeBytes must be a positive integer")
-    for key in ("debianPartuuid", "espPartuuid", "windowsPartuuid"):
+    for key in ("debianPartuuid", "espPartuuid"):
         value = _require_string(target.get(key), f"target.{key}")
         if not PARTUUID_RE.fullmatch(value):
             raise ContractError(f"target.{key} has an invalid format")
@@ -240,10 +261,6 @@ def validate_profile(profile: dict[str, Any]) -> None:
         raise ContractError(
             "recovery.goldenBtrfsStream.filesystemUuid must be a full UUID"
         )
-    _require_sha256(
-        recovery.get("microsoftEfiTreeSha256"),
-        "recovery.microsoftEfiTreeSha256",
-    )
 
 
 def validate_profile_against_manifest(
@@ -304,7 +321,7 @@ def validate_platform_identity(
         raise ContractError("; ".join(mismatches))
 
 
-def validate_exact_identity(
+def validate_exact_disk_identity(
     profile: dict[str, Any], inventory: dict[str, Any]
 ) -> list[str]:
     expected = profile["target"]
@@ -319,6 +336,14 @@ def validate_exact_identity(
                 f"target identity mismatch for {key}: "
                 f"expected {expected.get(key)!r}, observed {observed.get(key)!r}"
             )
+    return mismatches
+
+
+def validate_exact_identity(
+    profile: dict[str, Any], inventory: dict[str, Any]
+) -> list[str]:
+    expected = profile["target"]
+    mismatches = validate_exact_disk_identity(profile, inventory)
 
     partitions = inventory.get("partitions")
     if not isinstance(partitions, dict):
@@ -326,7 +351,6 @@ def validate_exact_identity(
     for label, profile_key in (
         ("debian", "debianPartuuid"),
         ("esp", "espPartuuid"),
-        ("windows", "windowsPartuuid"),
     ):
         observed_partition = partitions.get(label)
         observed_partuuid = (

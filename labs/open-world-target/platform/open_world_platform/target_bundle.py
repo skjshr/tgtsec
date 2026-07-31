@@ -3,6 +3,8 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
+import secrets
 import shutil
 import subprocess
 import tempfile
@@ -14,6 +16,7 @@ from .session import fresh_marker_bytes
 
 
 BUNDLE_MANIFEST = "TARGET-BUNDLE.json"
+SALES_PASSWORD_PLACEHOLDER = "@@BUILD_TIME_SALES_PASSWORD@@"
 
 
 def _mode_permits(
@@ -164,8 +167,8 @@ def _materialize_flags(
         cwd=world.parent,
         runner=runner,
     )
-    if not isinstance(flags, list) or len(flags) != 14:
-        raise ContractError("world must materialize exactly 14 logical flags")
+    if not isinstance(flags, list) or len(flags) != 13:
+        raise ContractError("world must materialize exactly 13 Debian flags")
     for flag in flags:
         if not isinstance(flag, dict) or not isinstance(flag.get("location"), str):
             raise ContractError("world flag metadata is invalid")
@@ -175,6 +178,62 @@ def _materialize_flags(
         if not destination.joinpath(*location.parts).is_file():
             raise ContractError(f"materialized flag is missing: {location}")
     return flags
+
+
+def _generate_synthetic_credentials(spec: dict[str, Any]) -> dict[str, Any]:
+    accounts = spec.get("accounts")
+    if (
+        spec.get("version") != 1
+        or spec.get("trainingOnly") is not True
+        or not isinstance(accounts, list)
+        or len(accounts) != 1
+    ):
+        raise ContractError("synthetic credential specification is invalid")
+    account = accounts[0]
+    random_bytes = account.get("randomBytes")
+    prefix = account.get("passwordPrefix")
+    if (
+        account.get("username") != "sales"
+        or not isinstance(prefix, str)
+        or not prefix
+        or not isinstance(random_bytes, int)
+        or not 16 <= random_bytes <= 64
+    ):
+        raise ContractError("sales credential generation contract is invalid")
+    password = prefix + secrets.token_hex(random_bytes)
+    if (
+        len(password) > 128
+        or any(not 33 <= ord(character) <= 126 for character in password)
+    ):
+        raise ContractError("generated sales credential is unsafe")
+    return {
+        "version": 1,
+        "trainingOnly": True,
+        "accounts": [
+            {
+                "username": "sales",
+                "password": password,
+                "purpose": account.get("purpose"),
+            }
+        ],
+    }
+
+
+def _inject_sales_credential(
+    debian: Path,
+    credentials: dict[str, Any],
+) -> None:
+    handover = debian / "srv/kazekiri/handover/SHIFT-HANDOVER.txt"
+    text = handover.read_text(encoding="utf-8")
+    if text.count(SALES_PASSWORD_PLACEHOLDER) != 1:
+        raise ContractError(
+            "SMB handover must contain exactly one credential placeholder"
+        )
+    password = credentials["accounts"][0]["password"]
+    handover.write_text(
+        text.replace(SALES_PASSWORD_PLACEHOLDER, password),
+        encoding="utf-8",
+    )
 
 
 def _normalize_apache_site(rootfs: Path) -> None:
@@ -302,13 +361,14 @@ def build_target_bundle(
     _safe_empty_output(output)
 
     fixture_manifest = load_json(world / "fixtures/fixture-manifest.json")
-    credentials = load_json(world / "fixtures/synthetic-credentials.json")
+    credential_spec = load_json(
+        world / "fixtures/synthetic-credential-spec.json"
+    )
     with tempfile.TemporaryDirectory(
         prefix=".open-world-target-", dir=output.parent
     ) as temporary_name:
         temporary = Path(temporary_name)
         debian = temporary / "debian-rootfs"
-        windows = temporary / "windows-offline"
         installer = temporary / "installer-private"
         _copy_tree(world / "fixtures/rootfs", debian)
         for obsolete_audit_path in (
@@ -325,17 +385,13 @@ def build_target_bundle(
         flags = _materialize_flags(
             node_binary, world, debian, runner=runner
         )
-        windows_source = debian / "windows-fixture"
-        if not windows_source.is_dir():
-            raise ContractError("materialized Windows flag subtree is missing")
-        windows.mkdir(parents=True)
-        windows_source.replace(windows / "windows-fixture")
+        credentials = _generate_synthetic_credentials(credential_spec)
+        _inject_sales_credential(debian, credentials)
         _normalize_apache_site(debian)
 
         world_runtime = debian / "opt/examserver/open-world/world"
         world_runtime.mkdir(parents=True)
         for name in (
-            "flag-verifiers.mjs",
             "validate-world.mjs",
             "world-definition.mjs",
         ):
@@ -392,12 +448,6 @@ def build_target_bundle(
         flag_modes = {
             "/" + flag["location"]: int(flag["mode"])
             for flag in flags
-            if flag.get("category") != "windows"
-        }
-        windows_flag_modes = {
-            flag["location"]: int(flag["mode"])
-            for flag in flags
-            if flag.get("category") == "windows"
         }
         groups = [
             {
@@ -470,29 +520,19 @@ def build_target_bundle(
             flag_modes=flag_modes,
             role="debian",
         )
-        windows_entries = _file_entries(
-            windows,
-            ownership=[],
-            flag_modes=windows_flag_modes,
-            role="windows-offline",
-        )
         private_entries = _file_entries(
             installer,
             ownership=[],
             flag_modes={},
             role="installer-private",
         )
-        all_entries = debian_entries + windows_entries + private_entries
+        all_entries = debian_entries + private_entries
         entries_by_role_path = {
             (entry["role"], entry["path"]): entry for entry in all_entries
         }
         flag_files = []
         for flag in flags:
-            role = (
-                "windows-offline"
-                if flag.get("category") == "windows"
-                else "debian"
-            )
+            role = "debian"
             entry = entries_by_role_path.get((role, flag["location"]))
             if entry is None:
                 raise ContractError(
@@ -514,9 +554,9 @@ def build_target_bundle(
                 }
             )
         bundle_manifest = {
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "bundleId": "examserver-open-world-target-v1",
-            "flagCounts": {"debian": 13, "windowsOffline": 1, "total": 14},
+            "flagCounts": {"debian": 13, "total": 13},
             "groups": groups,
             "accounts": accounts,
             "directories": directories,
@@ -614,14 +654,28 @@ def build_target_bundle(
 def validate_target_bundle(root: Path) -> dict[str, Any]:
     if not root.is_dir() or root.is_symlink():
         raise ContractError("target bundle must be a real directory")
+    allowed_top_level = {
+        BUNDLE_MANIFEST,
+        "debian-rootfs",
+        "installer-private",
+    }
+    unexpected_top_level = sorted(
+        path.name for path in root.iterdir()
+        if path.name not in allowed_top_level
+    )
+    if unexpected_top_level:
+        raise ContractError(
+            "target bundle contains an unexpected top-level entry: "
+            + ", ".join(unexpected_top_level)
+        )
     manifest_path = root / BUNDLE_MANIFEST
     if not manifest_path.is_file() or manifest_path.is_symlink():
         raise ContractError("target bundle manifest must be a regular file")
     manifest = load_json(manifest_path)
-    if manifest.get("schemaVersion") != 1:
-        raise ContractError("target bundle schemaVersion must be 1")
+    if manifest.get("schemaVersion") != 2:
+        raise ContractError("target bundle schemaVersion must be 2")
     counts = manifest.get("flagCounts")
-    if counts != {"debian": 13, "windowsOffline": 1, "total": 14}:
+    if counts != {"debian": 13, "total": 13}:
         raise ContractError("target bundle flag counts are invalid")
     expected_groups = {
         "lab-foothold": {
@@ -761,7 +815,6 @@ def validate_target_bundle(root: Path) -> dict[str, Any]:
         role = entry.get("role")
         base = {
             "debian": root / "debian-rootfs",
-            "windows-offline": root / "windows-offline",
             "installer-private": root / "installer-private",
         }.get(role)
         if base is None:
@@ -801,7 +854,6 @@ def validate_target_bundle(root: Path) -> dict[str, Any]:
     observed = set()
     for role, directory in (
         ("debian", root / "debian-rootfs"),
-        ("windows-offline", root / "windows-offline"),
         ("installer-private", root / "installer-private"),
     ):
         if not directory.is_dir() or directory.is_symlink():
@@ -843,8 +895,10 @@ def validate_target_bundle(root: Path) -> dict[str, Any]:
     if any(path.endswith(".key") for path in observed):
         raise ContractError("event keys must never be stored in a target bundle")
     forbidden_runtime_names = {
+        "materialize-flags.mjs",
         "private-answers.mjs",
         "validate-private-answers.mjs",
+        "flag-verifiers.mjs",
     }
     if any(
         PurePosixPath(path).name in forbidden_runtime_names
@@ -852,7 +906,7 @@ def validate_target_bundle(root: Path) -> dict[str, Any]:
         if path.startswith("debian/")
     ):
         raise ContractError(
-            "build-only plaintext answer modules must never enter Debian"
+            "build-only secret generation modules must never enter Debian"
         )
     credentials = load_json(
         root / "installer-private/synthetic-credentials.json"
@@ -870,6 +924,8 @@ def validate_target_bundle(root: Path) -> dict[str, Any]:
         raise ContractError("synthetic credential file must be mode 0600")
     accounts = credentials.get("accounts")
     if (
+        credentials.get("version") != 1
+        or
         credentials.get("trainingOnly") is not True
         or not isinstance(accounts, list)
         or len(accounts) != 1
@@ -880,10 +936,21 @@ def validate_target_bundle(root: Path) -> dict[str, Any]:
         or any(character in accounts[0]["password"] for character in "\r\n")
     ):
         raise ContractError("synthetic credential contract is invalid")
+    handover = (
+        root
+        / "debian-rootfs/srv/kazekiri/handover/SHIFT-HANDOVER.txt"
+    ).read_text(encoding="utf-8")
+    if (
+        SALES_PASSWORD_PLACEHOLDER in handover
+        or handover.count(accounts[0]["password"]) != 1
+    ):
+        raise ContractError(
+            "generated sales credential is missing from the SMB handover"
+        )
     flag_files = manifest.get("flagFiles")
-    if not isinstance(flag_files, list) or len(flag_files) != 14:
-        raise ContractError("target bundle must identify exactly 14 flag files")
-    if len({entry.get("id") for entry in flag_files}) != 14:
+    if not isinstance(flag_files, list) or len(flag_files) != 13:
+        raise ContractError("target bundle must identify exactly 13 flag files")
+    if len({entry.get("id") for entry in flag_files}) != 13:
         raise ContractError("target bundle flag IDs must be unique")
     flagged_entries = {
         (entry.get("role"), entry.get("path"))
@@ -928,7 +995,6 @@ def validate_target_bundle(root: Path) -> dict[str, Any]:
         "flag-route-timer": ("root", "root"),
         "flag-route-suid": ("root", "root"),
         "flag-root-common": ("root", "root"),
-        "flag-windows": ("offline-operator", "offline-operator"),
     }
     observed_flag_ownership = {
         flag.get("id"): (flag.get("owner"), flag.get("group"))
@@ -936,34 +1002,38 @@ def validate_target_bundle(root: Path) -> dict[str, Any]:
     }
     if observed_flag_ownership != expected_flag_ownership:
         raise ContractError("target bundle flag ownership contract is invalid")
+    if any(flag.get("role") != "debian" for flag in flag_files):
+        raise ContractError("all target bundle flags must use the Debian role")
+    flag_answers = []
+    for flag in flag_files:
+        try:
+            answer = (
+                root / "debian-rootfs" / flag["path"]
+            ).read_text(encoding="ascii")
+        except (KeyError, OSError, UnicodeError) as exc:
+            raise ContractError(
+                f"target bundle flag is unreadable: {flag.get('id')}"
+            ) from exc
+        if re.fullmatch(r"FLAG\{ow_[a-f0-9]{48}\}\n", answer) is None:
+            raise ContractError(
+                f"target bundle flag format is invalid: {flag.get('id')}"
+            )
+        flag_answers.append(answer.strip())
+    if len(set(flag_answers)) != len(flag_answers):
+        raise ContractError("target bundle flag answers must be unique")
+    serialized_manifest = canonical_json(manifest)
     if (
-        sum(flag["role"] == "debian" for flag in flag_files) != 13
-        or sum(flag["role"] == "windows-offline" for flag in flag_files) != 1
+        b'"seed"' in serialized_manifest.lower()
+        or any(
+            answer.encode("ascii") in serialized_manifest
+            for answer in flag_answers
+        )
+        or accounts[0]["password"].encode("ascii") in serialized_manifest
     ):
-        raise ContractError("target bundle Debian/Windows flag split is invalid")
-    windows_flag = next(
-        flag for flag in flag_files if flag.get("id") == "flag-windows"
-    )
-    windows_secret = (
-        root / "windows-offline" / windows_flag["path"]
-    ).read_bytes().strip()
-    if not windows_secret:
-        raise ContractError("Windows offline flag is empty")
-    for role_directory in (
-        root / "debian-rootfs",
-        root / "installer-private",
-    ):
-        for path in role_directory.rglob("*"):
-            if path.is_file() and windows_secret in path.read_bytes():
-                raise ContractError(
-                    "Windows offline flag plaintext leaked outside its role"
-                )
+        raise ContractError(
+            "target bundle manifest must not contain generated secret material"
+        )
     required_runtime = {
-        "/opt/examserver/open-world/world/flag-verifiers.mjs": (
-            "root",
-            "lab-telemetry",
-            "0640",
-        ),
         "/usr/local/bin/open-world-event": ("root", "root", "0755"),
         "/usr/local/sbin/open-world-telemetry-status": (
             "root",

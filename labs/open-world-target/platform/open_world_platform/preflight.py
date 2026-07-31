@@ -11,7 +11,6 @@ from .model import (
     RAW_AUDIT_UNITS,
     SECONDARY_NETWORK_OWNER_UNITS,
     TRANSIENT_LAB_UNITS,
-    WINDOWS_MOUNT_UNIT,
     platform_identity_mismatches,
     validate_exact_identity,
 )
@@ -31,7 +30,7 @@ def _required_exercise_services(manifest: dict[str, Any]) -> list[str]:
     return (
         services["vulnerable"]
         + services["exerciseInfrastructure"]
-        + ["open-world-telemetry.socket", WINDOWS_MOUNT_UNIT]
+        + ["open-world-telemetry.socket"]
     )
 
 
@@ -174,31 +173,6 @@ def _masked_and_inactive(
         isinstance(unit_files, dict)
         and all(unit_files.get(unit) == "masked" for unit in units)
         and all(services.get(unit) == "inactive" for unit in units)
-    )
-
-
-def _windows_mount_ready(
-    profile: dict[str, Any], inventory: dict[str, Any]
-) -> bool:
-    mount = inventory.get("windowsMount")
-    partitions = inventory.get("partitions")
-    windows = (
-        partitions.get("windows")
-        if isinstance(partitions, dict)
-        else None
-    )
-    if not isinstance(mount, dict) or not isinstance(windows, dict):
-        return False
-    options = mount.get("options")
-    required_options = {"ro", "nosuid", "nodev", "noexec"}
-    return (
-        mount.get("sourceDevice") == windows.get("device")
-        and mount.get("target") == "/mnt/windows"
-        and mount.get("filesystemType") == "ntfs3"
-        and mount.get("partuuid") == profile["target"]["windowsPartuuid"]
-        and isinstance(options, list)
-        and required_options.issubset(options)
-        and "rw" not in options
     )
 
 
@@ -557,14 +531,6 @@ def evaluate_exercise(
                     "dnsmasq.listener",
                     "dnsmasq DNS must remain disabled with no TCP/UDP 53 "
                     "listener",
-                )
-            )
-        if not _windows_mount_ready(profile, inventory):
-            issues.append(
-                Issue(
-                    "windows.mount",
-                    "the exact Windows PARTUUID must be mounted at /mnt/windows "
-                    "as ntfs3 with ro,nosuid,nodev,noexec",
                 )
             )
         for service in _required_exercise_services(manifest):

@@ -12,7 +12,6 @@ from .model import (
     INTERFACE_RE,
     RAW_AUDIT_UNITS,
     TRANSIENT_LAB_UNITS,
-    WINDOWS_MOUNT_UNIT,
 )
 from .preflight import (
     evaluate_connectivity_clean_state,
@@ -45,7 +44,6 @@ def _service_names(manifest: dict[str, Any]) -> list[str]:
             + services["exerciseInfrastructure"]
             + [
                 TELEMETRY_SOCKET,
-                WINDOWS_MOUNT_UNIT,
                 *ALWAYS_MASKED_UNITS,
                 *TRANSIENT_LAB_UNITS,
             ]

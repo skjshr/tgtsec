@@ -2,9 +2,6 @@ import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import test from "node:test";
 
-import {
-  getPrivateFlagAnswer,
-} from "../../world/private-answers.mjs";
 import { WORLD } from "../../world/world-definition.mjs";
 import { createLabHttpServer } from "../src/http-server.mjs";
 import { SessionEngine } from "../src/session-engine.mjs";
@@ -98,7 +95,7 @@ test("target APIs require a secret-safe Bridge bearer token", async (context) =>
   assert.ok(!text.includes(BRIDGE_TOKEN));
 });
 
-test("GET state and POST hypothesis/hint APIs return the stable projection", async (context) => {
+test("GET state and POST hypothesis/hint/guidance APIs return the stable projection", async (context) => {
   const engine = new SessionEngine({ sessionId: "http-state" });
   const baseUrl = await startApi(context, engine);
 
@@ -108,7 +105,8 @@ test("GET state and POST hypothesis/hint APIs return the stable projection", asy
   assert.equal(response.headers.get("cache-control"), "no-store");
   let state = await response.json();
   assert.equal(state.sessionId, "http-state");
-  assert.equal(state.progress.total, 14);
+  assert.equal(state.progress.total, 13);
+  assert.equal(state.guidance.showCommandExamples, true);
 
   engine.applyEvent(eventFor("event-entry-web", "http-state"));
   response = await bridgeFetch(
@@ -140,47 +138,51 @@ test("GET state and POST hypothesis/hint APIs return the stable projection", asy
   state = await response.json();
   assert.equal(state.hints[0].state, "unlocked");
   assert.match(state.hints[0].body, /診断対象/);
+
+  response = await bridgeFetch(
+    `${baseUrl}/api/session/guidance/preset.hard/apply`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    },
+  );
+  assert.equal(response.status, 200);
+  state = await response.json();
+  assert.equal(state.guidance.showCommandExamples, false);
+  assert.equal(state.guidance.silhouetteDepth, 0);
 });
 
-test("manual flag endpoint is generic, privacy-bounded, and available on fallback", async (context) => {
-  const engine = new SessionEngine({
-    sessionId: "http-manual",
-    telemetryStatus: "unavailable",
-  });
+test("guidance endpoint rejects unsupported commands and request fields", async (context) => {
+  const engine = new SessionEngine({ sessionId: "http-guidance" });
   const baseUrl = await startApi(context, engine);
-  const answer = getPrivateFlagAnswer("flag-entry-nfs");
 
-  let response = await bridgeFetch(`${baseUrl}/api/session/flags/submit`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ flag: answer, command: "do-not-store" }),
-  });
+  let response = await bridgeFetch(
+    `${baseUrl}/api/session/guidance/preset.easy/apply`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ profile: "not-allowed" }),
+    },
+  );
   assert.equal(response.status, 400);
-  let text = await response.text();
-  assert.ok(!text.includes(answer));
-  assert.ok(!text.includes("do-not-store"));
+
+  response = await bridgeFetch(
+    `${baseUrl}/api/session/guidance/not-a-setting/apply`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    },
+  );
+  assert.equal(response.status, 400);
 
   response = await bridgeFetch(`${baseUrl}/api/session/flags/submit`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ flag: answer }),
+    body: JSON.stringify({ flag: "FLAG{not-forwarded}" }),
   });
-  assert.equal(response.status, 200);
-  const result = await response.json();
-  assert.equal(result.accepted, true);
-  assert.equal(result.state.progress.discovered, 1);
-  assert.ok(!JSON.stringify(result).includes(answer));
-
-  response = await bridgeFetch(`${baseUrl}/api/session/flags/submit`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ flag: "FLAG{wrong}" }),
-  });
-  assert.equal(response.status, 200);
-  const rejected = await response.json();
-  assert.equal(rejected.accepted, false);
-  assert.match(rejected.message, /確認できません/);
-  assert.equal(rejected.state.progress.discovered, 1);
+  assert.equal(response.status, 404);
 });
 
 test("SSE sends a full initial snapshot, broadcasts changes, and snapshots on reconnect", async (context) => {
@@ -216,7 +218,7 @@ test("SSE sends a full initial snapshot, broadcasts changes, and snapshots on re
   reconnectAbort.abort();
 });
 
-test("root-controlled detector signals switch fallback while the HTTP API stays alive", async (context) => {
+test("root-controlled detector signals preserve state while the HTTP API stays alive", async (context) => {
   const engine = new SessionEngine({ sessionId: "http-status-control" });
   const signalTarget = new EventEmitter();
   const removeSignals = installDetectorStatusSignals({
@@ -232,19 +234,16 @@ test("root-controlled detector signals switch fallback while the HTTP API stays 
   let state = await response.json();
   assert.equal(state.telemetry.status, "unavailable");
 
-  response = await bridgeFetch(`${baseUrl}/api/session/flags/submit`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      flag: getPrivateFlagAnswer("flag-entry-web"),
-    }),
-  });
-  assert.equal(response.status, 200);
-  assert.equal((await response.json()).accepted, true);
+  const ignored = engine.applyEvent(
+    eventFor("event-entry-web", "http-status-control"),
+  );
+  assert.equal(ignored.changed, false);
 
   signalTarget.emit("SIGUSR2");
+  engine.applyEvent(eventFor("event-entry-web", "http-status-control"));
   response = await bridgeFetch(`${baseUrl}/api/session/state`);
   assert.equal(response.status, 200);
   state = await response.json();
   assert.equal(state.telemetry.status, "live");
+  assert.equal(state.progress.discovered, 1);
 });

@@ -204,7 +204,6 @@ def _install_request(args: argparse.Namespace) -> InstallRequest:
         disk_by_id=args.disk_by_id,
         debian_partuuid=args.debian_partuuid,
         esp_partuuid=args.esp_partuuid,
-        windows_partuuid=args.windows_partuuid,
         overlay_sha256=args.overlay_sha256.lower(),
         confirmation=args.confirm,
     )
@@ -244,7 +243,6 @@ def _target_install_request(args: argparse.Namespace) -> TargetInstallRequest:
         disk_by_id=args.disk_by_id,
         debian_partuuid=args.debian_partuuid,
         esp_partuuid=args.esp_partuuid,
-        windows_partuuid=args.windows_partuuid,
         bundle_manifest_sha256=args.bundle_manifest_sha256.lower(),
         confirmation=args.confirm,
     )
@@ -272,7 +270,6 @@ def _recovery_request(args: argparse.Namespace) -> RecoveryRequest:
         disk_by_id=args.disk_by_id,
         debian_partuuid=args.debian_partuuid,
         esp_partuuid=args.esp_partuuid,
-        windows_partuuid=args.windows_partuuid,
         image_sha256=args.image_sha256.lower(),
         efi_sha256=args.efi_sha256.lower() if args.efi_sha256 else None,
         confirmation=args.confirm,
@@ -399,7 +396,6 @@ def build_parser() -> argparse.ArgumentParser:
     install.add_argument("--disk-by-id", required=True)
     install.add_argument("--debian-partuuid", required=True)
     install.add_argument("--esp-partuuid", required=True)
-    install.add_argument("--windows-partuuid", required=True)
     install.add_argument("--confirm", required=True)
     install.add_argument("--inventory", type=Path)
     install.add_argument("--boot-environment")
@@ -423,7 +419,6 @@ def build_parser() -> argparse.ArgumentParser:
     install_target.add_argument("--disk-by-id", required=True)
     install_target.add_argument("--debian-partuuid", required=True)
     install_target.add_argument("--esp-partuuid", required=True)
-    install_target.add_argument("--windows-partuuid", required=True)
     install_target.add_argument("--confirm", required=True)
     install_target.add_argument("--inventory", type=Path)
     install_target.add_argument("--boot-environment")
@@ -438,7 +433,6 @@ def build_parser() -> argparse.ArgumentParser:
     recover.add_argument("--disk-by-id", required=True)
     recover.add_argument("--debian-partuuid", required=True)
     recover.add_argument("--esp-partuuid", required=True)
-    recover.add_argument("--windows-partuuid", required=True)
     recover.add_argument("--image-sha256", required=True)
     recover.add_argument("--efi-sha256")
     recover.add_argument("--confirm", required=True)

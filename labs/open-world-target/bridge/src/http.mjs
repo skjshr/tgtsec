@@ -62,7 +62,7 @@ function validateFixedActionPath(path) {
   const match =
     typeof path === "string"
       ? path.match(
-          /^\/api\/session\/(hypotheses|hints)\/([A-Za-z0-9_.%~-]+)\/(select|unlock)$/,
+          /^\/api\/session\/(hypotheses|hints|guidance)\/([A-Za-z0-9_.%~-]+)\/(select|unlock|apply)$/,
         )
       : null;
   if (!match) return false;
@@ -77,7 +77,8 @@ function validateFixedActionPath(path) {
   }
   return (
     (match[1] === "hypotheses" && match[3] === "select") ||
-    (match[1] === "hints" && match[3] === "unlock")
+    (match[1] === "hints" && match[3] === "unlock") ||
+    (match[1] === "guidance" && match[3] === "apply")
   );
 }
 

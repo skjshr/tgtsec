@@ -45,11 +45,11 @@ node ID、evidence code、timestamp、写真/画面の保管先だけを記録�
 
 | Gate | Status |
 |---|---|
-| Debian 13 / Windows dual boot | NOT RUN |
+| Public pinned anonymous clone + Codex clean rebuild and residue check | NOT RUN |
+| Kali Firefox live current state / choices / explanations | NOT RUN |
+| Second-operator reproduction | NOT RUN |
+| Dedicated full-disk Debian 13 install | NOT RUN |
 | Debian 13 amd64 live identity (`ID=debian`、`VERSION_ID=13`、`amd64`、`x86_64`) | NOT RUN |
-| Windows system volume fully decrypted | NOT RUN |
-| Windows hibernation and Fast Startup disabled | NOT RUN |
-| Windows exact-PARTUUID read-only mount | NOT RUN |
 | Exercise wired-only isolation | NOT RUN |
 | dnsmasq DHCP-only / DNS listener disabled | NOT RUN |
 | Target telemetry Bridge bearer authentication | NOT RUN |
@@ -57,18 +57,15 @@ node ID、evidence code、timestamp、写真/画面の保管先だけを記録�
 | dnsmasq lease runtime permissions | NOT RUN |
 | NFSv4-only/rpcbind socket isolation | NOT RUN |
 | NFS watcher event delivery | NOT RUN |
-| Windows flag absent from Debian root | NOT RUN |
 | Event-key access by installed UID/GID | NOT RUN |
 | Fixed-path file watcher event delivery | NOT RUN |
 | Maintenance direct-link cable disconnected and unmanaged | NOT RUN |
 | systemd-networkd masked; direct `ip` is sole Ethernet owner | NOT RUN |
 | Maintenance Wi-Fi firmware and tethering | NOT RUN |
 | 9 route combinations | NOT RUN |
-| 14 flags reset after recovery | NOT RUN |
+| 13 optional flags reset after recovery | NOT RUN |
 | Debian normal recovery | NOT RUN |
 | Golden Debian Btrfs UUID preserved | NOT RUN |
-| EFI Microsoft tree unchanged | NOT RUN |
-| Offline Windows boot after recovery | NOT RUN |
 | Full-disk fallback rehearsal | NOT RUN |
 
 `NOT RUN`、`BLOCKED`、`FAILED`を`PASSED`として扱いません。写真やlogのない口頭確認も合格にしません。

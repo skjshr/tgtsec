@@ -111,7 +111,7 @@ Evidence:
 ## Automated verification
 
 - Repository contracts: 5/5 passed.
-- World graph: 3 entrances, 3 footholds, 3 root paths, 14 flags, and all 9
+- World graph: 3 entrances, 3 footholds, 3 root paths, 13 flags, and all 9
   viable combinations.
 - Telemetry: 42 passed, 1 Linux-only skip.
 - Bridge: 19/19 passed.
@@ -151,7 +151,7 @@ step because of the account billing or spending-limit state. This is recorded as
 an external CI infrastructure exception, not a passing CI run; the complete
 local `npm run check` result above remains the executed test evidence.
 
-The physical Kali-to-Debian connection, dual-boot installation, recovery image,
+The physical Kali-to-Debian connection, dedicated Debian installation, recovery image,
 and hardware isolation gates remain **NOT RUN** until tested on the designated
 machines.
 
