@@ -83,7 +83,7 @@ export function EndSessionDialog({
           <IconX aria-hidden="true" />
         </button>
         <IconAlertTriangle className="dialog-symbol" aria-hidden="true" />
-        <h2 id="end-session-title">演習を終了しますか？</h2>
+        <h2 id="end-session-title">調査の表示を終了しますか？</h2>
         <p id="end-session-description">
           この画面を終了しても、標的ノートは初期化されません。終了後は運営者へ復旧を依頼してください。
         </p>

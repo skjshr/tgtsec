@@ -1,3 +1,5 @@
+import type { RouteAchievementId } from "./route-achievements";
+
 export type ScreenId = "map" | "consultation";
 
 export type ExperienceMode = "browse" | "live";
@@ -36,6 +38,7 @@ export type GraphNodeState = "discovered" | "selected" | "undiscovered";
 export interface GraphNode {
   id: string;
   label: string;
+  category?: string;
   detail?: string;
   icon: IconKey;
   state: GraphNodeState;
@@ -78,7 +81,7 @@ export type HintState = "unlocked" | "available" | "locked";
 
 export interface Hint {
   id: string;
-  step: 1 | 2 | 3;
+  step: 1 | 2 | 3 | 4;
   title: string;
   state: HintState;
   body?: string;
@@ -89,6 +92,16 @@ export interface RecentEvent {
   id: string;
   at: string;
   message: string;
+}
+
+export interface GuidanceConfig {
+  showNextChoices: boolean;
+  showToolNames: boolean;
+  showCommandSyntax: boolean;
+  showCommandExamples: boolean;
+  explainNoProgress: boolean;
+  explanationDepth: "brief" | "full";
+  silhouetteDepth: 0 | 1;
 }
 
 export interface LabProjection {
@@ -105,6 +118,7 @@ export interface LabProjection {
   investigations: Investigation[];
   graph: GraphProjection;
   hints: Hint[];
+  guidance: GuidanceConfig;
   progress: {
     discovered: number;
     total: number;
@@ -117,12 +131,9 @@ export interface LabProjection {
   capabilities: {
     manualFlagSubmission: boolean;
   };
-}
-
-export interface FlagSubmissionResult {
-  accepted: boolean;
-  message: string;
-  projection?: LabProjection;
+  completion?: {
+    routeId: RouteAchievementId;
+  };
 }
 
 export interface LabClient {
@@ -133,5 +144,5 @@ export interface LabClient {
   ): () => void;
   selectHypothesis(id: string): Promise<LabProjection | undefined>;
   unlockHint(id: string): Promise<LabProjection | undefined>;
-  submitFlag(flag: string): Promise<FlagSubmissionResult>;
+  applyGuidance(commandId: string): Promise<LabProjection | undefined>;
 }

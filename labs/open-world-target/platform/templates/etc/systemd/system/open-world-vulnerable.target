@@ -1,8 +1,8 @@
 [Unit]
 Description=ExamServer open-world exercise services
 ConditionPathExists=/run/open-world-lab/exercise-ready
-Requires=apache2.service dnsmasq.service mnt-windows.mount nfs-server.service open-world-file-watch.service open-world-nfs-watch.service open-world-root-timer.timer open-world-telemetry.service smbd.service ssh.service
-BindsTo=apache2.service dnsmasq.service mnt-windows.mount nfs-server.service open-world-file-watch.service open-world-nfs-watch.service open-world-root-timer.timer open-world-telemetry.service open-world-telemetry.socket smbd.service ssh.service
-After=apache2.service dnsmasq.service mnt-windows.mount nfs-server.service open-world-file-watch.service open-world-nfs-watch.service open-world-root-timer.timer open-world-telemetry.service open-world-telemetry.socket smbd.service ssh.service
+Requires=apache2.service dnsmasq.service nfs-server.service open-world-file-watch.service open-world-nfs-watch.service open-world-root-timer.timer open-world-telemetry.service smbd.service ssh.service
+BindsTo=apache2.service dnsmasq.service nfs-server.service open-world-file-watch.service open-world-nfs-watch.service open-world-root-timer.timer open-world-telemetry.service open-world-telemetry.socket smbd.service ssh.service
+After=apache2.service dnsmasq.service nfs-server.service open-world-file-watch.service open-world-nfs-watch.service open-world-root-timer.timer open-world-telemetry.service open-world-telemetry.socket smbd.service ssh.service
 Conflicts=open-world-maintenance.target
 StopWhenUnneeded=yes

@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  getPrivateFlagAnswer,
-} from "../../world/private-answers.mjs";
 import { WORLD } from "../../world/world-definition.mjs";
 import { SessionEngine } from "../src/session-engine.mjs";
 
@@ -20,28 +17,39 @@ function eventFor(routeId, sessionId, occurredAt = "2026-07-27T00:00:00.000Z") {
   };
 }
 
-test("initial projection reveals silhouettes but no hidden labels, answers, or hint bodies", () => {
+test("initial projection reveals public categories without hidden node material", () => {
   const engine = new SessionEngine({ sessionId: "privacy" });
-  const projectionText = JSON.stringify(engine.getProjection());
+  const projection = engine.getProjection();
+  const projectionText = JSON.stringify(projection);
 
-  assert.equal(engine.getProjection().facts.length, 0);
+  assert.equal(projection.facts.length, 0);
   assert.deepEqual(
-    engine.getProjection().graph.nodes.map((node) => Object.keys(node).sort()),
+    projection.graph.nodes,
     [
-      ["id", "state"],
-      ["id", "state"],
-      ["id", "state"],
+      { id: "map-01", state: "undiscovered", category: "Web" },
+      { id: "map-02", state: "undiscovered", category: "共有" },
+      { id: "map-03", state: "undiscovered", category: "整備" },
     ],
   );
+  assert.equal(projection.guidance.showCommandExamples, true);
+  assert.ok(projection.hints.every((hint) => hint.state === "unlocked"));
   assert.ok(
-    engine
-      .getProjection()
-      .hints.every((hint) => !Object.hasOwn(hint, "body")),
+    WORLD.nodes.every((node) =>
+      [
+        "Web",
+        "共有",
+        "整備",
+        "権限獲得",
+        "権限昇格",
+        "root経路",
+        "最終地点",
+      ].includes(node.publicCategory),
+    ),
   );
   for (const flag of WORLD.flags) {
-    assert.ok(!projectionText.includes(getPrivateFlagAnswer(flag.id)));
     assert.ok(!projectionText.includes(flag.id));
   }
+  assert.ok(!projectionText.includes("FLAG{"));
   for (const node of WORLD.nodes) {
     assert.ok(!projectionText.includes(node.id));
   }
@@ -73,6 +81,7 @@ test("event input is an exact allowlist and state transitions are idempotent", (
     sameTransitionLater.projection.revision,
     first.projection.revision,
   );
+  assert.equal(engine.exportState().seenEventFingerprints.length, 1);
 
   assert.throws(
     () => engine.applyEvent({ ...event, command: "cat /etc/shadow" }),
@@ -139,6 +148,12 @@ for (const [entranceIndex, entranceRoute] of ENTRANCE_ROUTES.entries()) {
       const projection = engine.getProjection();
       assert.equal(projection.status, "complete");
       assert.equal(projection.progress.discovered, 5);
+      const routePrefix = ["web", "smb", "nfs"][entranceIndex];
+      const routeSuffix = ["sudo", "timer", "suid"][rootIndex];
+      assert.equal(
+        projection.completion.routeId,
+        `${routePrefix}-${routeSuffix}`,
+      );
       assert.ok(
         projection.facts.some((fact) => fact.label === "Debian root"),
       );
@@ -146,24 +161,13 @@ for (const [entranceIndex, entranceRoute] of ENTRANCE_ROUTES.entries()) {
   }
 }
 
-test("all automatic flags plus post-root manual Windows flag reach 14 of 14", () => {
-  const sessionId = "all-flags";
+test("thirteen Debian flags remain optional and root completion is event-based", () => {
+  assert.equal(WORLD.flags.length, 13);
+  assert.ok(WORLD.flags.every((flag) => !flag.manualOnly));
+
+  const sessionId = "optional-flags";
   const engine = new SessionEngine({ sessionId });
-  const routes = [
-    "event-entry-web",
-    "event-entry-smb",
-    "event-entry-nfs",
-    "event-foothold-web",
-    "event-foothold-sales",
-    "event-foothold-mechanic",
-    "event-clue-sudo",
-    "event-clue-timer",
-    "event-clue-suid",
-    "event-route-sudo",
-    "event-route-timer",
-    "event-route-suid",
-    "event-root-common",
-  ];
+  const routes = ["event-foothold-web", "event-route-sudo"];
   routes.forEach((routeId, index) => {
     engine.applyEvent(
       eventFor(
@@ -173,25 +177,22 @@ test("all automatic flags plus post-root manual Windows flag reach 14 of 14", ()
       ),
     );
   });
-  assert.equal(engine.getProjection().progress.discovered, 13);
-
-  const result = engine.submitManualFlag(
-    getPrivateFlagAnswer("flag-windows"),
-  );
-  assert.equal(result.accepted, true);
-  assert.equal(result.changed, true);
-  assert.equal(result.projection.progress.discovered, 14);
-  const projectionText = JSON.stringify(result.projection);
+  const projection = engine.getProjection();
+  assert.equal(projection.status, "complete");
+  assert.equal(projection.progress.discovered, 3);
+  assert.equal(projection.completion.routeId, "web-sudo");
+  const projectionText = JSON.stringify(projection);
   for (const flag of WORLD.flags) {
     assert.ok(!projectionText.includes(flag.id));
-    assert.ok(!projectionText.includes(getPrivateFlagAnswer(flag.id)));
   }
+  assert.ok(!projectionText.includes("FLAG{"));
 });
 
 test("root completion is the final accepted automatic state transition", () => {
   const sessionId = "root-final-event";
   const engine = new SessionEngine({ sessionId });
-  engine.applyEvent(eventFor("event-root-common", sessionId));
+  engine.applyEvent(eventFor("event-foothold-web", sessionId));
+  engine.applyEvent(eventFor("event-route-sudo", sessionId));
   const rootRevision = engine.getProjection().revision;
 
   const afterRoot = engine.applyEvent(
@@ -203,50 +204,48 @@ test("root completion is the final accepted automatic state transition", () => {
   );
   assert.equal(afterRoot.changed, false);
   assert.equal(afterRoot.projection.revision, rootRevision);
-  assert.equal(afterRoot.projection.progress.discovered, 1);
+  assert.equal(afterRoot.projection.progress.discovered, 3);
 });
 
-test("manual fallback never stores the submitted answer and is gated while live", () => {
-  const answer = getPrivateFlagAnswer("flag-entry-smb");
-  const liveEngine = new SessionEngine({ sessionId: "manual-live" });
-  assert.throws(
-    () => liveEngine.submitManualFlag(answer),
-    (error) => error.code === "manual_fallback_inactive",
-  );
-  assert.throws(
-    () => liveEngine.submitManualFlag("FLAG{not-valid}"),
-    (error) => error.code === "manual_fallback_inactive",
-  );
-
+test("unavailable detector preserves the last state without a flag fallback", () => {
   const engine = new SessionEngine({
-    sessionId: "manual-down",
+    sessionId: "detector-down",
     telemetryStatus: "unavailable",
-    now: () => "2026-07-27T02:00:00.000Z",
   });
-  assert.equal(engine.submitManualFlag("FLAG{not-valid}").accepted, false);
-  assert.equal(
-    engine.submitManualFlag(getPrivateFlagAnswer("flag-windows")).accepted,
-    false,
+  const result = engine.applyEvent(
+    eventFor("event-entry-smb", "detector-down"),
   );
-  const result = engine.submitManualFlag(answer);
-  assert.equal(result.accepted, true);
-  assert.equal(result.projection.progress.discovered, 1);
-  assert.ok(!JSON.stringify(engine.exportState()).includes(answer));
-  assert.ok(!JSON.stringify(result.projection).includes(answer));
+  assert.equal(result.changed, false);
+  assert.equal(result.projection.progress.discovered, 0);
+  assert.equal(result.projection.capabilities.manualFlagSubmission, false);
+  assert.match(result.projection.telemetry.message, /自動検出が停止/);
+  const hiddenReason = engine.applyGuidance(
+    "explainNoProgress.off",
+  ).projection;
+  assert.ok(!Object.hasOwn(hiddenReason.telemetry, "message"));
 });
 
-test("hypotheses and hints unlock in the accepted order without early bodies", () => {
+test("guidance defaults to EASY and remains changeable mid-session", () => {
   const engine = new SessionEngine({ sessionId: "hints" });
   let projection = engine.getProjection();
+  assert.ok(projection.hints.every((hint) => hint.state === "unlocked"));
+  assert.equal(projection.hints.length, 4);
+
+  projection = engine.applyGuidance("preset.hard").projection;
   assert.equal(projection.hints[0].state, "available");
   assert.equal(projection.hints[1].state, "locked");
+  assert.equal(projection.lede, "確定した事実から次を選びます。");
+  assert.equal(
+    projection.hypotheses[0].summary,
+    "この仮説を確かめます。",
+  );
 
   projection = engine.unlockHint("hyp-service-inventory:1").projection;
   assert.equal(projection.hints[0].state, "unlocked");
   assert.ok(projection.hints[0].body);
   assert.ok(!Object.hasOwn(projection.hints[1], "body"));
   assert.throws(
-    () => engine.unlockHint("hyp-service-inventory:3"),
+    () => engine.unlockHint("hyp-service-inventory:4"),
     (error) => error.code === "hint_order",
   );
 
@@ -258,6 +257,45 @@ test("hypotheses and hints unlock in the accepted order without early bodies", (
     ).selected,
     true,
   );
-  assert.equal(projection.hints[0].title, "見る場所");
+  assert.equal(projection.hints[0].title, "確かめること");
   assert.ok(projection.hints.every((hint) => !Object.hasOwn(hint, "body")));
+
+  projection = engine.applyGuidance("preset.easy").projection;
+  assert.ok(projection.hints.every((hint) => hint.state === "unlocked"));
+  assert.ok(projection.hints.every((hint) => hint.body));
+  assert.ok(
+    projection.facts.some(
+      (fact) => fact.label === "スタッフ用の診断画面",
+    ),
+  );
+});
+
+test("visible location is deterministic when discoveries arrive in another order", () => {
+  const left = new SessionEngine({ sessionId: "same-state" });
+  const right = new SessionEngine({ sessionId: "same-state" });
+  left.applyEvent(eventFor("event-entry-web", "same-state"));
+  left.applyEvent(
+    eventFor(
+      "event-entry-smb",
+      "same-state",
+      "2026-07-27T00:00:01.000Z",
+    ),
+  );
+  right.applyEvent(eventFor("event-entry-smb", "same-state"));
+  right.applyEvent(
+    eventFor(
+      "event-entry-web",
+      "same-state",
+      "2026-07-27T00:00:01.000Z",
+    ),
+  );
+
+  const visible = (projection) => ({
+    ...projection,
+    recentEvents: [],
+  });
+  assert.deepEqual(
+    visible(left.getProjection()),
+    visible(right.getProjection()),
+  );
 });

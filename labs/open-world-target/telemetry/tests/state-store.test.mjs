@@ -24,6 +24,10 @@ test("state store round-trips derived state and blocks forbidden material", asyn
   const serialized = await readFile(statePath, "utf8");
   assert.ok(!serialized.includes("FLAG{"));
   assert.ok(!serialized.includes('"command"'));
+  const stored = JSON.parse(serialized);
+  assert.ok(!Object.hasOwn(stored, "profile"));
+  assert.ok(!Object.hasOwn(stored, "account"));
+  assert.ok(!Object.hasOwn(stored, "userId"));
   const restored = new SessionEngine({
     sessionId: "stored",
     telemetryStatus: "unavailable",

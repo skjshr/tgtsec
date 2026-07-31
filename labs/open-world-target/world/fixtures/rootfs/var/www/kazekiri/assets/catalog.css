@@ -1,0 +1,372 @@
+.inventory-filter {
+  display: grid;
+  padding: 26px;
+  grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(150px, 0.65fr)) auto;
+  align-items: end;
+  gap: 18px;
+  border-top: 4px solid var(--steel);
+  background: #e8e5dc;
+}
+
+.inventory-filter__heading h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.inventory-filter__heading p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.inventory-filter label,
+.form-row {
+  display: grid;
+  gap: 7px;
+}
+
+.inventory-filter label > span,
+.form-row > label {
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.inventory-filter select,
+.contact-form input,
+.contact-form select,
+.contact-form textarea {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid #9fa9a7;
+  border-radius: 2px;
+  color: var(--ink);
+  background: #fff;
+}
+
+.inventory-filter select,
+.contact-form input,
+.contact-form select {
+  padding: 0 12px;
+}
+
+.inventory-filter__actions {
+  display: grid;
+  gap: 2px;
+}
+
+.inventory-filter__actions .text-link {
+  min-height: 34px;
+  justify-content: center;
+}
+
+.result-summary {
+  margin: 34px 0 14px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.result-summary p {
+  margin: 0;
+}
+
+.result-summary strong {
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+}
+
+.inline-state {
+  margin-top: 30px;
+  padding: 36px;
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--steel);
+  background: var(--surface);
+}
+
+.inline-state--error {
+  border-left-color: var(--brand);
+}
+
+.inline-state h2 {
+  margin: 0 0 10px;
+  font-size: 1.6rem;
+}
+
+.inline-state > p:not(.eyebrow) {
+  margin: 0;
+  color: var(--muted);
+}
+
+.inventory-list {
+  border-top: 2px solid var(--ink);
+}
+
+.inventory-card {
+  display: grid;
+  padding: 26px 0;
+  grid-template-columns: minmax(260px, 0.78fr) minmax(0, 1.22fr);
+  gap: clamp(28px, 5vw, 72px);
+  border-bottom: 1px solid var(--line);
+}
+
+.inventory-card__media {
+  min-height: 260px;
+  overflow: hidden;
+  background: #d7d8d2;
+}
+
+.inventory-card__photo {
+  min-height: 260px;
+  transition: transform 280ms ease;
+}
+
+.inventory-card__media:hover .inventory-card__photo {
+  transform: scale(1.018);
+}
+
+.inventory-card__body {
+  align-self: center;
+}
+
+.inventory-card__topline,
+.vehicle-detail__topline {
+  display: flex;
+  margin-bottom: 13px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+}
+
+.inventory-card h2 {
+  margin: 0;
+  font-size: clamp(1.65rem, 2.7vw, 2.45rem);
+  letter-spacing: -0.04em;
+  line-height: 1.2;
+}
+
+.inventory-card h2 a {
+  text-decoration: none;
+}
+
+.inventory-card__body > p {
+  max-width: 45rem;
+  margin: 18px 0 7px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.vehicle-facts,
+.vehicle-specs {
+  display: grid;
+  margin: 22px 0 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-block: 1px solid var(--line);
+}
+
+.vehicle-facts div,
+.vehicle-specs div {
+  padding: 12px 14px;
+  border-right: 1px solid var(--line);
+}
+
+.vehicle-facts div:first-child,
+.vehicle-specs div:first-child {
+  padding-left: 0;
+}
+
+.vehicle-facts div:last-child,
+.vehicle-specs div:last-child {
+  border-right: 0;
+}
+
+.vehicle-facts dt,
+.vehicle-specs dt {
+  color: var(--muted);
+  font-size: 0.66rem;
+}
+
+.vehicle-facts dd,
+.vehicle-specs dd {
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.77rem;
+  font-weight: 700;
+}
+
+.detail-breadcrumb {
+  padding-block: 18px;
+}
+
+.vehicle-detail {
+  border-top: 1px solid var(--line);
+}
+
+.vehicle-detail__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.16fr) minmax(360px, 0.84fr);
+  align-items: stretch;
+  gap: clamp(44px, 7vw, 100px);
+}
+
+.vehicle-detail__media {
+  min-height: 580px;
+  margin-left: calc(var(--page-gutter) * -1);
+}
+
+.vehicle-detail__photo {
+  min-height: 580px;
+}
+
+.vehicle-detail__summary {
+  display: flex;
+  padding-block: 62px;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.vehicle-detail__summary h1 {
+  margin: 0;
+  font-size: clamp(2.7rem, 4.25vw, 3.6rem);
+  letter-spacing: -0.06em;
+  line-height: 1.08;
+}
+
+.vehicle-detail__summary h1 small {
+  display: block;
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: 0.34em;
+  letter-spacing: 0.02em;
+}
+
+.vehicle-detail__lead {
+  margin: 24px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.price-note {
+  margin: 12px 0 20px;
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.availability-note {
+  margin-bottom: 18px;
+  padding: 13px;
+  border-left: 4px solid var(--warning);
+  background: #efe6d7;
+  font-size: 0.74rem;
+}
+
+.vehicle-detail__content {
+  display: grid;
+  padding-block: 88px 100px;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(240px, 0.65fr);
+  align-items: start;
+  gap: clamp(35px, 5vw, 70px);
+}
+
+.content-heading h2 {
+  margin: 0 0 24px;
+  font-size: 1.65rem;
+}
+
+.condition-list {
+  margin: 0;
+  border-top: 2px solid var(--ink);
+}
+
+.condition-list div {
+  padding: 17px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.condition-list dt {
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.condition-list dd {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.77rem;
+}
+
+.work-log {
+  margin: 0;
+  padding: 0;
+  border-top: 2px solid var(--ink);
+  list-style: none;
+}
+
+.work-log li {
+  display: grid;
+  padding: 17px 0;
+  grid-template-columns: 7rem 1fr;
+  gap: 15px;
+  border-bottom: 1px solid var(--line);
+}
+
+.work-log time {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.work-log span {
+  font-size: 0.77rem;
+}
+
+.delivery-note {
+  padding: 24px;
+  border-top: 4px solid var(--brand);
+  background: #e8e5dc;
+}
+
+.delivery-note h2 {
+  margin: 0 0 16px;
+  font-size: 1rem;
+}
+
+.delivery-note ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.76rem;
+}
+
+.delivery-note p {
+  margin: 19px 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.related-stock {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 25px;
+}
+
+.related-stock article > a {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  align-items: center;
+  gap: 22px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.related-stock__photo {
+  min-height: 125px;
+}
+
+.related-stock p {
+  margin: 8px 0 0 212px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+}

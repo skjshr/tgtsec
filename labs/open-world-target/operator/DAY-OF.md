@@ -1,5 +1,8 @@
 # Day-of operation
 
+Kali上のFirefoxが参加者向けの正規画面です。terminalや運営者consoleではなく、Firefoxだけで
+現在の目標、確定した現在地、次の選択肢、選択理由の説明、root到達を確認できることをrelease gateにします。
+
 ## 開始前
 
 標的とKaliの電源を入れる前に次を目視します。
@@ -10,7 +13,7 @@
 - 公開guideを使う場合だけKaliの別Wi-FiまたはVMの別WAN adapterを外向きHTTPS用に使い、
   IPv4/IPv6 forwarding、NAT、Ethernet↔WAN転送を無効にする。
 - Kali VMのUSB Ethernetは専有し、host、bridge、host-onlyと共有しない。
-- 標的はDebian maintenanceでbootし、Windowsやexercise serviceは起動していない。
+- 標的はDebian maintenanceでbootし、exercise serviceは起動していない。
 - 参加者へ「指定標的`10.13.37.10`以外をscanしない」と説明した。
 
 対象ノートのDebianで、mode切替とready preflightの前にlive identityを読みます。
@@ -99,6 +102,16 @@ npm start
 `LAB_PUBLIC_ORIGIN`と一致することを確認します。tokenは表示・転記しません。Debianへ公開guideの
 DNS名、build成果物、server、serviceを置きません。
 
+Kali上のFirefoxでviewer URLを開き、次を実操作します。
+
+- pairing codeを入力し、接続状態がliveになる。
+- Firefoxの開発者tool、page source、storage、network requestのいずれにも
+  `BRIDGE_TARGET_TOKEN`が現れない。
+- targetで許可済み教材eventを1件発生させ、2秒以内にrevision、現在の目標、地図上の現在地が変わる。
+- 利用可能な次の選択肢を一つ選び、説明を開き、再読込後も選択と確定状態が巻き戻らない。
+- Bridgeを一度停止すると最後の確定状態と再接続表示を残し、再起動後に欠落なく追いつく。
+- root event後に完了状態が表示され、未知のflag本文や未解放ヒントがbrowser bundle/APIへ出ない。
+
 完全オフライン演習ではBridge/Vercelを使わず、build済みguideをKali上のloopbackだけで起動します。
 同じ`BRIDGE_TARGET_TOKEN`をserver側だけに保持し、ブラウザへ渡しません。
 
@@ -116,15 +129,14 @@ node apps/lab-guide/server/index.mjs
 
 Kali自身のブラウザで`http://127.0.0.1:8080/?local=1`を開きます。このlocal-only fallbackを
 `0.0.0.0`、Kali Ethernet address、Debian、参加者LANへbindしません。
+公開pairingと同じFirefox確認を行い、現在の目標、次の選択肢、説明、root完了が同じtarget revisionから
+表示されることを記録します。
 
 target側のready preflightでは`open-world-file-watch.service`、dnsmasqがactiveで、
 dnsmasq leaseの専用directory/file権限、exact single-config override、`port=0`、空のrouter/DNS
 optionが正しくなければ失敗します。file watcherは固定allowlist pathのinotify eventを
 固定教材eventへ変換するだけで、raw syscall record、command、任意path、file contentを保存・配信しません。
 watcherまたはtelemetry socketが起動しない場合は自動eventを推測で補完せず、演習を止めます。
-同じpreflightはprofileのWindows PARTUUIDが`/mnt/windows`へ`ntfs3`の
-`ro,nosuid,nodev,noexec`でmountされ、`mnt-windows.mount`がactiveであることも要求します。
-参加者はWindows bonusをこのread-only mountから探します。
 
 active probeは実機証跡であり、自動testの代用にしません。
 
@@ -137,7 +149,7 @@ active probeは実機証跡であり、自動testの代用にしません。
 - Kaliでforwarding、NAT、exercise Ethernet↔WAN転送が有効になった。
 - 想定外portまたは会社LAN/第三者addressへのpacketを観測した。
 - paired guideまたはKali local fallbackと標的状態が一致せず、誤対象の可能性がある。
-- target disk、Windows、EFIへ想定外の書き込みが見えた。
+- target diskまたはEFIへ想定外の書き込みが見えた。
 - root取得後に次の参加者へそのまま渡そうとしている。
 
 ## Maintenanceへ戻す
@@ -153,8 +165,7 @@ sudo open-world-platform mode \
   --apply
 ```
 
-vulnerable、telemetry service/socket、file watcher、DHCP、nmbd、
-`mnt-windows.mount`がすべてinactiveで
+vulnerable、telemetry service/socket、file watcher、DHCP、nmbdがすべてinactiveで
 quarantineになったことを確認します。これは封じ込めと停止のためだけで、exercise後のOSを
 信頼済みmaintenance環境へ戻す操作ではありません。任意のroot payloadが残り得るため、このbootでは
 Wi-Fiや他の外部接続を絶対に有効化せず、そのまま電源を切って信頼済みrecovery mediaからrestoreします。

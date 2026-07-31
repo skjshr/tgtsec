@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+"""Fail closed when build-time checkout or credential state remains."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from pathlib import Path
+from typing import Iterable
+
+
+SECRET_ENV_NAMES = (
+    "CODEX_ACCESS_TOKEN",
+    "GH_TOKEN",
+    "GITHUB_TOKEN",
+    "OPENAI_API_KEY",
+)
+
+PERSISTENT_AUTH_PATHS = (
+    Path(".codex/auth.json"),
+    Path(".codex/history.jsonl"),
+    Path(".codex/sessions"),
+    Path(".config/gh/hosts.yml"),
+    Path(".git-credentials"),
+    Path(".netrc"),
+)
+TRANSIENT_PREFIXES = (
+    "/var/tmp/open-world-codex.",
+    "/var/tmp/open-world-build.",
+)
+
+
+def absolute_path(value: str | Path, label: str) -> Path:
+    path = Path(value)
+    if not path.is_absolute():
+        raise ValueError(f"{label} must be an absolute path")
+    if path == Path(path.anchor):
+        raise ValueError(f"{label} must not be a filesystem root")
+    return path
+
+
+def validate_transient_contract(paths: Iterable[Path]) -> list[Path]:
+    values = list(paths)
+    rendered = [path.as_posix() for path in values]
+    if len(values) != len(TRANSIENT_PREFIXES) or any(
+        sum(value.startswith(prefix) for value in rendered) != 1
+        for prefix in TRANSIENT_PREFIXES
+    ):
+        raise ValueError(
+            "transient paths must contain exactly one temporary Codex home "
+            "and one temporary build root"
+        )
+    return values
+
+
+def inspect(
+    operator_home: Path,
+    transient_paths: Iterable[Path],
+    environment: dict[str, str],
+) -> dict[str, object]:
+    findings: list[dict[str, str]] = []
+
+    for relative in PERSISTENT_AUTH_PATHS:
+        candidate = operator_home / relative
+        if candidate.exists() or candidate.is_symlink():
+            findings.append(
+                {
+                    "code": "persistent_auth_state",
+                    "path": str(candidate),
+                }
+            )
+
+    for candidate in transient_paths:
+        if candidate.exists() or candidate.is_symlink():
+            findings.append(
+                {
+                    "code": "transient_build_state",
+                    "path": str(candidate),
+                }
+            )
+
+    for name in SECRET_ENV_NAMES:
+        if environment.get(name):
+            findings.append(
+                {
+                    "code": "secret_environment_variable",
+                    "name": name,
+                }
+            )
+
+    return {
+        "passed": not findings,
+        "findingCount": len(findings),
+        "findings": findings,
+    }
+
+
+def parser() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(
+        description=(
+            "Verify that Codex, checkout, and secret environment "
+            "state have been removed before sealing the Debian target."
+        )
+    )
+    result.add_argument("--operator-home", required=True)
+    result.add_argument(
+        "--transient-path",
+        action="append",
+        required=True,
+        help="Absolute temporary CODEX_HOME, npm cache, or checkout path.",
+    )
+    return result
+
+
+def main() -> int:
+    args = parser().parse_args()
+    try:
+        operator_home = absolute_path(args.operator_home, "operator home")
+        transient_paths = validate_transient_contract(
+            absolute_path(value, "transient path")
+            for value in args.transient_path
+        )
+    except ValueError as error:
+        print(json.dumps({"passed": False, "error": str(error)}))
+        return 2
+
+    result = inspect(operator_home, transient_paths, dict(os.environ))
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0 if result["passed"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

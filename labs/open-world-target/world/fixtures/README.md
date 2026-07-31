@@ -22,6 +22,10 @@ PAM adapterと固定path inotify watcherもallowlist済みの定数だけをUnix
 破棄する。鍵の所有権正本は`fixture-manifest.json`、runtime手順は
 `telemetry/README.md`に置く。
 
+公開sourceのhandover本文は資格情報placeholderだけを持つ。target bundle構築時に
+sales用資格情報を暗号学的乱数で生成して本文へ差し込み、公開repository、manifest、
+telemetryへ値を出さない。
+
 NFSはv4/TCPだけを使い、export自身を`fsid=0`のpseudo-rootにする。Kali側は
 `sudo mount -t nfs4 -o vers=4,proto=tcp 10.13.37.10:/ /mnt/workshop`
 で直接mountする。Debian trixieではNFSv4-onlyでもkernel認証cacheのため
@@ -52,4 +56,4 @@ maintenanceへ戻る途中で教材用listenerやtimerを残さない。
 だけroot専用の経路flagを読み、file watcherが固定教材eventとして経路到達を記録する。sudo helper
 とSUID helperも、root制御コードを起動する直前に対応する経路flagを読む。
 共通`/root/ROOT.flag`の読み取りを最後の信頼可能な自動イベントとし、それ以後の
-Windows調査は自動検出しない。
+状態は自動検出の対象にしない。

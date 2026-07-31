@@ -1,10 +1,12 @@
+import { randomBytes } from "node:crypto";
 import { chmod, mkdir, open } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { getPrivateFlagAnswer } from "./private-answers.mjs";
-import { validatePrivateAnswers } from "./validate-private-answers.mjs";
+import { validateWorld } from "./validate-world.mjs";
 import { WORLD } from "./world-definition.mjs";
+
+const FLAG_RANDOM_BYTES = 24;
 
 function assertSafeDestination(destinationRoot) {
   if (!path.isAbsolute(destinationRoot)) {
@@ -17,12 +19,21 @@ function assertSafeDestination(destinationRoot) {
   return resolved;
 }
 
-export async function materializeFlags(destinationRoot, { force = false } = {}) {
-  validatePrivateAnswers();
+function generateFlagAnswer() {
+  const random = randomBytes(FLAG_RANDOM_BYTES);
+  return `FLAG{ow_${random.toString("hex")}}`;
+}
+
+export async function materializeFlags(destinationRoot) {
+  validateWorld();
   const resolvedRoot = assertSafeDestination(destinationRoot);
   const written = [];
+  const answers = WORLD.flags.map(() => generateFlagAnswer());
+  if (new Set(answers).size !== answers.length) {
+    throw new Error("flag entropy source generated a duplicate answer");
+  }
 
-  for (const flag of WORLD.flags) {
+  for (const [index, flag] of WORLD.flags.entries()) {
     const destination = path.resolve(resolvedRoot, flag.location);
     const relative = path.relative(resolvedRoot, destination);
     if (
@@ -34,9 +45,9 @@ export async function materializeFlags(destinationRoot, { force = false } = {}) 
     }
 
     await mkdir(path.dirname(destination), { recursive: true });
-    const handle = await open(destination, force ? "w" : "wx", flag.mode);
+    const handle = await open(destination, "wx", flag.mode);
     try {
-      await handle.writeFile(`${getPrivateFlagAnswer(flag.id)}\n`, "utf8");
+      await handle.writeFile(`${answers[index]}\n`, "utf8");
     } finally {
       await handle.close();
     }
@@ -54,13 +65,11 @@ if (invokedPath === import.meta.url) {
   const destinationRoot = process.argv[2];
   if (!destinationRoot) {
     process.stderr.write(
-      "usage: node materialize-flags.mjs /absolute/staging/root [--force]\n",
+      "usage: node materialize-flags.mjs /absolute/new-staging/root\n",
     );
     process.exitCode = 2;
   } else {
-    const written = await materializeFlags(destinationRoot, {
-      force: process.argv.includes("--force"),
-    });
-    process.stdout.write(`materialized ${written.length} training flags\n`);
+    const written = await materializeFlags(destinationRoot);
+    process.stdout.write(`generated ${written.length} optional flags\n`);
   }
 }

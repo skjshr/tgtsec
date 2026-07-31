@@ -10,7 +10,7 @@ or named by the target.
 
 - Do not edit `apps/lab-guide/src`, `apps/lab-guide/cloud`, `apps/lab-guide/api`,
   or Bridge code.
-- Do not weaken recovery, dual-boot, event authentication, or vulnerable-world
+- Do not weaken recovery, dedicated-Debian identity, event authentication, or vulnerable-world
   tests.
 - Do not give Debian a default route, upstream DNS, Wi-Fi, NAT, or forwarding.
 - Do not deploy anything.

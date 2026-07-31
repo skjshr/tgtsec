@@ -3,6 +3,7 @@ const nodes = [
     id: "entrance-web-diagnostics",
     mapId: "map-01",
     kind: "entrance",
+    publicCategory: "Web",
     icon: "browser",
     label: "スタッフ用の診断画面",
     detail: "公開Webの奥に、入力値をOSコマンドへ渡す診断機能がある。",
@@ -13,6 +14,7 @@ const nodes = [
     id: "entrance-smb-handover",
     mapId: "map-02",
     kind: "entrance",
+    publicCategory: "共有",
     icon: "folder",
     label: "引き継ぎ用の共有",
     detail: "匿名で読める共有に、古いバックアップと運用メモが残っている。",
@@ -23,6 +25,7 @@ const nodes = [
     id: "entrance-nfs-workshop",
     mapId: "map-03",
     kind: "entrance",
+    publicCategory: "整備",
     icon: "network",
     label: "整備場のNFS共有",
     detail: "書き込み権限と所有者の対応が、利用者の想定より広い。",
@@ -33,6 +36,7 @@ const nodes = [
     id: "foothold-www-data",
     mapId: "map-04",
     kind: "foothold",
+    publicCategory: "権限獲得",
     icon: "server",
     label: "Webサービスの権限",
     detail: "www-dataとしてDebian内を観察できる状態になった。",
@@ -47,6 +51,7 @@ const nodes = [
     id: "foothold-sales",
     mapId: "map-05",
     kind: "foothold",
+    publicCategory: "権限獲得",
     icon: "user",
     label: "販売担当のログイン",
     detail: "バックアップ由来の訓練用資格情報が別サービスでも使えた。",
@@ -61,6 +66,7 @@ const nodes = [
     id: "foothold-mechanic",
     mapId: "map-06",
     kind: "foothold",
+    publicCategory: "権限獲得",
     icon: "user",
     label: "整備担当のログイン",
     detail: "共有の所有権対応を利用してmechanicとして接続できた。",
@@ -75,6 +81,7 @@ const nodes = [
     id: "clue-sudo-helper",
     mapId: "map-07",
     kind: "root-clue",
+    publicCategory: "権限昇格",
     icon: "file",
     label: "sudo保守コマンドの手掛かり",
     detail: "共同作業者が編集できるhookをrootの保守処理が実行する。",
@@ -85,6 +92,7 @@ const nodes = [
     id: "clue-writable-timer",
     mapId: "map-08",
     kind: "root-clue",
+    publicCategory: "権限昇格",
     icon: "calendar",
     label: "定期処理の手掛かり",
     detail: "rootのtimerが、共同作業者に変更可能なpayloadを呼び出す。",
@@ -95,6 +103,7 @@ const nodes = [
     id: "clue-unsafe-path",
     mapId: "map-09",
     kind: "root-clue",
+    publicCategory: "権限昇格",
     icon: "terminal",
     label: "PATH解決の手掛かり",
     detail: "教材用SUIDヘルパーが実行ファイルを絶対パスで指定していない。",
@@ -105,6 +114,7 @@ const nodes = [
     id: "root-path-sudo",
     mapId: "map-10",
     kind: "root-path",
+    publicCategory: "root経路",
     icon: "terminal",
     label: "sudo保守hook経路",
     detail: "書き換え可能なhookがrootとして実行された。",
@@ -115,6 +125,7 @@ const nodes = [
     id: "root-path-timer",
     mapId: "map-11",
     kind: "root-path",
+    publicCategory: "root経路",
     icon: "calendar",
     label: "定期処理payload経路",
     detail: "書き換え可能なpayloadがroot timerから実行された。",
@@ -125,6 +136,7 @@ const nodes = [
     id: "root-path-suid",
     mapId: "map-12",
     kind: "root-path",
+    publicCategory: "root経路",
     icon: "terminal",
     label: "SUID PATH経路",
     detail: "PATH上の訓練用rendererがroot権限で解決された。",
@@ -135,20 +147,11 @@ const nodes = [
     id: "root-common",
     mapId: "map-13",
     kind: "root",
+    publicCategory: "最終地点",
     icon: "door",
     label: "Debian root",
     detail: "選んだ経路の因果を説明できるroot到達点。",
     flagId: "flag-root-common",
-    unlockHypothesisIds: ["hyp-windows-remnant"],
-  },
-  {
-    id: "windows-remnant",
-    mapId: "map-14",
-    kind: "windows",
-    icon: "folder",
-    label: "Windows側の保管記録",
-    detail: "root到達後だけ調べられる、オフラインの追加flag。",
-    flagId: "flag-windows",
     unlockHypothesisIds: [],
   },
 ];
@@ -172,7 +175,6 @@ const edges = [
   ["root-path-sudo", "root-common"],
   ["root-path-timer", "root-common"],
   ["root-path-suid", "root-common"],
-  ["root-common", "windows-remnant"],
 ].map(([from, to]) => ({ from, to }));
 
 const flags = [
@@ -267,15 +269,6 @@ const flags = [
     location: "root/ROOT.flag",
     mode: 0o400,
   },
-  {
-    id: "flag-windows",
-    nodeId: "windows-remnant",
-    category: "windows",
-    location:
-      "windows-fixture/Users/Public/Documents/KazekiriArchive/WINDOWS.flag",
-    mode: 0o444,
-    manualOnly: true,
-  },
 ];
 
 const hypotheses = [
@@ -286,12 +279,16 @@ const hypotheses = [
     anchorNodeId: null,
     hints: [
       {
-        title: "見る場所",
+        title: "確かめること",
         body: "Kali側の有線IPと、10.13.37.10が応答するTCPサービスを見る。",
       },
       {
         title: "使う道具",
         body: "ip addr、ping、nmapの順で、接続とサービスを分けて確認する。",
+      },
+      {
+        title: "組み立て方",
+        body: "対象IPを固定し、名前解決やping応答に依存せずサービス版を確認する。",
       },
       {
         title: "操作例",
@@ -306,12 +303,16 @@ const hypotheses = [
     anchorNodeId: "entrance-web-diagnostics",
     hints: [
       {
-        title: "見る場所",
+        title: "確かめること",
         body: "診断対象を入力したとき、結果欄へ何が返るかを見る。",
       },
       {
         title: "使う道具",
         body: "まずブラウザで通常入力と区切り記号を含む入力の差を比べる。",
+      },
+      {
+        title: "組み立て方",
+        body: "正常な診断対象の後ろへ区切り記号と、結果を確認できる短いコマンドを続ける。",
       },
       {
         title: "操作例",
@@ -326,12 +327,16 @@ const hypotheses = [
     anchorNodeId: "entrance-smb-handover",
     hints: [
       {
-        title: "見る場所",
+        title: "確かめること",
         body: "handover共有にある引き継ぎ文書とバックアップ一覧を見る。",
       },
       {
         title: "使う道具",
         body: "smbclientで共有一覧を確認し、匿名で読める範囲だけ調べる。",
+      },
+      {
+        title: "組み立て方",
+        body: "対象、共有名、匿名接続の順に指定し、まず一覧だけを確認する。",
       },
       {
         title: "操作例",
@@ -346,12 +351,16 @@ const hypotheses = [
     anchorNodeId: "entrance-nfs-workshop",
     hints: [
       {
-        title: "見る場所",
+        title: "確かめること",
         body: "NFSv4の公開rootと、mount後の所有者・権限・隠しファイルを見る。",
       },
       {
         title: "使う道具",
         body: "NFSv4を直接mountし、ls -laで所有者と書き込み範囲を観察する。",
+      },
+      {
+        title: "組み立て方",
+        body: "sudo mount -t nfs4 -o vers=4,proto=tcp 10.13.37.10:/ <ローカルの空ディレクトリ>",
       },
       {
         title: "操作例",
@@ -366,12 +375,16 @@ const hypotheses = [
     anchorNodeId: "clue-sudo-helper",
     hints: [
       {
-        title: "見る場所",
+        title: "確かめること",
         body: "sudo -lの許可内容と、保守helperが読むhookの所有者・groupを見る。",
       },
       {
         title: "使う道具",
         body: "sudo -l、ls -l、読み取り専用でのスクリプト確認を使う。",
+      },
+      {
+        title: "組み立て方",
+        body: "許可されたコマンドから順に、root処理が後から読む編集可能なファイルまで追う。",
       },
       {
         title: "操作例",
@@ -386,12 +399,16 @@ const hypotheses = [
     anchorNodeId: "clue-writable-timer",
     hints: [
       {
-        title: "見る場所",
+        title: "確かめること",
         body: "open-world-root-timer.timerの次回実行とpayloadのgroup権限を見る。",
       },
       {
         title: "使う道具",
         body: "systemctl list-timers、systemctl cat、ls -lを使う。",
+      },
+      {
+        title: "組み立て方",
+        body: "timerからservice、serviceからpayloadへ順にたどり、実行者と編集者を比較する。",
       },
       {
         title: "操作例",
@@ -406,7 +423,7 @@ const hypotheses = [
     anchorNodeId: "clue-unsafe-path",
     hints: [
       {
-        title: "見る場所",
+        title: "確かめること",
         body: "教材用report helperの権限と、実行時に探すrenderer名を見る。",
       },
       {
@@ -414,28 +431,12 @@ const hypotheses = [
         body: "find、ls -l、stringsを使い、既知CVE探しはしない。",
       },
       {
+        title: "組み立て方",
+        body: "SUID bit、所有者、絶対パスでない実行名を確認し、PATHの探索順と結びつける。",
+      },
+      {
         title: "操作例",
         body: "strings /usr/local/bin/kazekiri-report | grep renderer",
-      },
-    ],
-  },
-  {
-    id: "hyp-windows-remnant",
-    label: "root取得後の追加記録をオフライン領域から探す",
-    summary: "自動検出を信頼せず、見つけたflagだけを手動提出する。",
-    anchorNodeId: "root-common",
-    hints: [
-      {
-        title: "見る場所",
-        body: "Windowsの公開ドキュメントにあるKazekiriArchiveを見る。",
-      },
-      {
-        title: "使う道具",
-        body: "読み取り専用mountとfindを使い、Windows設定は変更しない。",
-      },
-      {
-        title: "操作例",
-        body: "find /mnt/windows/Users/Public/Documents -name '*.flag' -print",
       },
     ],
   },
@@ -548,6 +549,22 @@ const eventRoutes = [
   },
 ];
 
+const routeAchievements = [
+  ["web-sudo", "foothold-www-data", "root-path-sudo"],
+  ["web-timer", "foothold-www-data", "root-path-timer"],
+  ["web-suid", "foothold-www-data", "root-path-suid"],
+  ["smb-sudo", "foothold-sales", "root-path-sudo"],
+  ["smb-timer", "foothold-sales", "root-path-timer"],
+  ["smb-suid", "foothold-sales", "root-path-suid"],
+  ["nfs-sudo", "foothold-mechanic", "root-path-sudo"],
+  ["nfs-timer", "foothold-mechanic", "root-path-timer"],
+  ["nfs-suid", "foothold-mechanic", "root-path-suid"],
+].map(([id, footholdId, rootPathId]) => ({
+  id,
+  footholdId,
+  rootPathId,
+}));
+
 export const WORLD = Object.freeze({
   id: "kazekiri-motors-open-world-v1",
   version: 1,
@@ -571,4 +588,5 @@ export const WORLD = Object.freeze({
   flags,
   hypotheses,
   eventRoutes,
+  routeAchievements,
 });

@@ -28,7 +28,7 @@ def manifest() -> dict[str, Any]:
 def profile() -> dict[str, Any]:
     empty_hash = hashlib.sha256(b"").hexdigest()
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "target": {
             "diskById": "/dev/disk/by-id/test-target-disk",
             "diskSerial": "TEST-SERIAL-001",
@@ -36,7 +36,6 @@ def profile() -> dict[str, Any]:
             "diskSizeBytes": 512_110_190_592,
             "debianPartuuid": "11111111-1111-1111-1111-111111111111",
             "espPartuuid": "22222222-2222-2222-2222-222222222222",
-            "windowsPartuuid": "33333333-3333-3333-3333-333333333333",
         },
         "network": {
             "wiredInterface": "enp1s0",
@@ -55,7 +54,6 @@ def profile() -> dict[str, Any]:
                 "path": "assets/debian-efi.tar",
                 "sha256": empty_hash,
             },
-            "microsoftEfiTreeSha256": empty_hash,
             "bareMetalImage": {
                 "path": "assets/full-disk.img",
                 "sha256": empty_hash,
@@ -85,7 +83,6 @@ def exercise_inventory(
     for unit in ALWAYS_MASKED_UNITS:
         services[unit] = "inactive"
     services["open-world-root-timer.service"] = "inactive"
-    services["mnt-windows.mount"] = "active"
     return {
         "schemaVersion": 1,
         "platformIdentity": platform_identity(),
@@ -107,26 +104,6 @@ def exercise_inventory(
                 "device": "/dev/nvme0n1p1",
                 "mountpoints": ["/boot/efi"],
             },
-            "windows": {
-                "partuuid": profile()["target"]["windowsPartuuid"],
-                "device": "/dev/nvme0n1p2",
-                "mountpoints": ["/mnt/windows"],
-            },
-        },
-        "windowsMount": {
-            "sourceDevice": "/dev/nvme0n1p2",
-            "target": "/mnt/windows",
-            "filesystemType": "ntfs3",
-            "options": [
-                "gid=0",
-                "nodev",
-                "noexec",
-                "nosuid",
-                "ro",
-                "uid=0",
-                "umask=077",
-            ],
-            "partuuid": profile()["target"]["windowsPartuuid"],
         },
         "rootFilesystem": {
             "sourceDevice": "/dev/nvme0n1p3",
@@ -290,14 +267,6 @@ def maintenance_inventory(
     for name in value["services"]:
         value["services"][name] = "inactive"
     value["markers"]["exerciseReady"] = False
-    value["partitions"]["windows"]["mountpoints"] = [None]
-    value["windowsMount"] = {
-        "sourceDevice": None,
-        "target": "/mnt/windows",
-        "filesystemType": None,
-        "options": [],
-        "partuuid": profile()["target"]["windowsPartuuid"],
-    }
     value["network"]["interfaces"][1].update(
         {"up": False, "carrier": False, "addresses": []}
     )
@@ -335,6 +304,7 @@ def recovery_inventory(profile_value: dict[str, Any]) -> dict[str, Any]:
             "diskSerial": target["diskSerial"],
             "diskWwn": target["diskWwn"],
             "diskSizeBytes": target["diskSizeBytes"],
+            "descendantMountpoints": [],
         },
         "partitions": {
             "debian": {
@@ -345,11 +315,6 @@ def recovery_inventory(profile_value: dict[str, Any]) -> dict[str, Any]:
             "esp": {
                 "partuuid": target["espPartuuid"],
                 "device": "/dev/nvme0n1p1",
-                "mountpoints": [None],
-            },
-            "windows": {
-                "partuuid": target["windowsPartuuid"],
-                "device": "/dev/nvme0n1p2",
                 "mountpoints": [None],
             },
         },

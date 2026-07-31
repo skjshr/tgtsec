@@ -68,11 +68,38 @@ class ContractTests(unittest.TestCase):
         validate_manifest(manifest())
         validate_profile(profile())
 
+    def test_manifest_requires_anonymous_public_rebuild_tools(self) -> None:
+        missing_git = manifest()
+        missing_git["packages"].remove("git")
+        with self.assertRaisesRegex(
+            ContractError, "public reconstruction packages"
+        ):
+            validate_manifest(missing_git)
+
+        github_cli = manifest()
+        github_cli["packages"].append("gh")
+        github_cli["packages"].sort()
+        with self.assertRaisesRegex(ContractError, "GitHub CLI is forbidden"):
+            validate_manifest(github_cli)
+
     def test_profile_placeholders_fail_closed(self) -> None:
         incomplete = profile()
         incomplete["target"]["diskSerial"] = "REPLACE_WITH_SERIAL"
         with self.assertRaisesRegex(ContractError, "placeholder"):
             validate_profile(incomplete)
+
+    def test_profile_v2_rejects_legacy_windows_fields(self) -> None:
+        bad_target = profile()
+        bad_target["target"]["windowsPartuuid"] = (
+            "33333333-3333-3333-3333-333333333333"
+        )
+        with self.assertRaisesRegex(ContractError, "windowsPartuuid"):
+            validate_profile(bad_target)
+
+        bad_recovery = profile()
+        bad_recovery["recovery"]["microsoftEfiTreeSha256"] = "0" * 64
+        with self.assertRaisesRegex(ContractError, "microsoftEfiTreeSha256"):
+            validate_profile(bad_recovery)
 
     def test_profile_requires_networkmanager_as_connectivity_owner(self) -> None:
         for unsafe in (
@@ -127,11 +154,6 @@ class ContractTests(unittest.TestCase):
             "esp": {
                 "partuuid": target["espPartuuid"],
                 "device": "/dev/nvme0n1p1",
-                "mountpoints": [None],
-            },
-            "windows": {
-                "partuuid": target["windowsPartuuid"],
-                "device": "/dev/nvme0n1p2",
                 "mountpoints": [None],
             },
         }
@@ -253,7 +275,6 @@ class ContractTests(unittest.TestCase):
             for label, key, device in (
                 ("debian", "debianPartuuid", "/dev/nvme0n1p3"),
                 ("esp", "espPartuuid", "/dev/nvme0n1p1"),
-                ("windows", "windowsPartuuid", "/dev/nvme0n1p2"),
             )
         }
         media_evidence = {
@@ -554,22 +575,9 @@ class RenderTests(unittest.TestCase):
                 tmpfiles,
             )
             self.assertNotIn(139, manifest()["network"]["allowedTcpPorts"])
-            windows_mount = (
-                first / "etc/systemd/system/mnt-windows.mount"
-            ).read_text(encoding="utf-8")
-            self.assertIn(
-                "What=/dev/disk/by-partuuid/"
-                + profile()["target"]["windowsPartuuid"],
-                windows_mount,
+            self.assertFalse(
+                (first / "etc/systemd/system/mnt-windows.mount").exists()
             )
-            self.assertIn(
-                "Options=ro,nosuid,nodev,noexec,uid=0,gid=0,umask=077",
-                windows_mount,
-            )
-            self.assertIn(
-                "PartOf=open-world-vulnerable.target", windows_mount
-            )
-            self.assertNotIn("{{", windows_mount)
 
     def test_render_refuses_nonempty_output(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -692,24 +700,6 @@ class PreflightTests(unittest.TestCase):
                     "port": 53,
                 }
             ),
-            "Windows mounted read-write": lambda value: value[
-                "windowsMount"
-            ].update(
-                {
-                    "options": [
-                        "nodev",
-                        "noexec",
-                        "nosuid",
-                        "rw",
-                    ]
-                }
-            ),
-            "wrong Windows mount source": lambda value: value[
-                "windowsMount"
-            ].update({"sourceDevice": "/dev/sdz9"}),
-            "Windows mount unit inactive": lambda value: value[
-                "services"
-            ].update({"mnt-windows.mount": "inactive"}),
         }
         for label, mutate in mutations.items():
             with self.subTest(label=label):
@@ -877,8 +867,6 @@ class ModeTests(unittest.TestCase):
                 "debian-partuuid",
                 "--esp-partuuid",
                 "esp-partuuid",
-                "--windows-partuuid",
-                "windows-partuuid",
                 "--confirm",
                 "INSTALL PLATFORM /dev/disk/by-id/example",
             ]
@@ -1078,8 +1066,8 @@ class SessionTests(unittest.TestCase):
             marker = root / "state/fresh-state.json"
             marker.parent.mkdir(parents=True)
             marker.write_bytes(fresh_marker_bytes())
-            # Windows cannot unlink a read-only file; exact 0400 enforcement is
-            # covered by the dedicated metadata contract test above.
+            # Some development hosts cannot unlink a read-only file; exact
+            # 0400 enforcement is covered by the metadata contract test above.
             marker.chmod(0o600 if os.name == "nt" else 0o400)
             state = root / "state/telemetry-state.json"
             environment = root / "etc/session.env"
@@ -1296,9 +1284,6 @@ class InstallGuardTests(unittest.TestCase):
                         "mountpoints": ["/"],
                     },
                     "esp": {"partuuid": profile_value["target"]["espPartuuid"]},
-                    "windows": {
-                        "partuuid": profile_value["target"]["windowsPartuuid"]
-                    },
                 },
                 "rootFilesystem": {
                     "sourceDevice": "/dev/nvme0n1p3",
@@ -1312,7 +1297,6 @@ class InstallGuardTests(unittest.TestCase):
                 disk_by_id=profile_value["target"]["diskById"],
                 debian_partuuid=profile_value["target"]["debianPartuuid"],
                 esp_partuuid=profile_value["target"]["espPartuuid"],
-                windows_partuuid=profile_value["target"]["windowsPartuuid"],
                 overlay_sha256=overlay_hash,
                 confirmation=(
                     "INSTALL PLATFORM " + profile_value["target"]["diskById"]
@@ -1443,7 +1427,6 @@ class UnitContractTests(unittest.TestCase):
         required_runtime = {
             "apache2.service",
             "dnsmasq.service",
-            "mnt-windows.mount",
             "nfs-server.service",
             "open-world-file-watch.service",
             "open-world-nfs-watch.service",
@@ -1514,7 +1497,6 @@ class UnitContractTests(unittest.TestCase):
             "dnsmasq.service",
             "nfs-server.service",
             "nmbd.service",
-            "mnt-windows.mount",
             "open-world-nfs-watch.service",
             "open-world-file-watch.service",
             "open-world-root-timer.timer",

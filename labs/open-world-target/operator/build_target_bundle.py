@@ -19,7 +19,10 @@ from open_world_platform.target_bundle import (  # noqa: E402
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Build or verify the deterministic open-world target bundle"
+        description=(
+            "Build or verify the open-world target bundle with fresh "
+            "build-time exercise secrets"
+        )
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
     build = subparsers.add_parser("build")

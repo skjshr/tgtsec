@@ -9,7 +9,6 @@ import {
 import { App } from "./App";
 import { createBrowseClient } from "./browse";
 import { ExplorationMap } from "./components/ExplorationMap";
-import { ManualFlagForm } from "./components/ManualFlagForm";
 import {
   fallbackPositionFor,
   WORLD_POSITIONS,
@@ -128,6 +127,86 @@ describe("Lab guide", () => {
     expect(screen.queryByLabelText("見つけたflag")).not.toBeInTheDocument();
   });
 
+  it("applies guidance to the public state without creating a profile", async () => {
+    const client = createBrowseClient();
+    const easy = await client.getState();
+    expect(easy.hints).toHaveLength(4);
+    expect(easy.hints.every((hint) => hint.state === "unlocked")).toBe(true);
+    expect(
+      easy.graph.nodes.filter((node) => node.state === "undiscovered"),
+    ).toHaveLength(3);
+
+    const hard = await client.applyGuidance("preset.hard");
+    expect(hard?.investigations).toEqual([]);
+    expect(hard?.hints[0].state).toBe("available");
+    expect(
+      hard?.graph.nodes.some((node) => node.state === "undiscovered"),
+    ).toBe(false);
+    expect(hard?.telemetry.message).toBeUndefined();
+    expect(JSON.stringify(hard)).not.toMatch(/profile|account/);
+
+    const custom = await client.applyGuidance("showNextChoices.on");
+    expect(custom?.investigations).toHaveLength(3);
+    expect(custom?.hints[0].state).toBe("unlocked");
+  });
+
+  it("reprojects the live fixture when guidance changes", async () => {
+    const client = createFixtureClient("live");
+    const easy = await client.getState();
+    expect(easy.heading).toBe("風切モータースの業務環境を調べる");
+    expect(easy.facts.map((fact) => fact.label)).toEqual([
+      "スタッフ用の診断画面",
+      "引き継ぎ用の共有",
+      "整備場のNFS共有",
+    ]);
+    expect(easy.graph.nodes.map((node) => node.id)).toEqual([
+      "map-01",
+      "map-02",
+      "map-03",
+      "map-04",
+      "map-05",
+      "map-06",
+    ]);
+    expect(JSON.stringify(easy)).toContain("10.13.37.10");
+    expect(JSON.stringify(easy)).not.toContain("target.local");
+    expect(easy.hints).toHaveLength(4);
+    expect(easy.hints.every((hint) => hint.state === "unlocked")).toBe(true);
+    expect(easy.investigations).toHaveLength(3);
+    expect(
+      easy.graph.nodes.filter((node) => node.state === "undiscovered"),
+    ).toHaveLength(3);
+
+    const hard = await client.applyGuidance("preset.hard");
+    expect(hard?.investigations).toEqual([]);
+    expect(hard?.hints[0].state).toBe("available");
+    expect(
+      hard?.graph.nodes.some((node) => node.state === "undiscovered"),
+    ).toBe(false);
+    expect(hard?.graph.edges).toEqual([]);
+
+    const easyAgain = await client.applyGuidance("preset.easy");
+    expect(easyAgain?.investigations).toHaveLength(3);
+    expect(
+      easyAgain?.hints.every((hint) => hint.state === "unlocked"),
+    ).toBe(true);
+    expect(
+      easyAgain?.graph.nodes.filter(
+        (node) => node.state === "undiscovered",
+      ),
+    ).toHaveLength(3);
+
+    const backup = await client.selectHypothesis("hyp-backup-trust");
+    expect(backup?.objective).toBe(
+      "匿名共有のバックアップを運用上の手掛かりとして読む",
+    );
+    expect(backup?.hints.map((hint) => hint.id)).toEqual([
+      "hyp-backup-trust:1",
+      "hyp-backup-trust:2",
+      "hyp-backup-trust:3",
+      "hyp-backup-trust:4",
+    ]);
+  });
+
   it("traps focus in one requested drawer and returns it to its pull", async () => {
     const user = userEvent.setup();
     render(
@@ -167,8 +246,11 @@ describe("Lab guide", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "標的との接続を確かめる",
+        name: "風切モータースの業務環境を調べる",
       }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("progressbar", { name: "13件中0件を発見" }),
     ).toBeVisible();
     expect(
       screen.getByRole("button", { name: "探索ツールを開く" }),
@@ -177,8 +259,8 @@ describe("Lab guide", () => {
 
     expect(
       await screen.findByRole(
-        "heading",
-        { name: "Webの入口を発見" },
+        "progressbar",
+        { name: "13件中1件を発見" },
         { timeout: 2_000 },
       ),
     ).toBeVisible();
@@ -212,7 +294,7 @@ describe("Lab guide", () => {
     expect(document.documentElement).toHaveAttribute("data-theme", "play");
 
     await user.click(
-      screen.getByRole("button", { name: "状況相談" }),
+      screen.getByRole("button", { name: "次の手順" }),
     );
     await user.click(screen.getByLabelText("メニュー"));
     const reopenedThemeGroup = screen.getByRole("group", {
@@ -254,6 +336,53 @@ describe("Lab guide", () => {
     window.localStorage.removeItem(THEME_STORAGE_KEY);
   });
 
+  it("starts in EASY and changes guidance mid-session without leaving the screen", async () => {
+    const user = userEvent.setup();
+    render(<App client={createFixtureClient("live")} />);
+
+    await user.click(
+      await screen.findByTestId("next-action-map"),
+    );
+    await user.click(screen.getByLabelText("メニュー"));
+    let guidanceGroup = screen.getByRole("group", {
+      name: "難易度とヒント表示",
+    });
+    expect(
+      within(guidanceGroup).getByRole("button", { name: "EASY" }),
+    ).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(
+      within(guidanceGroup).getByRole("button", { name: "HARD" }),
+    );
+    await waitFor(() =>
+      expect(
+        within(guidanceGroup).getByRole("button", { name: "HARD" }),
+      ).toHaveAttribute("aria-pressed", "true"),
+    );
+    expect(
+      screen.getByRole("heading", { name: "次に確かめることを選ぶ" }),
+    ).toBeVisible();
+
+    await user.click(screen.getByLabelText("メニュー"));
+    guidanceGroup = screen.getByRole("group", {
+      name: "難易度とヒント表示",
+    });
+    await user.click(
+      within(guidanceGroup).getByText("表示を細かく選ぶ"),
+    );
+    await user.click(
+      within(guidanceGroup).getByRole("switch", {
+        name: /次の候補/,
+      }),
+    );
+    await waitFor(() => {
+      guidanceGroup = screen.getByRole("group", {
+        name: "難易度とヒント表示",
+      });
+      expect(within(guidanceGroup).getByText("CUSTOM")).toBeVisible();
+    });
+  });
+
   it("maps telemetry edge states onto tentative and known routes", () => {
     const projection = normalizeProjection({
       graph: {
@@ -272,12 +401,12 @@ describe("Lab guide", () => {
   });
 
   it("gives every projected world node a unique fallback position", () => {
-    expect(WORLD_POSITIONS.size).toBe(14);
+    expect(WORLD_POSITIONS.size).toBe(13);
     expect(
       new Set(
         [...WORLD_POSITIONS.values()].map(({ x, y }) => `${x}:${y}`),
       ).size,
-    ).toBe(14);
+    ).toBe(13);
   });
 
   it("keeps a subset on its stable topology rows", () => {
@@ -354,16 +483,32 @@ describe("Lab guide", () => {
     );
   });
 
-  it("exercises all fourteen telemetry map IDs in the success fixture", async () => {
+  it("exercises all thirteen Debian telemetry map IDs in the success fixture", async () => {
     const projection = await createFixtureClient("success").getState();
     expect(projection.graph.nodes.map((node) => node.id)).toEqual(
-      Array.from({ length: 14 }, (_, index) =>
+      Array.from({ length: 13 }, (_, index) =>
         `map-${String(index + 1).padStart(2, "0")}`,
       ),
     );
     expect(
       projection.graph.nodes.every((node) => node.position === undefined),
     ).toBe(true);
+  });
+
+  it("shows only the route unlocked by the current completed session", async () => {
+    render(<App client={createFixtureClient("success")} />);
+
+    const achievement = await screen.findByRole("region", {
+      name: "経路実績を解除",
+    });
+    expect(
+      within(achievement).getByText("Web診断 × sudo保守hook"),
+    ).toBeVisible();
+    expect(within(achievement).getByText(/ROUTE UNLOCKED/)).toBeVisible();
+    expect(screen.queryByText("整備場NFS × SUID PATH")).not.toBeInTheDocument();
+    expect(JSON.stringify(await createFixtureClient("success").getState())).not.toMatch(
+      /profile|account/,
+    );
   });
 
   it("publishes a live discovery without reloading the client", async () => {
@@ -374,18 +519,18 @@ describe("Lab guide", () => {
       const listener = vi.fn();
       const unsubscribe = client.subscribe(listener, vi.fn());
 
-      expect(initial.heading).toBe("標的との接続を確かめる");
+      expect(initial.heading).toBe("風切モータースの業務環境を調べる");
       expect(initial.facts).toHaveLength(0);
 
       await vi.advanceTimersByTimeAsync(900);
 
       expect(listener).toHaveBeenCalledTimes(1);
       expect(listener.mock.calls[0][0]).toMatchObject({
-        heading: "Webの入口を発見",
-        progress: { discovered: 1, total: 14 },
+        heading: "風切モータースの業務環境を調べる",
+        progress: { discovered: 1, total: 13 },
       });
       expect(listener.mock.calls[0][0].facts[0].label).toBe(
-        "Webサイトが見える",
+        "スタッフ用の診断画面",
       );
       unsubscribe();
     } finally {
@@ -399,11 +544,11 @@ describe("Lab guide", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "中古バイク店の業務サーバを調べる",
+        name: "風切モータースの業務環境を調べる",
       }),
     ).toBeVisible();
     expect(
-      screen.getByRole("progressbar", { name: "14件中3件を発見" }),
+      screen.getByRole("progressbar", { name: "13件中3件を発見" }),
     ).toBeVisible();
     expect(screen.queryByLabelText("見つけたflag")).not.toBeInTheDocument();
 
@@ -414,7 +559,7 @@ describe("Lab guide", () => {
     ).toBeVisible();
     expect(
       screen.getByRole("button", {
-        name: /スタッフ向け画面の入力を試す/,
+        name: /まず、直結先で応答するサービスを整理する/,
       }),
     ).toHaveAttribute("aria-pressed", "true");
 
@@ -431,12 +576,14 @@ describe("Lab guide", () => {
     await user.click(await screen.findByTestId("next-action-map"));
     await user.click(
       screen.getByRole("button", {
-        name: /公開ファイルに別の手掛かりがないか探す/,
+        name: /匿名共有のバックアップを運用上の手掛かりとして読む/,
       }),
     );
 
     expect(
-      screen.getByText("公開範囲に置かれたファイル名と更新時刻を見比べます。"),
+      screen.getByText(
+        "ファイル名だけでなく、いつ・何のために残されたかを確認する。",
+      ),
     ).toBeVisible();
 
     await user.click(
@@ -448,103 +595,46 @@ describe("Lab guide", () => {
     ).toBeInTheDocument();
   });
 
-  it("unlocks hints in order", async () => {
+  it("shows the four EASY explanation layers", async () => {
     const user = userEvent.setup();
     render(<App client={createFixtureClient("live")} />);
 
     await user.click(await screen.findByTestId("next-action-map"));
     await user.click(
-      screen.getByRole("button", { name: "相談ツールを開く" }),
+      screen.getByRole("button", { name: "手掛かりを開く" }),
     );
     const hintDialog = screen.getByRole("dialog", {
-      name: "相談ツール",
+      name: "手掛かり",
     });
     expect(
       within(hintDialog).getByText(
-        "入力した文字と、画面に返る結果の関係を見ます。",
+        "Kali側の有線IPと、10.13.37.10が応答するTCPサービスを見る。",
       ),
     ).toBeVisible();
-    const operationHint = within(hintDialog).getByRole("button", {
-      name: /^操作例/,
-    });
-    expect(operationHint).toBeDisabled();
-    expect(
-      within(hintDialog).getByText("「使う道具」を確認すると開けます"),
-    ).toBeVisible();
-
     await user.click(
       within(hintDialog).getByRole("button", { name: /^使う道具/ }),
     );
     expect(
       await within(hintDialog).findByText(
-        "ブラウザの開発者ツールで、送信された項目を確認します。",
+        "ip addr、ping、nmapの順で、接続とサービスを分けて確認する。",
       ),
     ).toBeVisible();
 
-    expect(operationHint).toBeEnabled();
-    await user.click(operationHint);
+    await user.click(
+      within(hintDialog).getByRole("button", { name: /^組み立て方/ }),
+    );
     expect(
       await within(hintDialog).findByText(
-        "無害な入力を一つずつ変え、返り方の差を記録します。",
+        "対象IPを固定し、名前解決やping応答に依存せずサービス版を確認する。",
       ),
     ).toBeVisible();
-  });
-
-  it("offers manual flag submission only when telemetry is unavailable", async () => {
-    const user = userEvent.setup();
-    render(<App client={createFixtureClient("unavailable")} />);
 
     await user.click(
-      await screen.findByRole("button", { name: "探索ツールを開く" }),
-    );
-    const investigationDialog = screen.getByRole("dialog", {
-      name: "探索ツール",
-    });
-    await user.click(
-      within(investigationDialog).getByRole("button", {
-        name: /^次の調査\d+件$/,
-      }),
-    );
-    const input = within(investigationDialog).getByLabelText("見つけたflag");
-    await user.type(input, "manual-proof");
-    await user.click(
-      within(investigationDialog).getByRole("button", { name: "提出" }),
-    );
-
-    expect(
-      await within(input.closest("form")!).findByText(
-        "提出を受け付けました。状態をもう一度確認します。",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getAllByText(
-        "提出を受け付けました。状態をもう一度確認します。",
-      ),
-    ).toHaveLength(1);
-    await waitFor(() => expect(input).toHaveValue(""));
-  });
-
-  it("always offers the post-root Windows bonus flag manually", async () => {
-    const user = userEvent.setup();
-    render(<App client={createFixtureClient("success")} />);
-
-    await user.click(
-      await screen.findByRole("button", { name: "探索ツールを開く" }),
-    );
-    const investigationDialog = screen.getByRole("dialog", {
-      name: "探索ツール",
-    });
-    await user.click(
-      within(investigationDialog).getByRole("button", {
-        name: /^次の調査\d+件$/,
-      }),
+      within(hintDialog).getByRole("button", { name: /^操作例/ }),
     );
     expect(
-      within(investigationDialog).getByLabelText("Windowsで見つけたflag"),
-    ).toBeVisible();
-    expect(
-      within(investigationDialog).getByText(
-        "root取得後のWindows追加flagは手動で確認します。",
+      await within(hintDialog).findByText(
+        "nmap -sV -Pn 10.13.37.10",
       ),
     ).toBeVisible();
   });
@@ -553,14 +643,14 @@ describe("Lab guide", () => {
     const user = userEvent.setup();
     render(<App client={createFixtureClient("live")} />);
     await screen.findByRole("heading", {
-      name: "中古バイク店の業務サーバを調べる",
+      name: "風切モータースの業務環境を調べる",
     });
 
     await user.click(screen.getByLabelText("メニュー"));
-    const endSession = screen.getByRole("button", { name: "演習を終了" });
+    const endSession = screen.getByRole("button", { name: "表示を終了" });
     await user.click(endSession);
     expect(
-      screen.getByRole("dialog", { name: "演習を終了しますか？" }),
+      screen.getByRole("dialog", { name: "調査の表示を終了しますか？" }),
     ).toBeVisible();
     expect(
       screen.getByRole("button", { name: "探索を続ける" }),
@@ -578,10 +668,10 @@ describe("Lab guide", () => {
     expect(screen.getByLabelText("メニュー")).toHaveFocus();
 
     await user.click(screen.getByLabelText("メニュー"));
-    await user.click(screen.getByRole("button", { name: "演習を終了" }));
+    await user.click(screen.getByRole("button", { name: "表示を終了" }));
     await user.click(screen.getByRole("button", { name: "終了する" }));
     expect(
-      screen.getByRole("heading", { name: "演習の表示を終了しました" }),
+      screen.getByRole("heading", { name: "調査の表示を終了しました" }),
     ).toBeVisible();
   });
 
@@ -618,15 +708,12 @@ describe("Lab guide", () => {
       },
       selectHypothesis: async () => undefined,
       unlockHint: async () => undefined,
-      submitFlag: async () => ({
-        accepted: false,
-        message: "not used",
-      }),
+      applyGuidance: async () => undefined,
     };
 
     render(<App client={client} />);
     await screen.findByRole("heading", {
-      name: "中古バイク店の業務サーバを調べる",
+      name: "風切モータースの業務環境を調べる",
     });
     await waitFor(() => expect(publish).toBeTypeOf("function"));
     await user.click(
@@ -635,7 +722,9 @@ describe("Lab guide", () => {
     const factsDialog = screen.getByRole("dialog", {
       name: "探索ツール",
     });
-    expect(within(factsDialog).getByText("Webサイトが見える")).toBeVisible();
+    expect(
+      within(factsDialog).getByText("スタッフ用の診断画面"),
+    ).toBeVisible();
 
     const newer = structuredClone(initial);
     newer.revision = initial.revision + 2;
@@ -678,7 +767,6 @@ describe("Lab guide", () => {
       pendingAction: null,
       onRefresh: () => undefined,
       onOpenConsultation: () => undefined,
-      onSubmitFlag: async () => undefined,
       experience: "live" as const,
       pairingPending: false,
       onPairSession: async () => true,
@@ -688,7 +776,7 @@ describe("Lab guide", () => {
     );
 
     const fileNode = screen
-      .getAllByRole("button", { name: /ファイル置き場/ })
+      .getAllByRole("button", { name: /引き継ぎ用の共有/ })
       .find((button) => button.hasAttribute("aria-pressed"))!;
     await user.click(fileNode);
     expect(fileNode).toHaveAttribute("aria-pressed", "true");
@@ -698,16 +786,16 @@ describe("Lab guide", () => {
     rerender(<ExplorationMap projection={stillVisible} {...sharedProps} />);
     expect(
       screen
-        .getAllByRole("button", { name: /ファイル置き場/ })
+        .getAllByRole("button", { name: /引き継ぎ用の共有/ })
         .find((button) => button.hasAttribute("aria-pressed")),
     ).toHaveAttribute("aria-pressed", "true");
 
     const removedSelection = structuredClone(stillVisible);
     removedSelection.revision += 1;
     removedSelection.graph.nodes = removedSelection.graph.nodes.map((node) =>
-      node.id === "file-drop"
-        ? { ...node, state: "undiscovered", label: "未発見" }
-        : node.id === "admin"
+      node.id === "map-02"
+        ? { ...node, state: "undiscovered", label: "共有" }
+        : node.id === "map-03"
           ? { ...node, state: "selected" }
           : { ...node, state: node.state === "selected" ? "discovered" : node.state },
     );
@@ -717,7 +805,7 @@ describe("Lab guide", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: /Linux管理者/ }),
+        screen.getByRole("button", { name: /整備場のNFS共有/ }),
       ).toHaveAttribute("aria-pressed", "true"),
     );
   });
@@ -731,7 +819,6 @@ describe("Lab guide", () => {
       onRefresh: () => undefined,
       onSelectHypothesis: async () => true,
       onUnlockHint: async () => true,
-      onSubmitFlag: async () => undefined,
       onBackToMap: () => undefined,
     };
     const { rerender } = render(
@@ -742,7 +829,7 @@ describe("Lab guide", () => {
     );
 
     const userChoice = screen.getByRole("button", {
-      name: /公開ファイルに別の手掛かりがないか探す/,
+      name: /匿名共有のバックアップを運用上の手掛かりとして読む/,
     });
     await user.click(userChoice);
 
@@ -756,10 +843,10 @@ describe("Lab guide", () => {
     const removedChoice = structuredClone(refreshed);
     removedChoice.revision += 1;
     removedChoice.hypotheses = removedChoice.hypotheses
-      .filter((hypothesis) => hypothesis.id !== "hypothesis-public-files")
+      .filter((hypothesis) => hypothesis.id !== "hyp-backup-trust")
       .map((hypothesis) => ({
         ...hypothesis,
-        selected: hypothesis.id === "hypothesis-login",
+        selected: hypothesis.id === "hyp-nfs-ownership",
       }));
     rerender(
       <SituationConsultation projection={removedChoice} {...sharedProps} />,
@@ -767,7 +854,7 @@ describe("Lab guide", () => {
     await waitFor(() =>
       expect(
         screen.getByRole("button", {
-          name: /ログイン用の情報が残っていないか調べる/,
+          name: /NFS上の所有者と書き込み可能範囲を確かめる/,
         }),
       ).toHaveAttribute("aria-pressed", "true"),
     );
@@ -775,55 +862,19 @@ describe("Lab guide", () => {
     rerender(
       <SituationConsultation
         projection={removedChoice}
-        preferredHypothesisId="hypothesis-input"
+        preferredHypothesisId="hyp-web-input-boundary"
         {...sharedProps}
       />,
     );
     await waitFor(() =>
       expect(
         screen.getByRole("button", {
-          name: /スタッフ向け画面の入力を試す/,
+          name: /診断入力がどこまでOSへ渡るか確かめる/,
         }),
       ).toHaveAttribute("aria-pressed", "true"),
     );
   });
 
-  it("shows rejected and accepted manual flag results beside the form", async () => {
-    const user = userEvent.setup();
-    const submit = vi
-      .fn()
-      .mockResolvedValueOnce({
-        accepted: false,
-        message: "flagを確認できませんでした。",
-      })
-      .mockResolvedValueOnce({
-        accepted: true,
-        message: "flagを確認しました。",
-      });
-    render(
-      <ManualFlagForm
-        pending={false}
-        onSubmit={submit}
-        mode="fallback"
-      />,
-    );
-
-    const input = screen.getByLabelText("見つけたflag");
-    await user.type(input, "LAB-wrong");
-    await user.click(screen.getByRole("button", { name: "提出" }));
-    expect(
-      await screen.findByText("flagを確認できませんでした。"),
-    ).toBeVisible();
-    expect(input).toHaveValue("LAB-wrong");
-    expect(input).toHaveAttribute("aria-invalid", "true");
-
-    await user.clear(input);
-    await user.type(input, "LAB-correct");
-    await user.click(screen.getByRole("button", { name: "提出" }));
-    expect(await screen.findByText("flagを確認しました。")).toBeVisible();
-    await waitFor(() => expect(input).toHaveValue(""));
-    expect(submit).toHaveBeenCalledTimes(2);
-  });
 });
 
 describe("projection boundary", () => {
@@ -852,6 +903,7 @@ describe("projection boundary", () => {
           {
             id: "map-opaque",
             state: "undiscovered",
+            category: "権限昇格",
             label: "secret route name",
             detail: "secret route detail",
           },
@@ -867,15 +919,41 @@ describe("projection boundary", () => {
           body: "secret locked hint",
         },
       ],
-      progress: { discovered: 0, total: 14 },
+      progress: { discovered: 0, total: 13 },
       telemetry: { status: "live" },
     });
 
     expect(projection.graph.nodes[0]).toMatchObject({
       id: "map-opaque",
-      label: "未発見",
+      label: "権限昇格",
+      category: "権限昇格",
       detail: undefined,
     });
+    expect(JSON.stringify(projection.graph.nodes[0])).not.toContain(
+      "secret route",
+    );
     expect(projection.hints[0].body).toBeUndefined();
+  });
+
+  it("does not accept an arbitrary hidden label as a public category", () => {
+    const projection = normalizeProjection({
+      graph: {
+        nodes: [
+          {
+            id: "map-hidden-category",
+            state: "undiscovered",
+            category: "秘密のroot経路名",
+            label: "別の秘密",
+          },
+        ],
+        edges: [],
+      },
+    });
+
+    expect(projection.graph.nodes[0]).toMatchObject({
+      label: "未発見",
+      category: undefined,
+    });
+    expect(JSON.stringify(projection.graph.nodes[0])).not.toContain("秘密");
   });
 });

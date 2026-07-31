@@ -39,14 +39,14 @@ npm start
 
 ## 境界
 
-- 標的への state、SSE、hypothesis、hint の全リクエストで
+- 標的への state、SSE、hypothesis、hint、guidance の全リクエストで
   `Authorization: Bearer <BRIDGE_TARGET_TOKEN>` を送信。
 - 標的から取得するのは `/api/session/state` と `/api/session/events` の公開 projection。
 - cloud へ送るのは検証済みの full projection、action acknowledgement、heartbeat。
-- cloud から受け付ける操作は `selectHypothesis` と `unlockHint` のみ。
+- cloud から受け付ける操作は `selectHypothesis`、`unlockHint`、allowlist済みの
+  `setGuidance` のみ。
 - 操作先は ID を検証して組み立てる固定 API path のみ。
-- Bridge は標的にローカル flag API が存在しても呼び出しません。flag 送信、任意
-  path、資格情報の中継、コマンド実行は扱いません。
+- 手動flag送信、任意path、資格情報の中継、コマンド実行は扱いません。
 - revision の巻き戻りと、同一 revision で内容が変わる snapshot は拒否します。
 - target SSE、cloud snapshot、action pollの一時障害は上限付き指数backoffで再試行します。
 

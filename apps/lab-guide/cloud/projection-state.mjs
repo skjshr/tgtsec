@@ -37,7 +37,16 @@ export function waitingProjection(targetSessionId) {
     investigations: [],
     graph: { nodes: [], edges: [] },
     hints: [],
-    progress: { discovered: 0, total: 14 },
+    guidance: {
+      showNextChoices: true,
+      showToolNames: true,
+      showCommandSyntax: true,
+      showCommandExamples: true,
+      explainNoProgress: true,
+      explanationDepth: "full",
+      silhouetteDepth: 1,
+    },
+    progress: { discovered: 0, total: 13 },
     recentEvents: [],
     telemetry: {
       status: "waiting",

@@ -9,6 +9,7 @@ import {
   pairLabSession,
   resolveLabClient,
 } from "./api";
+import { EASY_GUIDANCE } from "./guidance";
 import { AppHeader } from "./components/AppHeader";
 import { EndSessionDialog } from "./components/EndSessionDialog";
 import { ExplorationMap } from "./components/ExplorationMap";
@@ -126,12 +127,17 @@ export function App({
         experience={experience}
         theme={theme}
         onThemeChange={setTheme}
+        guidance={session.projection?.guidance ?? EASY_GUIDANCE}
+        guidancePending={session.pendingAction === "guidance"}
+        onGuidanceChange={(commandId) =>
+          void session.applyGuidance(commandId)
+        }
       />
 
       {sessionEnded ? (
         <main className="session-ended-state">
           <IconCircleCheck aria-hidden="true" />
-          <h1>演習の表示を終了しました</h1>
+          <h1>調査の表示を終了しました</h1>
           <p>
             標的ノートはまだ初期化されていません。機材には触れず、運営者へ復旧を依頼してください。
           </p>
@@ -144,7 +150,6 @@ export function App({
             pendingAction={session.pendingAction}
             onRefresh={() => void session.refresh()}
             onOpenConsultation={openConsultation}
-            onSubmitFlag={session.submitFlag}
             experience={experience}
             pairingPending={pairingPending}
             pairingError={pairingError}
@@ -159,7 +164,6 @@ export function App({
             onRefresh={() => void session.refresh()}
             onSelectHypothesis={session.selectHypothesis}
             onUnlockHint={session.unlockHint}
-            onSubmitFlag={session.submitFlag}
             onBackToMap={() => setActiveScreen("map")}
           />
         )
@@ -169,7 +173,7 @@ export function App({
           clientResolutionFailed ? (
             <>
               <IconRefresh aria-hidden="true" />
-              <h1>学習サイトに接続できません</h1>
+              <h1>状態を確認できません</h1>
               <p>有線接続を確認して、状態をもう一度読み込んでください。</p>
               <button
                 type="button"

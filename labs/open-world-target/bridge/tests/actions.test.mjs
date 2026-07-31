@@ -25,12 +25,29 @@ test("allowlisted actions map only to fixed target paths", () => {
     ),
     "/api/session/hints/hyp-service-inventory%3A1/unlock",
   );
+  assert.equal(
+    targetPathForAction(
+      action({
+        id: "action-003",
+        type: "setGuidance",
+        targetId: "preset.hard",
+      }),
+    ),
+    "/api/session/guidance/preset.hard/apply",
+  );
 });
 
 test("manual flags, arbitrary paths, and extra action fields are rejected", () => {
   assert.throws(
     () => validateAction(action({ type: "submitFlag" })),
     /not allowed/,
+  );
+  assert.throws(
+    () =>
+      validateAction(
+        action({ type: "setGuidance", targetId: "arbitrary.setting" }),
+      ),
+    /guidance command is not allowed/,
   );
   assert.throws(
     () => validateAction({ ...action(), command: "id" }),

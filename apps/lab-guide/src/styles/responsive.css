@@ -422,10 +422,6 @@
     min-height: 0;
   }
 
-  .manual-flag-controls {
-    grid-template-columns: 1fr;
-  }
-
   .end-session-dialog {
     padding: 30px 20px 22px;
   }

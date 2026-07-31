@@ -209,20 +209,16 @@ export function createLabHttpServer({ engine, bridgeToken }) {
         return;
       }
 
-      if (
-        request.method === "POST" &&
-        pathName === "/api/session/flags/submit"
-      ) {
-        const body = await readJsonBody(request);
-        assertExactKeys(body, ["flag"]);
-        const result = engine.submitManualFlag(body.flag);
-        writeJson(response, 200, {
-          accepted: result.accepted,
-          message: result.accepted
-            ? "flagを確認しました。"
-            : "flagを確認できませんでした。入力を見直してください。",
-          state: result.projection,
-        });
+      const guidanceMatch = pathName.match(
+        /^\/api\/session\/guidance\/([^/]+)\/apply$/,
+      );
+      if (request.method === "POST" && guidanceMatch) {
+        const body = await readJsonBody(request, { allowEmpty: true });
+        assertExactKeys(body, []);
+        const result = engine.applyGuidance(
+          decodePathId(guidanceMatch[1]),
+        );
+        writeJson(response, 200, result.projection);
         return;
       }
 

@@ -74,6 +74,16 @@ describe("cloud guide action queue", () => {
     assert.equal(response.status, 409);
     assert.equal((await response.json()).error.code, "action_unavailable");
 
+    response = await call(
+      harness,
+      "/api/session/guidance/preset.hard/apply",
+      {
+        method: "POST",
+        headers: { cookie: paired.cookie },
+      },
+    );
+    assert.equal(response.status, 202);
+
     response = await call(harness, "/api/session/flags/submit", {
       method: "POST",
       headers: { cookie: paired.cookie },
@@ -87,10 +97,10 @@ describe("cloud guide action queue", () => {
       "actions",
       "pollAfterMs",
     ]);
-    assert.equal(pending.body.actions.length, 2);
+    assert.equal(pending.body.actions.length, 3);
     assert.deepEqual(
       pending.body.actions.map((action) => action.type).sort(),
-      ["selectHypothesis", "unlockHint"],
+      ["selectHypothesis", "setGuidance", "unlockHint"],
     );
     for (const action of pending.body.actions) {
       assert.deepEqual(Object.keys(action).sort(), [
@@ -133,9 +143,30 @@ describe("cloud guide action queue", () => {
       },
     );
     assert.equal(response.status, 409);
+
+    response = await call(
+      harness,
+      "/api/session/guidance/arbitrary.setting/apply",
+      {
+        method: "POST",
+        headers: { cookie: paired.cookie },
+      },
+    );
+    assert.equal(response.status, 409);
     assert.equal((await response.json()).error.code, "state_not_ready");
 
     assert.equal((await upload(harness, created.body, projection())).status, 204);
+    response = await call(
+      harness,
+      "/api/session/guidance/arbitrary.setting/apply",
+      {
+        method: "POST",
+        headers: { cookie: paired.cookie },
+      },
+    );
+    assert.equal(response.status, 409);
+    assert.equal((await response.json()).error.code, "action_unavailable");
+
     response = await call(
       harness,
       "/api/session/hypotheses/not-present/select",

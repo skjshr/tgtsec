@@ -32,33 +32,41 @@ root source、tagなし、不正tag、余分なkeyは拒否する。その後
 
 生コマンド、HTTP parameter、資格情報、鍵、tag、flag内容、ファイル内容、
 任意ログはstate/projectionへ保存しない。同じイベントおよび同じ状態への
-別イベントはidempotentである。`/root/ROOT.flag`の固定inotify検出を最後の
-信頼可能な自動イベントとし、Windows追加flagは手動だけで扱う。
-runtimeは`world/flag-verifiers.mjs`の一方向digestだけを読み、平文を持つ
-`private-answers.mjs`はbuild専用としてDebian bundleから除外する。全flagは
-128-bit以上、Windows flagは192-bitのランダムsuffixを持ち、target上のdigestから
-現実的に逆算できない。
+別イベントはidempotentである。root経路の固定成功イベントを受けた時点で
+`root-common`も同じrevisionへ確定し、flagを読まなくても完了する。13個のDebian
+flagは任意の寄り道であり、収集数そのものを地図、経路判定、root完了の条件に
+しない。平文を持つ
+公開sourceとDebian runtime codeは固定flag本文、verifier、seedを持たない。flag本文は
+target bundleのstaging中に生成され、宣言済みflag fileへだけ置く。進行は本文照合ではなく
+固定eventで判定する。
 
 senderは接続から応答完了まで1.5秒の絶対deadlineを持ち、daemonがaccept後に
 沈黙しても非zeroで終了する。daemon側も各接続を1.5秒で閉じ、同時接続数を64へ
 制限する。timeout、oversize、不正JSONを含め、payloadや鍵をログへ出さない。
 
 公開wire shapeは`api-contract.json`を正本とする。未発見nodeはopaqueな
-`map-*` IDと`undiscovered`だけを返し、label、detail、hint body、flag ID、
-flag正解を返さない。SSEは差分ではなく毎回完全なsanitized projectionを送り、
+`map-*` ID、`undiscovered`、公開カテゴリだけを返し、label、detail、flag ID、
+flag正解を返さない。hint bodyは参加者が選んだguidance設定で開いた段階だけを返す。
+SSEは差分ではなく毎回完全なsanitized projectionを送り、
 切断時は`GET /api/session/state`へfallbackできる。
 
-HTTPのstate、SSE、固定hypothesis/hint操作、local manual flag提出はすべて
+HTTPのstate、SSE、固定hypothesis/hint/guidance操作はすべて
 `Authorization: Bearer`を要求する。tokenはfresh exercise開始時に32 random bytesから生成し、
 `/etc/examserver-open-world/session.env`の`TELEMETRY_BRIDGE_TOKEN`へ
 `root:lab-telemetry 0640`でsession IDと一緒にatomic保存する。Kaliでは同じ値を
 `BRIDGE_TARGET_TOKEN`としてBridgeまたはlocal-only fallback serverへ渡す。tokenをURL、browser、
 bundle、plan、log、証跡へ出さない。欠落・不一致はtoken本文を返さず401にする。
 
-Cloud Bridgeが読むのはstate/eventsだけで、cloudから戻せる操作は固定IDのhypothesis選択とhint解除だけ
-である。flag文字列はBridge/cloudを通さない。manual flag routeは完全オフライン時のKali
-loopback fallback専用で、同じBearer境界の内側に残す。`GET /healthz`だけは状態を含まないliveness
-応答としてBearerなしで利用できる。
+Cloud Bridgeが読むのはstate/eventsだけで、cloudから戻せる操作は固定IDの
+hypothesis選択、hint解除、guidance変更だけである。flag文字列は
+Bridge/cloudを通さない。`GET /healthz`だけは状態を含まないliveness応答として
+Bearerなしで利用できる。
+
+9経路の完了IDは、最後に自動検出したfootholdとroot経路成功イベントから決める。
+現行の固定イベントは生コマンドや任意のprocess情報を収集しないため、複数footholdの
+shellを同時に保持した場合にroot操作を行った実UIDまで暗号学的に証明するものではない。
+一人・一経路のsessionでは正規判定として使い、実機完成判定では各root helperが
+実UIDまたはpayload作成者を固定evidence codeへ結び付けられることを別途確認する。
 
 ## Event key provisioning
 
@@ -83,7 +91,7 @@ key directoryはlistingを許さず、既知pathのtraverseだけを許す。`ww
 読める。鍵は引数、環境変数、ログ、stateへ入れない。pathを変える試験環境だけ
 `LAB_EVENT_LOW_KEY_FILE`と`LAB_EVENT_ROOT_KEY_FILE`を使う。
 
-## Automatic detector fallback
+## Automatic detector status
 
 daemonとHTTP APIが生きているが、PAM/inotify等の自動detectorを信用できない場合、
 運営者はroot所有・mode `0750`で配置したhelperから状態を切り替える。
@@ -93,11 +101,10 @@ sudo /usr/local/sbin/open-world-telemetry-status unavailable
 sudo /usr/local/sbin/open-world-telemetry-status live
 ```
 
-helperはmain processへそれぞれ`SIGUSR1`/`SIGUSR2`を送り、SSEとstate APIを保った
-まま手動flag fallbackを開閉する。`unavailable`中もwire認証は行うが、自動eventは
-stateへ適用せず、手動提出だけを正本にする。`live`へ戻した後の新しい自動event
-から適用を再開する。これはdaemon停止時のfallbackではない。daemonが停止すれば
-同じAPIの手動提出も使えないため、operatorはserviceを復旧する。
+helperはmain processへそれぞれ`SIGUSR1`/`SIGUSR2`を送り、SSEと最後の確定状態を
+保つ。`unavailable`中もwire認証は行うが、自動eventはstateへ適用しない。
+`live`へ戻した後の新しい自動eventから適用を再開する。検出不能時にflag提出で
+進行を代替せず、operatorがdetectorを復旧する。
 
 NFS入口は`open-world-nfs-watch.service`が親directoryのLinux `IN_ACCESS`を監視する。
 watcherはsystemdへREADYを返すまでNFSより先に待たれ、署名eventを配信できなければ

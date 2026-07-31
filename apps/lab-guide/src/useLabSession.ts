@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   ConnectionStatus,
-  FlagSubmissionResult,
   LabClient,
   LabProjection,
 } from "./types";
@@ -14,7 +13,7 @@ interface LabSessionState {
   refresh: () => Promise<void>;
   selectHypothesis: (id: string) => Promise<boolean>;
   unlockHint: (id: string) => Promise<boolean>;
-  submitFlag: (flag: string) => Promise<FlagSubmissionResult | undefined>;
+  applyGuidance: (commandId: string) => Promise<boolean>;
   clearAnnouncement: () => void;
 }
 
@@ -22,8 +21,8 @@ function messageForError(action: string): string {
   if (action === "hint") {
     return "このヒントはまだ開けません。上のヒントから確認してください。";
   }
-  if (action === "flag") {
-    return "flagを送信できませんでした。接続を確認して、もう一度試してください。";
+  if (action === "guidance") {
+    return "表示設定を変更できませんでした。接続を確認してください。";
   }
   if (action === "hypothesis") {
     return "仮説を記録できませんでした。状態を再読込して、もう一度試してください。";
@@ -121,7 +120,7 @@ export function useLabSession(client: LabClient | null): LabSessionState {
 
   const runProjectionAction = useCallback(
     async (
-      action: "hint" | "hypothesis",
+      action: "hint" | "hypothesis" | "guidance",
       request: () => Promise<LabProjection | undefined>,
       successMessage: string,
     ): Promise<boolean> => {
@@ -166,22 +165,14 @@ export function useLabSession(client: LabClient | null): LabSessionState {
     [client, runProjectionAction],
   );
 
-  const submitFlag = useCallback(
-    async (flag: string): Promise<FlagSubmissionResult | undefined> => {
-      if (!client) return undefined;
-      setPendingAction("flag");
-      try {
-        const result = await client.submitFlag(flag);
-        if (result.projection) acceptProjection(result.projection);
-        return result;
-      } catch {
-        setAnnouncement(messageForError("flag"));
-        return undefined;
-      } finally {
-        setPendingAction(null);
-      }
-    },
-    [acceptProjection, client],
+  const applyGuidance = useCallback(
+    async (commandId: string) =>
+      runProjectionAction(
+        "guidance",
+        () => client!.applyGuidance(commandId),
+        "表示設定を変更しました。",
+      ),
+    [client, runProjectionAction],
   );
 
   return {
@@ -192,7 +183,7 @@ export function useLabSession(client: LabClient | null): LabSessionState {
     refresh,
     selectHypothesis,
     unlockHint,
-    submitFlag,
+    applyGuidance,
     clearAnnouncement: () => setAnnouncement(""),
   };
 }

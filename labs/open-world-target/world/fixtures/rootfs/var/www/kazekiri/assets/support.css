@@ -1,0 +1,390 @@
+.site-footer,
+.staff-footer {
+  color: #dce4e5;
+  background: var(--staff-navy);
+}
+
+.footer-grid {
+  display: grid;
+  padding-block: 52px 45px;
+  grid-template-columns: minmax(260px, 1fr) minmax(260px, 0.8fr) minmax(190px, 0.45fr);
+  align-items: start;
+  gap: 52px;
+}
+
+.site-footer .brand,
+.staff-footer .brand {
+  color: #fff;
+}
+
+.site-footer .brand__tagline,
+.staff-footer .brand__tagline {
+  color: #aebdc0;
+}
+
+.footer-note {
+  max-width: 30rem;
+  margin: 18px 0 0;
+  color: #aebdc0;
+  font-size: 0.76rem;
+}
+
+.footer-nav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 22px;
+}
+
+.footer-nav a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  border-bottom: 1px solid #38505a;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.footer-hours {
+  margin: 0;
+}
+
+.footer-hours div {
+  display: grid;
+  padding: 7px 0;
+  grid-template-columns: 5rem 1fr;
+  gap: 10px;
+  border-bottom: 1px solid #38505a;
+}
+
+.footer-hours dt {
+  color: #9eb0b4;
+  font-size: 0.68rem;
+}
+
+.footer-hours dd {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.footer-legal {
+  padding-block: 13px;
+  border-top: 1px solid #2c4149;
+  color: #85999e;
+  font-size: 0.62rem;
+}
+
+.service-ledger {
+  border-top: 2px solid var(--ink);
+}
+
+.service-entry {
+  display: grid;
+  padding: 34px 0;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(35px, 6vw, 86px);
+  border-bottom: 1px solid var(--line);
+}
+
+.service-entry:nth-child(even) .service-entry__media {
+  order: 2;
+}
+
+.service-entry__media,
+.service-entry__photo {
+  min-height: 300px;
+}
+
+.service-entry__body {
+  align-self: center;
+}
+
+.service-entry__number {
+  margin: 0 0 8px;
+  color: var(--brand);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.service-entry h3 {
+  margin: 0;
+  font-size: clamp(1.8rem, 3.2vw, 2.8rem);
+  letter-spacing: -0.045em;
+}
+
+.service-entry__body > p:not(.service-entry__number, .service-entry__time) {
+  margin: 15px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.service-entry ul {
+  display: grid;
+  margin: 20px 0;
+  padding: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  list-style: none;
+}
+
+.service-entry li {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.74rem;
+}
+
+.service-entry__time {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.service-entry__time span {
+  margin-right: 18px;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 400;
+}
+
+.workshop-flow {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.62fr) minmax(0, 1.38fr);
+  gap: clamp(45px, 8vw, 115px);
+}
+
+.workshop-flow h2,
+.service-help h2 {
+  margin: 0;
+  font-size: clamp(2.2rem, 4vw, 3.7rem);
+  letter-spacing: -0.05em;
+  line-height: 1.15;
+}
+
+.workshop-flow > div > p {
+  margin: 21px 0 0;
+  color: var(--muted);
+}
+
+.workshop-flow ol {
+  margin: 0;
+  padding: 0;
+  border-top: 2px solid var(--ink);
+  list-style: none;
+}
+
+.workshop-flow li {
+  display: grid;
+  padding: 19px 0;
+  grid-template-columns: 48px 1fr;
+  border-bottom: 1px solid var(--line);
+}
+
+.workshop-flow li > span {
+  color: var(--brand);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.workshop-flow h3,
+.workshop-flow p {
+  margin: 0;
+}
+
+.workshop-flow h3 {
+  font-size: 0.95rem;
+}
+
+.workshop-flow li p {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.service-help {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1fr);
+  gap: 50px;
+}
+
+.service-help > p {
+  margin: 0;
+  align-self: end;
+  color: var(--muted);
+}
+
+.service-help__links {
+  display: flex;
+  grid-column: 2;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+}
+
+.contact-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  align-items: start;
+  gap: clamp(42px, 7vw, 96px);
+}
+
+.contact-form-wrap {
+  max-width: 760px;
+}
+
+.contact-form {
+  display: grid;
+  gap: 25px;
+}
+
+.form-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.form-row > label span {
+  margin-left: 7px;
+  color: var(--brand);
+  font-size: 0.64rem;
+}
+
+.contact-form textarea {
+  min-height: 150px;
+  padding: 11px 12px;
+  resize: vertical;
+}
+
+.contact-form [aria-invalid="true"] {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 1px var(--brand);
+}
+
+.field-help,
+.field-error {
+  margin: 0;
+  font-size: 0.68rem;
+}
+
+.field-help {
+  color: var(--muted);
+}
+
+.field-error {
+  color: var(--brand-dark);
+  font-weight: 700;
+}
+
+.form-check {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+}
+
+.form-check input {
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+}
+
+.form-check label {
+  font-size: 0.76rem;
+}
+
+.form-check .field-error {
+  grid-column: 2;
+}
+
+.contact-aside {
+  padding: 25px;
+  border-top: 4px solid var(--brand);
+  background: #e8e5dc;
+}
+
+.contact-aside h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.contact-aside ul {
+  margin: 17px 0 25px;
+  padding-left: 1.2rem;
+  font-size: 0.74rem;
+}
+
+.contact-aside dl {
+  margin: 0;
+  border-top: 1px solid #c9c4b8;
+}
+
+.contact-aside dl div {
+  display: grid;
+  padding: 9px 0;
+  grid-template-columns: 5rem 1fr;
+  border-bottom: 1px solid #c9c4b8;
+}
+
+.contact-aside dt {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.contact-aside dd {
+  margin: 0;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.receipt {
+  margin-bottom: 34px;
+  padding: 33px;
+  border: 1px solid #c6cfc8;
+  border-top: 5px solid var(--steel);
+  background: var(--surface);
+}
+
+.receipt h2 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.receipt > code {
+  display: block;
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px dashed #8c9a96;
+  color: var(--brand-dark);
+  background: #efede6;
+  font-family: var(--font-mono);
+  font-size: clamp(1.1rem, 3vw, 1.7rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.receipt > p:not(.eyebrow) {
+  color: var(--muted);
+  font-size: 0.77rem;
+}
+
+.receipt dl {
+  margin: 22px 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.receipt dl div {
+  display: grid;
+  padding: 10px 0;
+  grid-template-columns: 7rem 1fr;
+  border-bottom: 1px solid var(--line);
+}
+
+.receipt dt {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.receipt dd {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+}

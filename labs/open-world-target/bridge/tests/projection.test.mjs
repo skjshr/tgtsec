@@ -21,7 +21,9 @@ test("projection boundary keeps public fields and disables cloud flags", () => {
 
   assert.equal(validated.experience, "live");
   assert.equal(validated.sessionId, value.sessionId);
-  assert.equal(validated.progress.total, 14);
+  assert.equal(validated.progress.total, 13);
+  assert.equal(validated.graph.nodes[0].category, "Web");
+  assert.equal(validated.guidance.showCommandExamples, true);
   assert.deepEqual(validated.capabilities, {
     manualFlagSubmission: false,
   });
@@ -41,6 +43,27 @@ test("projection boundary rejects hidden, arbitrary, and flag material", () => {
   assert.throws(
     () => validateProjection(lockedBody),
     /must not reveal a locked hint/,
+  );
+
+  const missingExplanationStep = projection();
+  missingExplanationStep.hints.pop();
+  assert.throws(
+    () => validateProjection(missingExplanationStep),
+    /four ordered explanation steps/,
+  );
+
+  const disguisedLabel = projection();
+  disguisedLabel.graph.nodes[0].category = "秘密の入口";
+  assert.throws(
+    () => validateProjection(disguisedLabel),
+    /allowlisted public category/,
+  );
+
+  const missingCategory = projection();
+  delete missingCategory.graph.nodes[0].category;
+  assert.throws(
+    () => validateProjection(missingCategory),
+    /allowlisted public category/,
   );
 
   const arbitrary = projection({ command: "cat /etc/shadow" });
@@ -97,12 +120,12 @@ test("projection tracker is monotonic and same-revision idempotent", () => {
           kind: "entrance",
           progress: "発見済み",
         },
-        { id: "map-02", state: "undiscovered" },
-        { id: "map-03", state: "undiscovered" },
+        { id: "map-02", state: "undiscovered", category: "共有" },
+        { id: "map-03", state: "undiscovered", category: "整備" },
       ],
       edges: [],
     },
-    progress: { discovered: 1, total: 14 },
+    progress: { discovered: 1, total: 13 },
   });
   assert.equal(tracker.accept(changed).changed, true);
   assert.equal(tracker.current.revision, 1);

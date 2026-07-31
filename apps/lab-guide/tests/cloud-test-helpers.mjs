@@ -55,7 +55,7 @@ export function projection(revision = 1) {
           progress: "発見済み",
           position: { x: 20, y: 40 },
         },
-        { id: "node-root", state: "undiscovered" },
+        { id: "node-root", state: "undiscovered", category: "最終地点" },
       ],
       edges: [
         {
@@ -81,8 +81,31 @@ export function projection(revision = 1) {
         state: "locked",
         condition: "前のヒントを確認すると開けます。",
       },
+      {
+        id: "hint-web-3",
+        step: 3,
+        title: "組み立て方",
+        state: "locked",
+        condition: "前のヒントを確認すると開けます。",
+      },
+      {
+        id: "hint-web-4",
+        step: 4,
+        title: "操作例",
+        state: "locked",
+        condition: "前のヒントを確認すると開けます。",
+      },
     ],
-    progress: { discovered: 1, total: 14 },
+    guidance: {
+      showNextChoices: true,
+      showToolNames: true,
+      showCommandSyntax: true,
+      showCommandExamples: true,
+      explainNoProgress: true,
+      explanationDepth: "full",
+      silhouetteDepth: 1,
+    },
+    progress: { discovered: 1, total: 13 },
     recentEvents: [
       {
         id: "event-web",

@@ -1,8 +1,5 @@
 import { pathToFileURL } from "node:url";
 
-import {
-  getVerifierFlagIds,
-} from "./flag-verifiers.mjs";
 import { WORLD } from "./world-definition.mjs";
 
 const EXPECTED_FLAG_COUNTS = Object.freeze({
@@ -11,7 +8,6 @@ const EXPECTED_FLAG_COUNTS = Object.freeze({
   "root-clue": 3,
   "root-route": 3,
   "common-root": 1,
-  windows: 1,
 });
 const ALLOWED_ICONS = new Set([
   "browser",
@@ -57,8 +53,8 @@ export function validateWorld(world = WORLD) {
   assert(world.entranceIds.length === 3, "world must define 3 entrances");
   assert(world.footholdIds.length === 3, "world must define 3 footholds");
   assert(world.rootPathIds.length === 3, "world must define 3 root paths");
-  assert(world.nodes.length === 14, "world must define 14 flag-bearing nodes");
-  assert(world.flags.length === 14, "world must define 14 flags");
+  assert(world.nodes.length === 13, "world must define 13 flag-bearing nodes");
+  assert(world.flags.length === 13, "world must define 13 flags");
 
   const nodeIds = world.nodes.map((node) => node.id);
   const mapIds = world.nodes.map((node) => node.mapId);
@@ -107,14 +103,6 @@ export function validateWorld(world = WORLD) {
     );
   }
 
-  const verifierFlagIds = getVerifierFlagIds();
-  assertUnique(verifierFlagIds, "verifier flag ids");
-  assert(
-    verifierFlagIds.length === flagIds.length &&
-      verifierFlagIds.every((flagId) => flagIdSet.has(flagId)),
-    "public verifiers must match the 14 logical flags exactly",
-  );
-
   for (const [category, expectedCount] of Object.entries(
     EXPECTED_FLAG_COUNTS,
   )) {
@@ -129,12 +117,12 @@ export function validateWorld(world = WORLD) {
 
   for (const hypothesis of world.hypotheses) {
     assert(
-      hypothesis.hints.length === 3,
-      `hypothesis ${hypothesis.id} must have exactly 3 hint stages`,
+      hypothesis.hints.length === 4,
+      `hypothesis ${hypothesis.id} must have exactly 4 hint stages`,
     );
     assert(
       hypothesis.hints.map((hint) => hint.title).join("|") ===
-        "見る場所|使う道具|操作例",
+        "確かめること|使う道具|組み立て方|操作例",
       `hypothesis ${hypothesis.id} must use the accepted hint order`,
     );
     if (hypothesis.anchorNodeId !== null) {
@@ -194,11 +182,8 @@ export function validateWorld(world = WORLD) {
     const eventCount = world.eventRoutes.filter(
       (route) => route.nodeId === flag.nodeId,
     ).length;
-    if (flag.manualOnly) {
-      assert(eventCount === 0, `${flag.id} must remain manual-only`);
-    } else {
-      assert(eventCount >= 1, `${flag.id} needs an automatic event route`);
-    }
+    assert(!flag.manualOnly, `${flag.id} must not require manual submission`);
+    assert(eventCount >= 1, `${flag.id} needs an automatic event route`);
   }
 
   return Object.freeze({

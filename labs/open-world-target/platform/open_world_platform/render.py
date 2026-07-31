@@ -75,7 +75,6 @@ def render_overlay(
     replacements = {
         "WIRED_INTERFACE": profile["network"]["wiredInterface"],
         "WIRED_MAC": profile["network"]["wiredMac"].lower(),
-        "WINDOWS_PARTUUID": profile["target"]["windowsPartuuid"],
     }
     installed: list[dict[str, Any]] = []
     root = platform_root()
@@ -157,7 +156,7 @@ def render_overlay(
     )
 
     generated_manifest = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "labId": manifest["labId"],
         "sourceManifestSha256": sha256_file(manifest_path),
         "files": sorted(installed, key=lambda item: item["target"]),

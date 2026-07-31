@@ -67,4 +67,52 @@ test("Bridge and browser complete one paired live action through the cloud contr
   assert.equal(visible.revision, 2);
   assert.equal(visible.hypotheses[0].selected, true);
   assert.deepEqual((await bridgeClient.pollActions()).actions, []);
+
+  const guidanceQueued = await call(
+    harness,
+    "/api/session/guidance/preset.hard/apply",
+    {
+      method: "POST",
+      headers: { cookie: paired.cookie },
+    },
+  );
+  assert.equal(guidanceQueued.status, 202);
+
+  const guidancePending = await bridgeClient.pollActions();
+  assert.equal(guidancePending.actions.length, 1);
+  assert.deepEqual(
+    {
+      type: guidancePending.actions[0].type,
+      targetId: guidancePending.actions[0].targetId,
+    },
+    {
+      type: "setGuidance",
+      targetId: "preset.hard",
+    },
+  );
+
+  const afterGuidance = projection(3);
+  afterGuidance.hypotheses[0].selected = true;
+  afterGuidance.guidance = {
+    showNextChoices: false,
+    showToolNames: false,
+    showCommandSyntax: false,
+    showCommandExamples: false,
+    explainNoProgress: false,
+    explanationDepth: "brief",
+    silhouetteDepth: 0,
+  };
+  await bridgeClient.uploadSnapshot(afterGuidance, {
+    ackActionIds: [guidancePending.actions[0].id],
+  });
+
+  const guidedState = await call(harness, "/api/session/state", {
+    headers: { cookie: paired.cookie },
+  });
+  assert.equal(guidedState.status, 200);
+  const guidedVisible = await guidedState.json();
+  assert.equal(guidedVisible.revision, 3);
+  assert.equal(guidedVisible.guidance.showCommandExamples, false);
+  assert.equal(guidedVisible.guidance.silhouetteDepth, 0);
+  assert.deepEqual((await bridgeClient.pollActions()).actions, []);
 });

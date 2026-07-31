@@ -29,7 +29,7 @@ export function ConnectionBanner({
       title: "公開ガイドを表示しています",
       body:
         message ??
-        "標的がなくても世界と遊び方を確認できます。演習時だけライブ接続します。",
+        "標的がなくても世界と進み方を確認できます。標的へ接続するとライブ状態へ切り替わります。",
     },
     waiting: {
       icon: <IconPlugConnected aria-hidden="true" />,

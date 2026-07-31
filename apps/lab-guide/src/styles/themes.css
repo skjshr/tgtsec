@@ -807,7 +807,6 @@
 
 :root[data-theme="ops"] .hypothesis-explanation,
 :root[data-theme="ops"] .hint-step,
-:root[data-theme="ops"] .manual-flag-form,
 :root[data-theme="ops"] .connection-banner {
   background: #09191e;
   border-color: #29474e;
@@ -1054,7 +1053,6 @@
 
 :root[data-theme="focus"] .hypothesis-explanation,
 :root[data-theme="focus"] .hint-step,
-:root[data-theme="focus"] .manual-flag-form,
 :root[data-theme="focus"] .connection-banner {
   background: transparent;
   border-radius: 1px;

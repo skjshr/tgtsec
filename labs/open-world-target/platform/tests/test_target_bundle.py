@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -62,11 +63,6 @@ def installed_inventory(profile_value):
                 "device": "/dev/nvme0n1p1",
                 "mountpoints": ["/boot/efi"],
             },
-            "windows": {
-                "partuuid": target["windowsPartuuid"],
-                "device": "/dev/nvme0n1p2",
-                "mountpoints": [None],
-            },
         },
         "rootFilesystem": {
             "sourceDevice": "/dev/nvme0n1p3",
@@ -89,11 +85,42 @@ class TargetBundleTests(unittest.TestCase):
     def tearDownClass(cls) -> None:
         cls.temporary.cleanup()
 
-    def test_real_bundle_has_exact_split_runtime_and_permissions(self) -> None:
+    def test_public_source_excludes_runtime_answers_and_credentials(self) -> None:
+        world = REPO_ROOT / "labs/open-world-target/world"
+        for removed_name in (
+            "private-answers.mjs",
+            "validate-private-answers.mjs",
+            "flag-verifiers.mjs",
+        ):
+            self.assertFalse((world / removed_name).exists())
+        credential_spec = json.loads(
+            (
+                world / "fixtures/synthetic-credential-spec.json"
+            ).read_text(encoding="utf-8")
+        )
+        self.assertNotIn("password", credential_spec["accounts"][0])
+        self.assertFalse(
+            (world / "fixtures/synthetic-credentials.json").exists()
+        )
+        handover = (
+            world
+            / "fixtures/rootfs/srv/kazekiri/handover/SHIFT-HANDOVER.txt"
+        ).read_text(encoding="utf-8")
+        self.assertIn("@@BUILD_TIME_SALES_PASSWORD@@", handover)
+        for source in world.glob("*.mjs"):
+            self.assertIsNone(
+                re.search(
+                    r"FLAG\{ow_[a-f0-9]{32,}\}",
+                    source.read_text(encoding="utf-8"),
+                ),
+                source.name,
+            )
+
+    def test_real_bundle_has_exact_debian_runtime_and_permissions(self) -> None:
         manifest = self.validation["manifest"]
         self.assertEqual(
             self.validation["flagCounts"],
-            {"debian": 13, "windowsOffline": 1, "total": 14},
+            {"debian": 13, "total": 13},
         )
         self.assertEqual(
             self.validation["eventKeyAccess"],
@@ -231,35 +258,26 @@ class TargetBundleTests(unittest.TestCase):
                 / "debian-rootfs/windows-fixture"
             ).exists()
         )
-        self.assertTrue(
-            (
-                self.bundle
-                / "windows-offline/windows-fixture/Users/Public/Documents/"
-                "KazekiriArchive/WINDOWS.flag"
-            ).is_file()
-        )
+        self.assertFalse((self.bundle / "windows-offline").exists())
         runtime_world = (
             self.bundle
             / "debian-rootfs/opt/examserver/open-world/world"
         )
-        self.assertFalse((runtime_world / "private-answers.mjs").exists())
-        self.assertFalse(
-            (runtime_world / "validate-private-answers.mjs").exists()
+        for build_only_name in (
+            "materialize-flags.mjs",
+            "private-answers.mjs",
+            "validate-private-answers.mjs",
+            "flag-verifiers.mjs",
+        ):
+            self.assertFalse((runtime_world / build_only_name).exists())
+        self.assertEqual(len(manifest["flagFiles"]), 13)
+        self.assertTrue(
+            all(flag["role"] == "debian" for flag in manifest["flagFiles"])
         )
-        self.assertTrue((runtime_world / "flag-verifiers.mjs").is_file())
-        windows_secret = (
-            self.bundle
-            / "windows-offline/windows-fixture/Users/Public/Documents/"
-            "KazekiriArchive/WINDOWS.flag"
-        ).read_bytes().strip()
-        for role in ("debian-rootfs", "installer-private"):
-            for path in (self.bundle / role).rglob("*"):
-                if path.is_file():
-                    self.assertNotIn(
-                        windows_secret,
-                        path.read_bytes(),
-                        f"Windows flag leaked into {path}",
-                    )
+        self.assertNotIn(
+            "flag-windows",
+            {flag["id"] for flag in manifest["flagFiles"]},
+        )
         site = (
             self.bundle
             / "debian-rootfs/etc/apache2/sites-available/open-world-target.conf"
@@ -287,7 +305,7 @@ class TargetBundleTests(unittest.TestCase):
             (fresh["owner"], fresh["group"], fresh["mode"]),
             ("root", "lab-telemetry", "0400"),
         )
-        self.assertEqual(len(manifest["flagFiles"]), 14)
+        self.assertEqual(len(manifest["flagFiles"]), 13)
         expected_debian_ownership = {
             "flag-entry-web": ("root", "www-data"),
             "flag-entry-smb": ("root", "root"),
@@ -304,24 +322,58 @@ class TargetBundleTests(unittest.TestCase):
             "flag-root-common": ("root", "root"),
         }
         for flag in manifest["flagFiles"]:
-            if flag["role"] == "debian":
-                self.assertTrue(flag["target"].startswith("/"))
-                self.assertNotEqual(flag["owner"], "offline-operator")
-                self.assertEqual(
-                    (flag["owner"], flag["group"]),
-                    expected_debian_ownership[flag["id"]],
-                )
-            else:
-                self.assertFalse(flag["target"].startswith("/"))
-                self.assertEqual(flag["mode"], "0444")
+            self.assertEqual(flag["role"], "debian")
+            self.assertTrue(flag["target"].startswith("/"))
+            self.assertNotEqual(flag["owner"], "offline-operator")
+            self.assertEqual(
+                (flag["owner"], flag["group"]),
+                expected_debian_ownership[flag["id"]],
+            )
+        flag_answers = [
+            (
+                self.bundle
+                / "debian-rootfs"
+                / flag["path"]
+            ).read_text(encoding="utf-8").strip()
+            for flag in manifest["flagFiles"]
+        ]
+        self.assertEqual(len(set(flag_answers)), 13)
+        self.assertTrue(
+            all(
+                re.fullmatch(r"FLAG\{ow_[a-f0-9]{48}\}", answer)
+                for answer in flag_answers
+            )
+        )
+        manifest_text = (self.bundle / BUNDLE_MANIFEST).read_text(
+            encoding="utf-8"
+        )
+        self.assertTrue(
+            all(answer not in manifest_text for answer in flag_answers)
+        )
         credential = next(
             entry
             for entry in manifest["files"]
             if entry["role"] == "installer-private"
         )
         self.assertEqual(credential["mode"], "0600")
+        generated_credentials = json.loads(
+            (
+                self.bundle
+                / "installer-private/synthetic-credentials.json"
+            ).read_text(encoding="utf-8")
+        )
+        sales_password = generated_credentials["accounts"][0]["password"]
+        self.assertRegex(sales_password, r"^Kaze-[a-f0-9]{36}$")
+        self.assertNotIn(sales_password, manifest_text)
+        self.assertIn(
+            sales_password,
+            (
+                self.bundle
+                / "debian-rootfs/srv/kazekiri/handover/SHIFT-HANDOVER.txt"
+            ).read_text(encoding="utf-8"),
+        )
 
-    def test_debian_runtime_module_closure_loads_without_private_answers(
+    def test_debian_runtime_module_closure_loads_without_secret_generators(
         self,
     ) -> None:
         runtime = (
@@ -349,7 +401,7 @@ class TargetBundleTests(unittest.TestCase):
             timeout=30,
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
-        self.assertEqual(json.loads(completed.stdout), {"flags": 14})
+        self.assertEqual(json.loads(completed.stdout), {"flags": 13})
 
     def test_fresh_marker_is_separated_for_final_install_commit(self) -> None:
         entries = [
@@ -364,16 +416,49 @@ class TargetBundleTests(unittest.TestCase):
         self.assertEqual(marker["target"], target)
         self.assertNotIn(target, {entry["target"] for entry in payload})
 
-    def test_build_is_deterministic_and_tampering_fails_validation(self) -> None:
+    def test_build_randomizes_secrets_and_tampering_fails_validation(self) -> None:
         second = self.root / "second"
         second_validation = build_target_bundle(REPO_ROOT, second)
-        self.assertEqual(
+        self.assertNotEqual(
             self.validation["bundleManifestSha256"],
             second_validation["bundleManifestSha256"],
         )
-        self.assertEqual(
-            (self.bundle / BUNDLE_MANIFEST).read_bytes(),
-            (second / BUNDLE_MANIFEST).read_bytes(),
+        first_manifest = self.validation["manifest"]
+        second_manifest = second_validation["manifest"]
+        first_flags = {
+            flag["id"]: (
+                self.bundle / "debian-rootfs" / flag["path"]
+            ).read_text(encoding="utf-8")
+            for flag in first_manifest["flagFiles"]
+        }
+        second_flags = {
+            flag["id"]: (
+                second / "debian-rootfs" / flag["path"]
+            ).read_text(encoding="utf-8")
+            for flag in second_manifest["flagFiles"]
+        }
+        self.assertEqual(first_flags.keys(), second_flags.keys())
+        self.assertTrue(
+            all(
+                first_flags[flag_id] != second_flags[flag_id]
+                for flag_id in first_flags
+            )
+        )
+        first_credentials = json.loads(
+            (
+                self.bundle
+                / "installer-private/synthetic-credentials.json"
+            ).read_text(encoding="utf-8")
+        )
+        second_credentials = json.loads(
+            (
+                second
+                / "installer-private/synthetic-credentials.json"
+            ).read_text(encoding="utf-8")
+        )
+        self.assertNotEqual(
+            first_credentials["accounts"][0]["password"],
+            second_credentials["accounts"][0]["password"],
         )
         tampered = self.root / "tampered"
         shutil.copytree(self.bundle, tampered)
@@ -384,6 +469,16 @@ class TargetBundleTests(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "hash mismatch"):
             validate_target_bundle(tampered)
 
+        unexpected_role = self.root / "unexpected-role"
+        shutil.copytree(self.bundle, unexpected_role)
+        legacy = unexpected_role / "windows-offline"
+        legacy.mkdir()
+        (legacy / "unexpected.flag").write_text(
+            "not-a-real-flag\n", encoding="utf-8"
+        )
+        with self.assertRaisesRegex(ContractError, "unexpected top-level"):
+            validate_target_bundle(unexpected_role)
+
     def test_target_install_is_a_guarded_dry_run_only(self) -> None:
         profile_value = profile()
         inventory = installed_inventory(profile_value)
@@ -392,7 +487,6 @@ class TargetBundleTests(unittest.TestCase):
             disk_by_id=target["diskById"],
             debian_partuuid=target["debianPartuuid"],
             esp_partuuid=target["espPartuuid"],
-            windows_partuuid=target["windowsPartuuid"],
             bundle_manifest_sha256=self.validation[
                 "bundleManifestSha256"
             ],

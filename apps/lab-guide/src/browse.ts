@@ -1,8 +1,8 @@
-import type {
-  FlagSubmissionResult,
-  LabClient,
-  LabProjection,
-} from "./types";
+import {
+  applyGuidanceCommand,
+  EASY_GUIDANCE,
+} from "./guidance";
+import type { LabClient, LabProjection } from "./types";
 
 const browseProjection: LabProjection = {
   experience: "browse",
@@ -11,9 +11,9 @@ const browseProjection: LabProjection = {
   status: "active",
   heading: "風切モータースへ接続する",
   lede:
-    "標的がなくても遊び方を確認できます。演習では発見に合わせて、この地図が変化します。",
+    "接続後は、確定した発見に合わせてこの地図が変化します。",
   objective: "必要な機材と安全な接続範囲を理解する",
-  consultationQuestion: "演習を始める前に、どこから確認しますか？",
+  consultationQuestion: "接続する前に、どこから確認しますか？",
   facts: [
     {
       id: "public-story",
@@ -39,7 +39,7 @@ const browseProjection: LabProjection = {
       id: "browse-safety",
       label: "最初に調査できる範囲を確認する",
       summary:
-        "Debian標的だけが演習範囲です。会社LANやインターネットは調査しません。",
+        "許可されたDebian標的だけを調べ、会社LANやインターネットは対象にしません。",
       selected: true,
       available: true,
     },
@@ -94,7 +94,7 @@ const browseProjection: LabProjection = {
       {
         id: "browse-link",
         label: "直結Ethernet",
-        detail: "演習専用の有線経路",
+        detail: "Debian標的だけにつながる有線経路",
         icon: "network",
         state: "discovered",
         position: { x: 300, y: 205 },
@@ -110,6 +110,7 @@ const browseProjection: LabProjection = {
       {
         id: "browse-unknown-a",
         label: "未発見",
+        category: "Web",
         icon: "file",
         state: "undiscovered",
         position: { x: 980, y: 35 },
@@ -117,6 +118,7 @@ const browseProjection: LabProjection = {
       {
         id: "browse-unknown-b",
         label: "未発見",
+        category: "共有",
         icon: "file",
         state: "undiscovered",
         position: { x: 980, y: 205 },
@@ -124,6 +126,7 @@ const browseProjection: LabProjection = {
       {
         id: "browse-unknown-c",
         label: "未発見",
+        category: "整備",
         icon: "file",
         state: "undiscovered",
         position: { x: 980, y: 375 },
@@ -166,7 +169,7 @@ const browseProjection: LabProjection = {
     {
       id: "browse-safety:1",
       step: 1,
-      title: "見る場所",
+      title: "確かめること",
       state: "unlocked",
       body: "有線接続の両端がKaliとDebian標的だけであることを確認します。",
     },
@@ -181,20 +184,29 @@ const browseProjection: LabProjection = {
     {
       id: "browse-safety:3",
       step: 3,
+      title: "組み立て方",
+      state: "locked",
+      body: "有線側の接続先と対象IPを一つずつ照合します。",
+      condition: "「使う道具」を確認すると開けます",
+    },
+    {
+      id: "browse-safety:4",
+      step: 4,
       title: "操作例",
       state: "locked",
       body: "運営者が配布した接続確認だけを実行します。",
-      condition: "「使う道具」を確認すると開けます",
+      condition: "「組み立て方」を確認すると開けます",
     },
   ],
+  guidance: { ...EASY_GUIDANCE },
   progress: {
     discovered: 0,
-    total: 14,
+    total: 13,
   },
   recentEvents: [],
   telemetry: {
     status: "browse",
-    message: "公開ガイドを表示中。ライブセッションには未接続です",
+    message: "接続前の案内を表示しています",
   },
   capabilities: {
     manualFlagSubmission: false,
@@ -205,9 +217,96 @@ function cloneProjection(value: LabProjection): LabProjection {
   return structuredClone(value);
 }
 
+function automaticHintDepth(
+  guidance: LabProjection["guidance"],
+): number {
+  let depth = guidance.showNextChoices ? 1 : 0;
+  if (guidance.showToolNames) depth = Math.max(depth, 2);
+  if (guidance.showCommandSyntax) depth = Math.max(depth, 3);
+  if (guidance.showCommandExamples) depth = Math.max(depth, 4);
+  return depth;
+}
+
 class BrowseLabClient implements LabClient {
+  private readonly baseProjection = cloneProjection(browseProjection);
   private projection = cloneProjection(browseProjection);
+  private manualHintDepth = 0;
   private listeners = new Set<(projection: LabProjection) => void>();
+
+  constructor() {
+    this.applyGuidanceView();
+  }
+
+  private applyGuidanceView(): void {
+    const guidance = this.projection.guidance;
+    const fullExplanation = guidance.explanationDepth === "full";
+    const hintDepth = Math.max(
+      this.manualHintDepth,
+      automaticHintDepth(guidance),
+    );
+
+    this.projection.lede = fullExplanation
+      ? this.baseProjection.lede
+      : "接続後は発見に合わせて地図が変わります。";
+    this.projection.consultationQuestion = fullExplanation
+      ? this.baseProjection.consultationQuestion
+      : "次は何を確認しますか？";
+    this.projection.facts = this.baseProjection.facts.map((fact) => ({
+      ...fact,
+      ...(fullExplanation ? {} : { detail: undefined }),
+    }));
+    this.projection.hypotheses = this.projection.hypotheses.map(
+      (hypothesis) => ({
+        ...hypothesis,
+        summary: fullExplanation
+          ? this.baseProjection.hypotheses.find(
+              (item) => item.id === hypothesis.id,
+            )?.summary ?? hypothesis.summary
+          : "この項目を確認します。",
+      }),
+    );
+    this.projection.investigations = guidance.showNextChoices
+      ? cloneProjection(this.baseProjection).investigations
+      : [];
+
+    const graph = cloneProjection(this.baseProjection).graph;
+    this.projection.graph.nodes =
+      guidance.silhouetteDepth === 1
+        ? graph.nodes
+        : graph.nodes.filter((node) => node.state !== "undiscovered");
+    const visibleNodeIds = new Set(
+      this.projection.graph.nodes.map((node) => node.id),
+    );
+    this.projection.graph.edges = graph.edges.filter(
+      (edge) =>
+        visibleNodeIds.has(edge.from) && visibleNodeIds.has(edge.to),
+    );
+
+    this.projection.hints = this.baseProjection.hints.map((hint, index) => ({
+      ...hint,
+      state:
+        index < hintDepth
+          ? "unlocked"
+          : index === hintDepth
+            ? "available"
+            : "locked",
+      ...(index < hintDepth
+        ? { condition: undefined }
+        : {
+            body: undefined,
+            condition:
+              index === 0
+                ? "必要な時に開けます"
+                : "前の説明を確認すると開けます",
+          }),
+    }));
+    this.projection.telemetry = {
+      status: "browse",
+      ...(guidance.explainNoProgress
+        ? { message: "標的へ接続するまでは公開案内を表示します" }
+        : {}),
+    };
+  }
 
   async getState(): Promise<LabProjection> {
     return cloneProjection(this.projection);
@@ -254,21 +353,18 @@ class BrowseLabClient implements LabClient {
       throw new Error("public_hint_locked");
     }
 
-    this.projection.hints = this.projection.hints.map((hint) =>
-      hint.id === id
-        ? { ...hint, state: "unlocked", condition: undefined }
-        : hint.id === ordered[targetIndex + 1]?.id && hint.state === "locked"
-          ? { ...hint, state: "available" }
-          : hint,
-    );
+    this.manualHintDepth = Math.max(this.manualHintDepth, targetIndex + 1);
+    this.applyGuidanceView();
     return this.publish();
   }
 
-  async submitFlag(_flag: string): Promise<FlagSubmissionResult> {
-    return {
-      accepted: false,
-      message: "公開ガイドではflagを送信しません。",
-    };
+  async applyGuidance(commandId: string): Promise<LabProjection> {
+    this.projection.guidance = applyGuidanceCommand(
+      this.projection.guidance,
+      commandId,
+    );
+    this.applyGuidanceView();
+    return this.publish();
   }
 }
 

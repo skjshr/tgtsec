@@ -1,6 +1,15 @@
 {
   "version": 1,
   "basePath": "/api/session",
+  "publicCategories": [
+    "Web",
+    "共有",
+    "整備",
+    "権限獲得",
+    "権限昇格",
+    "root経路",
+    "最終地点"
+  ],
   "authentication": {
     "scheme": "Bearer",
     "targetEnvironmentVariable": "TELEMETRY_BRIDGE_TOKEN",
@@ -10,7 +19,7 @@
       "events",
       "selectHypothesis",
       "unlockHint",
-      "submitManualFlag"
+      "applyGuidance"
     ],
     "failure": {
       "status": 401,
@@ -40,15 +49,18 @@
         "nodes": [
           {
             "id": "map-01",
-            "state": "undiscovered"
+            "state": "undiscovered",
+            "category": "Web"
           },
           {
             "id": "map-02",
-            "state": "undiscovered"
+            "state": "undiscovered",
+            "category": "共有"
           },
           {
             "id": "map-03",
-            "state": "undiscovered"
+            "state": "undiscovered",
+            "category": "整備"
           }
         ],
         "edges": []
@@ -57,32 +69,51 @@
         {
           "id": "hyp-service-inventory:1",
           "step": 1,
-          "title": "見る場所",
-          "state": "available"
+          "title": "確かめること",
+          "state": "unlocked",
+          "body": "Kali側の有線IPと、10.13.37.10が応答するTCPサービスを見る。"
         },
         {
           "id": "hyp-service-inventory:2",
           "step": 2,
           "title": "使う道具",
-          "state": "locked"
+          "state": "unlocked",
+          "body": "ip addr、ping、nmapの順で、接続とサービスを分けて確認する。"
         },
         {
           "id": "hyp-service-inventory:3",
           "step": 3,
+          "title": "組み立て方",
+          "state": "unlocked",
+          "body": "対象IPを固定し、名前解決やping応答に依存せずサービス版を確認する。"
+        },
+        {
+          "id": "hyp-service-inventory:4",
+          "step": 4,
           "title": "操作例",
-          "state": "locked"
+          "state": "unlocked",
+          "body": "nmap -sV -Pn 10.13.37.10"
         }
       ],
+      "guidance": {
+        "showNextChoices": true,
+        "showToolNames": true,
+        "showCommandSyntax": true,
+        "showCommandExamples": true,
+        "explainNoProgress": true,
+        "explanationDepth": "full",
+        "silhouetteDepth": 1
+      },
       "progress": {
         "discovered": 0,
-        "total": 14
+        "total": 13
       },
       "recentEvents": [],
       "telemetry": {
         "status": "live"
       },
       "capabilities": {
-        "manualFlagSubmission": true
+        "manualFlagSubmission": false
       }
     }
   },
@@ -114,17 +145,21 @@
     "body": {},
     "response": "state projection"
   },
-  "submitManualFlag": {
+  "applyGuidance": {
     "method": "POST",
-    "path": "/api/session/flags/submit",
-    "body": {
-      "flag": "participant-entered value"
-    },
-    "response": {
-      "accepted": true,
-      "message": "flagを確認しました。",
-      "state": "state projection"
-    },
-    "availability": "Kali loopback fallback only; Bridge and cloud never forward flag strings"
+    "path": "/api/session/guidance/{commandId}/apply",
+    "body": {},
+    "commands": [
+      "preset.easy",
+      "preset.normal",
+      "preset.hard",
+      "{booleanField}.on",
+      "{booleanField}.off",
+      "explanationDepth.brief",
+      "explanationDepth.full",
+      "silhouetteDepth.0",
+      "silhouetteDepth.1"
+    ],
+    "response": "state projection"
   }
 }

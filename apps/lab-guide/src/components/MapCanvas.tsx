@@ -45,7 +45,6 @@ export const WORLD_POSITIONS: ReadonlyMap<
   ["map-11", { x: 615, y: 155 }],
   ["map-12", { x: 615, y: 300 }],
   ["map-13", { x: 820, y: 155 }],
-  ["map-14", { x: 820, y: 340 }],
 ]);
 
 function stableHash(value: string) {
@@ -146,7 +145,7 @@ function WorldNode({ data, selected }: NodeProps<WorldFlowNode>) {
             {stateLabel}
           </span>
           <span className="world-node-copy">
-            <strong>{node.label}</strong>
+            <strong>{node.category ?? "未発見"}</strong>
           </span>
         </div>
       )}
@@ -250,7 +249,7 @@ export function MapCanvas({
             {node.state === "undiscovered" ? (
               <div className="mobile-map-node mobile-map-node--undiscovered">
                 <IconCircleDashed aria-hidden="true" />
-                <span>未発見</span>
+                <span>{node.category ?? "未発見"} · 未発見</span>
               </div>
             ) : (
               <div

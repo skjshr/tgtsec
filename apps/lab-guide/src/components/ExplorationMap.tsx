@@ -15,7 +15,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   ConnectionStatus,
   ExperienceMode,
-  FlagSubmissionResult,
   LabProjection,
 } from "../types";
 import { AppIcon } from "./AppIcon";
@@ -28,8 +27,8 @@ import {
 } from "./DisclosureDrawer";
 import { EventStrip } from "./EventStrip";
 import { KnownFacts } from "./KnownFacts";
-import { ManualFlagForm } from "./ManualFlagForm";
 import { MapCanvas } from "./MapCanvas";
+import { RouteUnlock } from "./RouteUnlock";
 import { SessionPairingPanel } from "./SessionPairingPanel";
 
 interface ExplorationMapProps {
@@ -38,9 +37,6 @@ interface ExplorationMapProps {
   pendingAction: string | null;
   onRefresh: () => void;
   onOpenConsultation: (hypothesisId?: string) => void;
-  onSubmitFlag: (
-    flag: string,
-  ) => Promise<FlagSubmissionResult | undefined>;
   experience: ExperienceMode;
   pairingPending: boolean;
   pairingError?: string;
@@ -55,7 +51,6 @@ export function ExplorationMap({
   pendingAction,
   onRefresh,
   onOpenConsultation,
-  onSubmitFlag,
   experience,
   pairingPending,
   pairingError,
@@ -206,13 +201,17 @@ export function ExplorationMap({
         </div>
 
         {projection.status === "complete" ? (
-          <section className="success-callout" aria-labelledby="success-title">
-            <IconRoute aria-hidden="true" />
-            <div>
-              <strong id="success-title">入口からrootまでの経路がつながりました</strong>
-              <span>見つけた事実を順にたどり、権限が変わった理由を説明してみましょう。</span>
-            </div>
-          </section>
+          projection.completion ? (
+            <RouteUnlock routeId={projection.completion.routeId} />
+          ) : (
+            <section className="success-callout" aria-labelledby="success-title">
+              <IconRoute aria-hidden="true" />
+              <div>
+                <strong id="success-title">入口からrootまでの経路がつながりました</strong>
+                <span>見つけた事実を順にたどり、権限が変わった理由を説明してみましょう。</span>
+              </div>
+            </section>
+          )
         ) : null}
 
         <section className="mission-route">
@@ -318,22 +317,6 @@ export function ExplorationMap({
               ヒントを見る
             </button>
 
-            {projection.capabilities.manualFlagSubmission &&
-            (connectionStatus === "unavailable" ||
-              projection.status === "complete") ? (
-              <ManualFlagForm
-                pending={pendingAction === "flag"}
-                onSubmit={onSubmitFlag}
-                mode={
-                  projection.status === "complete" ? "bonus" : "fallback"
-                }
-              />
-            ) : null}
-
-            <p className="safety-note">
-              <AppIcon name="server" stroke={1.7} />
-              これは学習環境です。許可された対象に対してのみ調査を行ってください。
-            </p>
           </aside>
         ) : null}
 

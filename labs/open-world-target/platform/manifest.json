@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "labId": "examserver-open-world-v1",
   "debian": {
     "release": "13",
@@ -12,7 +12,9 @@
     "apache2",
     "btrfs-progs",
     "build-essential",
+    "ca-certificates",
     "dnsmasq",
+    "git",
     "iproute2",
     "iputils-ping",
     "jq",
@@ -21,6 +23,7 @@
     "nfs-kernel-server",
     "nftables",
     "nodejs",
+    "npm",
     "openssh-server",
     "python3",
     "rfkill",
@@ -132,7 +135,7 @@
   },
   "recovery": {
     "normalConfirmationPrefix": "RESTORE DEBIAN",
-    "fullConfirmationPrefix": "RESTORE FULL DISK INCLUDING WINDOWS",
+    "fullConfirmationPrefix": "RESTORE FULL DISK",
     "mountRoot": "/run/open-world-recovery"
   },
   "installFiles": [
@@ -203,12 +206,6 @@
       "template": false
     },
     {
-      "source": "templates/etc/systemd/system/mnt-windows.mount",
-      "target": "/etc/systemd/system/mnt-windows.mount",
-      "mode": "0644",
-      "template": true
-    },
-    {
       "source": "templates/etc/systemd/system-preset/00-open-world-lab.preset",
       "target": "/etc/systemd/system-preset/00-open-world-lab.preset",
       "mode": "0644",
@@ -227,14 +224,14 @@
       "template": false
     },
     {
-      "source": "templates/etc/tmpfiles.d/open-world-windows.conf",
-      "target": "/etc/tmpfiles.d/open-world-windows.conf",
-      "mode": "0644",
+      "source": "templates/usr/local/sbin/open-world-platform",
+      "target": "/usr/local/sbin/open-world-platform",
+      "mode": "0755",
       "template": false
     },
     {
-      "source": "templates/usr/local/sbin/open-world-platform",
-      "target": "/usr/local/sbin/open-world-platform",
+      "source": "templates/usr/local/sbin/open-world-build-hygiene",
+      "target": "/usr/local/sbin/open-world-build-hygiene",
       "mode": "0755",
       "template": false
     }

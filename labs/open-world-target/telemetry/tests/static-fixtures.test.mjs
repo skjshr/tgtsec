@@ -94,6 +94,152 @@ test("Web fixture is bound to the lab address and emits constants, never the raw
   assert.ok(!php.match(/open-world-event[^;]*\$target/s));
 });
 
+test("Web fixture ships an offline multi-page business site and keeps the diagnostic boundary", async () => {
+  const routeFiles = [
+    "index.php",
+    "inventory.php",
+    "vehicle.php",
+    "service.php",
+    "shop.php",
+    "news.php",
+    "article.php",
+    "faq.php",
+    "contact.php",
+    "staff/diagnostics.php",
+  ];
+  const cssFiles = [
+    "site.css",
+    "support.css",
+    "public.css",
+    "catalog.css",
+    "content.css",
+    "staff.css",
+    "responsive.css",
+    "mobile.css",
+  ];
+  const imageFiles = [
+    "workshop-hero.webp",
+    "shop-exterior-morning.webp",
+    ...Array.from({ length: 6 }, (_, index) =>
+      `stock-${String(index + 1).padStart(2, "0")}.webp`),
+    "inspection-brake.webp",
+    "service-oil-bench.webp",
+    "service-tire-lift.webp",
+    "parts-shelf.webp",
+    "showroom-floor.webp",
+    "waiting-counter.webp",
+    "workshop-rain.webp",
+    "area-mountain-road.webp",
+  ];
+  const routeSources = await Promise.all(
+    routeFiles.map((relativePath) =>
+      fixture(`var/www/kazekiri/${relativePath}`)),
+  );
+  const [home, inventory, vehicle, service, shop, news, article, faq, contact,
+    diagnostics] = routeSources;
+  const site = await fixture("var/www/kazekiri/inc/site.php");
+  const data = await fixture("var/www/kazekiri/inc/data.php");
+  const cssSources = await Promise.all(
+    cssFiles.map((relativePath) =>
+      fixture(`var/www/kazekiri/assets/${relativePath}`)),
+  );
+
+  for (const [index, source] of routeSources.entries()) {
+    assert.match(
+      source,
+      /inc\/site\.php/,
+      `${routeFiles[index]} must use the shared site owner`,
+    );
+    assert.ok(
+      !source.includes("演習用の架空サイト"),
+      `${routeFiles[index]} must not repeat the visible disclosure`,
+    );
+    assert.ok(
+      !source.match(/https?:\/\/|<script\b/i),
+      `${routeFiles[index]} must not request an external runtime`,
+    );
+  }
+  assert.equal(
+    site.match(/演習用の架空サイト/g)?.length,
+    1,
+    "the quiet footer owns the only visible exercise disclosure",
+  );
+  assert.match(site, /href="\/staff\/diagnostics\.php"/);
+  for (const route of [
+    "inventory.php",
+    "service.php",
+    "shop.php",
+    "news.php",
+    "faq.php",
+    "contact.php",
+  ]) {
+    assert.ok(
+      site.includes(`"/${route}"`),
+      `shared navigation must own /${route}`,
+    );
+  }
+
+  assert.match(home, /workshop-hero\.webp/);
+  assert.match(home, /shop-exterior-morning\.webp/);
+  assert.ok(!home.includes("hero__caption"));
+  assert.ok(!site.match(/TRAINING|演習専用/));
+  for (const source of [...routeSources, site, data]) {
+    assert.ok(
+      !source.match(/[–—]| · /),
+      "visible fixture copy must not use decorative dash separators",
+    );
+  }
+  assert.match(inventory, /"category"\s*=>\s*kazekiri_value/);
+  assert.match(inventory, /"availability"\s*=>\s*kazekiri_value/);
+  assert.match(inventory, /<select name="<\?=\s*h\(\$name\)\s*\?>">/);
+  assert.match(vehicle, /支払総額目安/);
+  assert.match(vehicle, /整備記録/);
+  assert.match(service, /kazekiri_services/);
+  assert.match(shop, /showroom-floor\.webp/);
+  assert.match(news, /kazekiri_articles/);
+  assert.match(article, /kazekiri_not_found/);
+  assert.match(faq, /kazekiri_faq_groups/);
+  assert.match(contact, /<form\b[^>]*\bmethod="post"/);
+  assert.match(contact, /http_response_code\(422\)/);
+  assert.match(contact, /入力内容をサーバーへ保存/);
+  assert.ok(!contact.match(/\bmail\s*\(|file_put_contents|PDO|mysqli|curl_/));
+
+  assert.equal((data.match(/"id" => "kz-/g) ?? []).length, 6);
+  assert.equal((data.match(/"total" =>/g) ?? []).length, 6);
+  for (const filename of imageFiles) {
+    assert.ok(data.includes(filename) || home.includes(filename) ||
+      shop.includes(filename), `${filename} must be referenced by site data`);
+    const imagePath = path.join(
+      fixtureRoot,
+      "var/www/kazekiri/assets",
+      filename,
+    );
+    const image = await readFile(imagePath);
+    assert.equal(image.subarray(0, 4).toString("ascii"), "RIFF");
+    assert.equal(image.subarray(8, 12).toString("ascii"), "WEBP");
+    await access(imagePath);
+  }
+
+  assert.match(diagnostics, /<form\b[^>]*\bmethod="post"/);
+  assert.match(diagnostics, /action="\/staff\/diagnostics\.php#diagnostic-result"/);
+  assert.match(diagnostics, /<input\b[^>]*\bid="target"/s);
+  assert.match(diagnostics, /\bname="target"/);
+  assert.ok(!diagnostics.includes("pattern="));
+  assert.match(diagnostics, /aria-live="polite"/);
+  assert.match(diagnostics, /保守照合コード/);
+
+  for (const [index, css] of cssSources.entries()) {
+    assert.ok(
+      !css.match(/@import|https?:\/\//),
+      `${cssFiles[index]} must remain local-only`,
+    );
+    assert.ok(
+      !css.includes("hero__caption"),
+      `${cssFiles[index]} must not restore a hero image overlay label`,
+    );
+  }
+});
+
 test("SMB disclosure and NFS ownership fixtures stay on the direct-link CIDR", async () => {
   const samba = await fixture(
     "etc/samba/smb.conf.d/open-world-target.conf",
@@ -103,8 +249,11 @@ test("SMB disclosure and NFS ownership fixtures stay on the direct-link CIDR", a
     "etc/exports.d/open-world-target.exports",
   );
   const nfsConfig = await fixture("etc/nfs.conf.d/open-world-target.conf");
-  const credentials = JSON.parse(
-    await readFile(path.join(fixtures, "synthetic-credentials.json"), "utf8"),
+  const credentialSpec = JSON.parse(
+    await readFile(
+      path.join(fixtures, "synthetic-credential-spec.json"),
+      "utf8",
+    ),
   );
 
   assert.match(samba, /interfaces = lo 10\.13\.37\.10\/24/);
@@ -114,9 +263,14 @@ test("SMB disclosure and NFS ownership fixtures stay on the direct-link CIDR", a
   assert.match(samba, /^\s*smb ports = 445\s*$/m);
   assert.ok(!samba.match(/^\s*smb ports\s*=.*\b139\b/m));
   assert.match(samba, /smbd\.service/);
-  assert.equal(credentials.trainingOnly, true);
-  assert.ok(handover.includes(credentials.accounts[0].username));
-  assert.ok(handover.includes(credentials.accounts[0].password));
+  assert.equal(credentialSpec.trainingOnly, true);
+  assert.ok(handover.includes(credentialSpec.accounts[0].username));
+  assert.equal(
+    Object.hasOwn(credentialSpec.accounts[0], "password"),
+    false,
+  );
+  assert.match(handover, /@@BUILD_TIME_SALES_PASSWORD@@/);
+  assert.ok(!/Kaze-[a-f0-9]{32,}/.test(handover));
 
   assert.match(exportsFile, /10\.13\.37\.0\/24/);
   assert.match(exportsFile, /fsid=0/);

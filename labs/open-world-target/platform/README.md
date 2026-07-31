@@ -1,76 +1,54 @@
 # Debian platform
 
-このディレクトリは、Debian 13実機を安全側から演習modeへ切り替えるための正本です。
-初期値は常にdry-runで、実機へ書く操作は一致検査と明示的な`--apply`がない限り実行しません。
+このディレクトリは、専用のDebian 13実機を安全側から演習modeへ切り替え、復旧するための正本です。
+対象diskはDebian専用の全disk構成です。初期値は常にdry-runで、実機へ書く操作はlive identity、
+完全な確認文、`--apply`が揃わない限り実行しません。
 
-## 所有するもの
+## 所有範囲
 
 - `manifest.json`: Debian release、package、service、port、install fileの固定一覧
-- `profile.example.json`: 実機固有のdisk、PARTUUID、NIC、復旧asset情報の型
+- `profile.example.json`: 実機固有のdisk、Debian/ESP PARTUUID、NIC、復旧asset情報
 - `templates/`: wired-only network、DHCP-only dnsmasq、nftables、systemd mode
 - `open_world_platform/`: overlay生成、inventory、preflight、mode、install、recovery CLI
 - `tests/`: hostのdisk/networkへ触れないcontract test
 
-攻撃world、flag、telemetryの内容はここへ置きません。service名だけを
-`manifest.json`の`serviceProviders`で相互契約にしています。
+攻撃world、flag、telemetryの内容はここへ重複させません。相互契約は
+`manifest.json`の`serviceProviders`とtarget bundle manifestで固定します。
 
 ## Fail-closedの順序
 
 Exerciseへの遷移は次の順序を変えません。
 
-1. live `/`、disk identity、3 PARTUUIDが対象Debianと一致することを確認する。
-2. 対象OSのlive identityが`ID=debian`、`VERSION_ID=13`、`dpkg --print-architecture=amd64`、
-   `uname -m=x86_64`であることを確認する。install、target install、mode、preflightは一つでも
-   異なれば拒否する。これは対象Debianのgateであり、信頼済みrecovery USBは必要toolを備えた
-   別の互換Linuxでよい。
-3. 全lab serviceを停止する。
-4. NetworkManager、wpa_supplicant、systemd-resolvedを停止する。
-5. Wi-Fi、WWAN、Bluetoothをrfkillし、wired以外のNICをdownにする。
-6. wiredを`10.13.37.10/24`だけにし、default routeを消す。
-7. IPv4 forwardingとIPv6を止め、output dropのnftablesを入れる。
-8. 読み取り専用inventoryでisolation preflightを通す。
-9. `/run/open-world-lab/exercise-ready`を作り、初めてlab serviceを起動する。
-10. service込みのready preflightを通す。失敗時はmarkerを消してmaintenanceへ戻す。
+1. live `/`、disk by-id、serial、WWN、byte size、Debian/ESP PARTUUIDをprofileと照合する。
+2. live OSがDebian 13 amd64/x86_64であることを確認する。
+3. lab serviceとmaintenance connectivityをすべて停止する。
+4. Wi-Fi、WWAN、Bluetoothをrfkillし、wired以外のNICをdownにする。
+5. wiredを`10.13.37.10/24`だけにし、default routeを消す。
+6. IPv4 forwardingとIPv6を止め、output dropのnftablesを入れる。
+7. 読み取り専用inventoryでisolation preflightを通す。
+8. fresh sessionを作り、初めてlab serviceを起動する。
+9. service込みのready preflightを通す。失敗時はmarkerを消してmaintenanceへ戻す。
 
-Maintenanceは最初に全lab serviceを止め、quarantine firewallを入れます。Wi-Fiを使う操作は
-`connectivity-on`へ分離され、対象Debianの一致、全service停止、未消費fresh marker、
-session/state不在をlive inventoryで確認できなければ実行できません。一度でもexerciseへ入ったOSは
-root compromise済みとして扱い、信頼済みrecovery完了までconnectivityを再開しません。
+一度でもexerciseへ入ったOSはroot compromise済みとして扱います。信頼済み復旧が終わるまで
+maintenance connectivityを再開しません。
 
-## Profile
+## Profileとplatform overlay
 
-`profile.example.json`をコピーし、対象実機と信頼済み復旧mediaで読んだ値だけを記入します。
-次の値に推測、短縮名、`/dev/sda`のような不安定名を使いません。
+`profile.example.json`をコピーし、実機と信頼済み復旧mediaで読んだ値だけを記入します。
+`/dev/sda`のような不安定名、推測値、placeholderは拒否されます。
 
 - `/dev/disk/by-id/...`、serial、WWN、byte単位のdisk size
-- Debian、ESP、WindowsのPARTUUID
-- wired interface名とMAC address
-- NetworkManagerを使うmaintenance connectivity
-- 復旧USBのfilesystem UUID、golden Debian Btrfs UUID、kit ID、3 assetのSHA-256
-- `EFI/Microsoft` treeのSHA-256
-
-placeholder、0 byte disk、相対disk path、不正なhashが一つでもあれば`validate`は失敗します。
+- DebianとESPのPARTUUID
+- wired interface名、MAC address、maintenance connectivity owner
+- kit ID、復旧media UUID、golden Btrfs UUID、3 assetのSHA-256
 
 ```text
 python -m open_world_platform.cli validate --profile profile.json
-```
 
-## Deterministic overlay
-
-空のstaging directoryだけを出力先にします。同じmanifest/profile/sourceからは同じtree hashが
-生成されます。既存fileがあるdirectoryを自動cleanしません。
-
-```text
 python -m open_world_platform.cli render \
   --profile profile.json \
   --output build/platform-overlay
-```
 
-生成物にはinstall fileごとのmode/hash、package一覧、platform manifest、実機profileが入ります。
-`install`も既定はplan出力だけです。適用には、live inventoryと一致するdisk identity、
-3 PARTUUID、overlay tree hash、完全な確認文、root、`--apply`がすべて必要です。
-
-```text
 python -m open_world_platform.cli install \
   --profile profile.json \
   --overlay build/platform-overlay \
@@ -78,30 +56,23 @@ python -m open_world_platform.cli install \
   --disk-by-id /dev/disk/by-id/ACTUAL_STABLE_ID \
   --debian-partuuid ACTUAL_DEBIAN_PARTUUID \
   --esp-partuuid ACTUAL_ESP_PARTUUID \
-  --windows-partuuid ACTUAL_WINDOWS_PARTUUID \
   --confirm "INSTALL PLATFORM /dev/disk/by-id/ACTUAL_STABLE_ID" \
   --inventory evidence/install-inventory.json
 ```
 
-`--apply`を加える判断条件は[PREPARE-TARGET.md](../operator/PREPARE-TARGET.md)に固定しています。
-packageは[offline bootstrap手順](../operator/PACKAGE-BOOTSTRAP.md)でworld fixtureより先に導入し、
-NICを物理的に外した状態でoverlayを適用します。inventoryでmanifest package全件がinstalledと
-確認できなければplatform/target installは拒否します。初回だけはmaintenance unit未導入の
-`installed-debian`を、route/外部DNS/非loopback listenerなし・radio blocked・全service inactiveの
-strict offline状態で受け付けます。
-overlay適用後はboot quarantineを先に起動し、lab/connectivity serviceをdisabledにします。
+`render`は空directoryだけを出力先にし、同じ入力から同じtree hashを作ります。`install`も既定は
+planだけです。packageはtarget fixtureより先に導入し、overlay適用後はboot quarantineを起動して
+lab/connectivity serviceをdisabledにします。手順は
+[PREPARE-TARGET.md](../operator/PREPARE-TARGET.md)を正本にします。
 
-## Deterministic target bundle
+## Target bundle
 
 `build-target-bundle`はworld fixtureとtelemetry runtimeを一時directoryで結合し、全fileの
-SHA-256・owner・group・modeを`TARGET-BUNDLE.json`へ固定します。guide build、server、serviceは
-入力にもDebian出力にも含めません。13個のDebian flagと
-1個のWindows offline flagを別roleにし、Windows/installer-private fileをDebianへ導入しません。
-Debian runtimeへ入るのは一方向hashの`flag-verifiers.mjs`だけで、平文answer moduleはbuild専用です。
-event HMAC keyはbundleへ保存せず、guarded `install-target --apply`時に32 random bytes相当を
-生成します。telemetry Bridge bearer tokenもbundleへ保存せず、fresh exercise開始ごとに
-32 random bytesから生成し、`/etc/examserver-open-world/session.env`へ
-`root:lab-telemetry 0640`でsession IDと一緒にatomic書き込みします。
+SHA-256・owner・group・modeを`TARGET-BUNDLE.json`へ固定します。配置と設定は同じsourceから
+再現し、13個の任意flag本文とsales用synthetic credentialだけはbuildごとに暗号学的乱数で
+新規生成します。本文やseedはmanifestへ書かず、生成flagはDebianの宣言済み配置先、
+生成credentialはSMB引き継ぎ文書と`installer-private`だけへ入ります。公開guide、
+build generator、event HMAC key、Bridge bearer tokenは対象Debianへ保存しません。
 
 ```text
 python -m open_world_platform.cli build-target-bundle \
@@ -112,47 +83,15 @@ python -m open_world_platform.cli verify-target-bundle \
   --bundle build/target-bundle
 ```
 
-`install-target`も既定はdry-runです。live `/`がprofileのDebian PARTUUID、maintenance quarantine、
-disk identity、3 PARTUUID、bundle manifest hash、完全な確認文のすべてに一致して初めて適用できます。
-適用はApache/PHP、SSH、Samba、NFS/file watcher、SUID helper、telemetryを検証しますが、lab serviceと
-telemetry socketはdisabledのまま残し、fresh-state markerをgolden snapshot前に用意します。
-markerは全config検査、unit停止、maintenance起動、masked状態の再確認が終わった最後にだけ配置します。
+`install-target`も既定はdry-runです。live `/`、disk identity、2 PARTUUID、bundle manifest hash、
+完全な確認文が一致した場合だけ適用できます。適用後もlab serviceはdisabledのままにし、
+config検査とmaintenance quarantine完了後の最後にfresh-state markerを配置します。
 
-NFSはv4-onlyの2049/TCPを公開し、標準unitが必要とするmountdは固定20048/TCPにします。
-`rpcbind.service`/`.socket`と不要なstatd unitをmaskし、20048はexercise nftablesで直結側から
-明示dropします。root所有の`open-world-file-watch.service`もexercise中の必須serviceです。これは
-bundleに固定したallowlist pathだけをinotifyで監視し、raw syscall record、command、任意path、
-file contentを保存・送信しません。
-preflightはこの境界が揃う場合にだけ内部mountd listenerを許容します。
-
-保守接続ではprofileの直結EthernetをNetworkManagerの`unmanaged-devices`へ固定します。
-`connectivity-on`は同NICがdown、carrierなし、addressなしであり、専用cableが物理的に外れた状態を
-要求します。planもwired down/address flushをhost firewallとNetworkManager起動より先に実行します。
-直結Ethernetの設定ownerはmode controllerの直接`ip`操作だけです。未使用の
-`systemd-networkd` `.network`設定は置かず、`systemd-networkd.service`はmasked/inactiveのままにして
-NetworkManagerやmode controllerと競合させません。
-
-Sambaは`smbd`のTCP/445だけを使い、`nmbd.service`を常時inactive/maskedにして
-TCP/139とUDP/137-138を公開しません。dnsmasqのleaseはsession directoryと分離した
-`/run/open-world-dnsmasq/dnsmasq.leases`へ置き、tmpfilesで`dnsmasq:root 0640`
-（親directoryは`0750`）を毎boot作ります。
-
-dnsmasqは直結EthernetのDHCPだけを所有します。`port=0`でDNS listenerを無効にし、DHCPでは
-router、DNS server、search domainを広告しません。Debian packageのhelperをsystemd drop-inで置換し、
-専用configだけを明示して暗黙のconf-dir、resolvconf、上流resolverを使いません。
-`--user=dnsmasq`でlease所有者と実効userを一致させます。nftablesはTCP/53、UDP/53、TCP/8080を
-許可せず、Kali Bridge用のTCP/8787だけを直結interface/subnetへ追加します。公開guideは
-`LAB_PUBLIC_ORIGIN`のVercel URLであり、Debianのhost名やportではありません。
-
-Windows bonusはprofileの`windowsPartuuid`から生成した`mnt-windows.mount`がexercise中だけ
-`/mnt/windows`へ`ntfs3`の`ro,nosuid,nodev,noexec`でmountします。このunitはboot時disabledで、
-`open-world-vulnerable.target`の停止に連動してunmountされます。ready preflightはexact device、
-PARTUUID、filesystem、mount options、unit activeを検証します。Windows側はgolden前にsystem volumeを
-完全復号し、hibernation/Fast Startupを無効化する実機gateが別途必要です。
+NFSはv4-onlyの2049/TCP、Sambaは445/TCPだけを公開します。dnsmasqは直結EthernetのDHCPだけを
+所有し、DNS listener、router/DNS広告、上流resolverを持ちません。公開guideは別originで、
+対象Debianが配信しません。
 
 ## Preflightとmode
-
-fixture fileを使う確認はhost stateを変えません。
 
 ```text
 python -m open_world_platform.cli preflight \
@@ -160,48 +99,32 @@ python -m open_world_platform.cli preflight \
   --mode exercise \
   --stage ready \
   --inventory evidence/exercise-inventory.json
-```
 
-実機ではまず`--apply`なしのplanを読みます。
-
-```text
 sudo open-world-platform mode \
   --profile /etc/open-world-lab/profile.json \
   --to exercise
 ```
 
-適用例と当日の停止条件は[DAY-OF.md](../operator/DAY-OF.md)にあります。通常bootは
-`open-world-boot-quarantine.service`とmaintenance target、演習時だけ
-`open-world-exercise.target`を使います。
+通常bootはmaintenance quarantine、演習時だけ`open-world-exercise.target`を使います。当日の
+停止条件は[DAY-OF.md](../operator/DAY-OF.md)に固定します。
 
 ## Recovery
 
-`recover`はinstalled Debianから実行できません。次が全部一致した信頼済みremovable media上だけで
-planまたはrestoreを作ります。
+`recover`はinstalled Debianから実行できません。次の全条件をlive inventoryで検証します。
 
-- boot environmentが`trusted-recovery-media`
-- recovery media UUID、kit marker、kit ID
-- assetがrecovery mount配下の通常fileで、profileと指定値のSHA-256に一致
-- disk by-id、serial、WWN、size、3 PARTUUID
-- target partitionがunmounted
-- recovery mediaのsource deviceがtarget diskではない
-- recovery boot rootがremovableで、空でないblock topologyを持ち、target diskを含まない
-- recovery boot rootとasset mountが同じ物理USB diskを共有する
-- operation固有の完全な確認文
+- trusted recovery USBからbootしている
+- recovery media UUID、kit marker、kit ID、asset hashが一致する
+- disk by-id、serial、WWN、sizeが一致する
+- normalではDebian/ESP PARTUUIDも一致し、target partitionsがunmountedである
+- recovery rootとasset mountが同じ物理USBで、target diskを含まない
+- operation固有の完全な確認文が一致する
 
-対象Debian用のlive identity gate（Debian 13 amd64/x86_64）はrecovery media自身へは適用しません。
-recovery USBは必要toolを備えた別の信頼済み互換Linuxで構いません。
-supported構成はその互換LinuxをUSBへblock-backed full installしたものです。`overlay` rootのlive ISO/Live USBや、
-内蔵diskからbootしてasset USBだけをmountした構成は拒否します。
-
-Normal recoveryはDebian partitionだけをBtrfs streamから作り直し、`EFI/Microsoft`のtree hashを
-golden profileに固定した同じBtrfs UUIDを`mkfs.btrfs --uuid`へ渡して`blkid`で読み戻します。
-これにより、復元するDebian EFI/GRUB loaderが保持するfilesystem UUID探索も一致させます。
-受信した`@`をwritableに戻し、`fstab`/`grub.cfg`のstable PARTUUID/label契約も検証します。
-その後`EFI/Microsoft`を前後比較してから`EFI/debian`だけを戻します。Full recoveryはpartition table、Windows、ESP、
-Debianを含むdisk全体を上書きする別operationです。詳しくは[RECOVERY.md](../operator/RECOVERY.md)。
-Full recoveryはhashだけでなくraw imageのlogical byte sizeがprofileの対象disk sizeと完全一致しなければ
-`dd`へ進みません。
+Normal recoveryはDebian partitionをgolden Btrfs streamから作り直し、golden filesystem UUIDを
+読み戻し、`@`、`fstab`、GRUBのstable identityを検証して`EFI/debian`を戻します。
+Full recoveryはpartition table、ESP、Debianを含む専用disk全体を上書きする別operationです。
+partition tableが壊れていてもstable physical disk identityは省略しません。raw imageのlogical byte
+sizeも対象disk sizeと完全一致しなければ`dd`へ進みません。
+詳しくは[RECOVERY.md](../operator/RECOVERY.md)を参照してください。
 
 ## Automated verification
 
@@ -210,5 +133,4 @@ python -m unittest discover -s tests -v
 ```
 
 このtestはfixture inventoryと一時directoryだけを使い、`ip`、`nft`、`systemctl`、`mkfs`、
-`mount`、`btrfs receive`、`dd`を実行しません。物理的なdual boot、Wi-Fi firmware、実NIC隔離、
-Windows boot、実restoreは自動testの合格とは別gateです。
+`mount`、`btrfs receive`、`dd`を実行しません。実NIC隔離、実boot、実restoreは別の物理gateです。

@@ -1,8 +1,8 @@
-import type {
-  FlagSubmissionResult,
-  LabClient,
-  LabProjection,
-} from "./types";
+import {
+  applyGuidanceCommand,
+  EASY_GUIDANCE,
+} from "./guidance";
+import type { LabClient, LabProjection } from "./types";
 
 type FixtureScenario =
   | "empty"
@@ -22,295 +22,304 @@ const liveProjection: LabProjection = {
   sessionId: "fixture-session",
   revision: 3,
   status: "active",
-  heading: "中古バイク店の業務サーバを調べる",
-  lede: "見つけた事実をつなぎ、管理者権限までの道を探します。",
-  objective: "まず1つの入口を確かめる",
-  consultationQuestion:
-    "staff が見つかったことから、次に何を確かめますか？",
+  heading: "風切モータースの業務環境を調べる",
+  lede: "確定した事実をつなぎ、次に確かめることを選びます。",
+  objective: "まず、直結先で応答するサービスを整理する",
+  consultationQuestion: "現在の事実から、次に何を確かめますか？",
   facts: [
     {
-      id: "fact-web",
-      label: "Webサイトが見える",
-      detail: "target.local を確認しました。",
-      icon: "globe",
+      id: "map-01",
+      label: "スタッフ用の診断画面",
+      detail: "公開Webの奥に、入力値をOSコマンドへ渡す診断機能がある。",
+      icon: "browser",
     },
     {
-      id: "fact-port",
-      label: "80番の入口が開いている",
-      detail: "Webの入口を確認しました。",
-      icon: "door",
-    },
-    {
-      id: "fact-staff",
-      label: "staff という場所を発見",
-      detail: "共有の可能性があります。",
+      id: "map-02",
+      label: "引き継ぎ用の共有",
+      detail: "匿名で読める共有に、古いバックアップと運用メモが残っている。",
       icon: "folder",
+    },
+    {
+      id: "map-03",
+      label: "整備場のNFS共有",
+      detail: "書き込み権限と所有者の対応が、利用者の想定より広い。",
+      icon: "network",
     },
   ],
   hypotheses: [
     {
-      id: "hypothesis-input",
-      label: "スタッフ向け画面の入力を試す",
-      summary: "画面の入力が、相手PCの処理へどう渡るかを観察します。",
+      id: "hyp-service-inventory",
+      label: "まず、直結先で応答するサービスを整理する",
+      summary: "入口を決める前に、見えている面を事実として並べる。",
       selected: true,
       available: true,
     },
     {
-      id: "hypothesis-public-files",
-      label: "公開ファイルに別の手掛かりがないか探す",
-      summary: "公開範囲に置かれたファイル名と更新時刻を見比べます。",
+      id: "hyp-web-input-boundary",
+      label: "診断入力がどこまでOSへ渡るか確かめる",
+      summary: "画面の用途と、入力値が処理される境界を分けて観察する。",
       available: true,
     },
     {
-      id: "hypothesis-login",
-      label: "ログイン用の情報が残っていないか調べる",
-      summary: "見つけた情報同士に再利用の関係がないか確かめます。",
+      id: "hyp-backup-trust",
+      label: "匿名共有のバックアップを運用上の手掛かりとして読む",
+      summary: "ファイル名だけでなく、いつ・何のために残されたかを確認する。",
+      available: true,
+    },
+    {
+      id: "hyp-nfs-ownership",
+      label: "NFS上の所有者と書き込み可能範囲を確かめる",
+      summary: "共有名ではなく、Debian側で誰の領域として扱われるかを見る。",
       available: true,
     },
   ],
   investigations: [
     {
-      id: "investigation-web",
-      label: "Webサイトの裏側を調べる",
-      summary: "在庫サイトの仕組みや、隠れたページを確認します。",
-      icon: "globe",
-      hypothesisId: "hypothesis-input",
+      id: "investigation-hyp-service-inventory",
+      label: "まず、直結先で応答するサービスを整理する",
+      summary: "入口を決める前に、見えている面を事実として並べる。",
+      icon: "terminal",
+      hypothesisId: "hyp-service-inventory",
     },
     {
-      id: "investigation-files",
-      label: "共有されたファイルを確認する",
-      summary: "ファイル置き場にアクセスし、公開範囲を調べます。",
+      id: "investigation-hyp-web-input-boundary",
+      label: "診断入力がどこまでOSへ渡るか確かめる",
+      summary: "画面の用途と、入力値が処理される境界を分けて観察する。",
+      icon: "browser",
+      hypothesisId: "hyp-web-input-boundary",
+    },
+    {
+      id: "investigation-hyp-backup-trust",
+      label: "匿名共有のバックアップを運用上の手掛かりとして読む",
+      summary: "ファイル名だけでなく、いつ・何のために残されたかを確認する。",
       icon: "folder",
-      hypothesisId: "hypothesis-public-files",
-    },
-    {
-      id: "investigation-login",
-      label: "ログインできる入口を探す",
-      summary: "見つけた事実から認証の可能性を確かめます。",
-      icon: "user",
-      hypothesisId: "hypothesis-login",
+      hypothesisId: "hyp-backup-trust",
     },
   ],
   graph: {
     nodes: [
       {
-        id: "external-entry",
-        label: "外から見える入口",
-        detail: "ポート80（HTTP）",
-        icon: "globe",
-        state: "discovered",
-        position: { x: 20, y: 70 },
-      },
-      {
-        id: "inventory-site",
-        label: "在庫サイト",
-        detail: "バイク在庫の一覧",
+        id: "map-01",
+        label: "スタッフ用の診断画面",
+        category: "Web",
+        detail: "公開Webの奥に、入力値をOSコマンドへ渡す診断機能がある。",
         icon: "browser",
-        state: "selected",
-        progress: "発見 2/4",
-        position: { x: 300, y: 70 },
-      },
-      {
-        id: "unknown-web",
-        label: "未発見",
-        icon: "file",
-        state: "undiscovered",
-        position: { x: 590, y: 74 },
-      },
-      {
-        id: "service-booking",
-        label: "整備予約",
-        detail: "予約フォーム",
-        icon: "calendar",
         state: "discovered",
-        progress: "発見 1/3",
-        position: { x: 180, y: 230 },
+        progress: "発見済み",
       },
       {
-        id: "unknown-service",
-        label: "未発見",
-        icon: "file",
-        state: "undiscovered",
-        position: { x: 480, y: 235 },
-      },
-      {
-        id: "file-drop",
-        label: "ファイル置き場",
-        detail: "共有ディレクトリ",
+        id: "map-02",
+        label: "引き継ぎ用の共有",
+        category: "共有",
+        detail: "匿名で読める共有に、古いバックアップと運用メモが残っている。",
         icon: "folder",
         state: "discovered",
-        progress: "発見 1/3",
-        position: { x: 60, y: 400 },
+        progress: "発見済み",
       },
       {
-        id: "staff-area",
-        label: "スタッフ環境",
-        detail: "社内端末へのアクセス",
-        icon: "terminal",
+        id: "map-03",
+        label: "整備場のNFS共有",
+        category: "整備",
+        detail: "書き込み権限と所有者の対応が、利用者の想定より広い。",
+        icon: "network",
         state: "discovered",
-        progress: "発見 0/2",
-        position: { x: 360, y: 400 },
+        progress: "発見済み",
       },
       {
-        id: "admin",
-        label: "Linux管理者",
-        detail: "管理者権限の取得",
-        icon: "server",
-        state: "discovered",
-        progress: "発見 0/3",
-        position: { x: 690, y: 300 },
-      },
-      {
-        id: "unknown-file-a",
-        label: "未発見",
+        id: "map-04",
+        label: "権限獲得",
+        category: "権限獲得",
         icon: "file",
         state: "undiscovered",
-        position: { x: 20, y: 565 },
       },
       {
-        id: "unknown-file-b",
-        label: "未発見",
+        id: "map-05",
+        label: "権限獲得",
+        category: "権限獲得",
         icon: "file",
         state: "undiscovered",
-        position: { x: 215, y: 565 },
       },
       {
-        id: "unknown-staff-a",
-        label: "未発見",
+        id: "map-06",
+        label: "権限獲得",
+        category: "権限獲得",
         icon: "file",
         state: "undiscovered",
-        position: { x: 445, y: 565 },
-      },
-      {
-        id: "unknown-staff-b",
-        label: "未発見",
-        icon: "file",
-        state: "undiscovered",
-        position: { x: 635, y: 565 },
       },
     ],
     edges: [
       {
-        id: "edge-entry-inventory",
-        from: "external-entry",
-        to: "inventory-site",
-        state: "known",
-      },
-      {
-        id: "edge-inventory-unknown",
-        from: "inventory-site",
-        to: "unknown-web",
-        state: "known",
-      },
-      {
-        id: "edge-entry-booking",
-        from: "external-entry",
-        to: "service-booking",
+        id: "edge-1",
+        from: "map-01",
+        to: "map-04",
         state: "possible",
       },
       {
-        id: "edge-booking-unknown",
-        from: "service-booking",
-        to: "unknown-service",
-        state: "known",
-      },
-      {
-        id: "edge-unknown-admin",
-        from: "unknown-service",
-        to: "admin",
+        id: "edge-2",
+        from: "map-02",
+        to: "map-05",
         state: "possible",
       },
       {
-        id: "edge-file-staff",
-        from: "file-drop",
-        to: "staff-area",
-        state: "known",
-      },
-      {
-        id: "edge-staff-admin",
-        from: "staff-area",
-        to: "admin",
-        state: "possible",
-      },
-      {
-        id: "edge-file-a",
-        from: "file-drop",
-        to: "unknown-file-a",
-        state: "possible",
-      },
-      {
-        id: "edge-file-b",
-        from: "file-drop",
-        to: "unknown-file-b",
-        state: "possible",
-      },
-      {
-        id: "edge-staff-a",
-        from: "staff-area",
-        to: "unknown-staff-a",
-        state: "possible",
-      },
-      {
-        id: "edge-staff-b",
-        from: "staff-area",
-        to: "unknown-staff-b",
+        id: "edge-3",
+        from: "map-03",
+        to: "map-06",
         state: "possible",
       },
     ],
   },
   hints: [
     {
-      id: "hint-observe",
+      id: "hyp-service-inventory:1",
       step: 1,
-      title: "見る場所",
+      title: "確かめること",
       state: "unlocked",
-      body: "入力した文字と、画面に返る結果の関係を見ます。",
+      body: "Kali側の有線IPと、10.13.37.10が応答するTCPサービスを見る。",
     },
     {
-      id: "hint-tool",
+      id: "hyp-service-inventory:2",
       step: 2,
       title: "使う道具",
-      state: "available",
-      body: "ブラウザの開発者ツールで、送信された項目を確認します。",
-      condition: "「見る場所」を確認すると開けます",
+      state: "unlocked",
+      body: "ip addr、ping、nmapの順で、接続とサービスを分けて確認する。",
     },
     {
-      id: "hint-example",
+      id: "hyp-service-inventory:3",
       step: 3,
+      title: "組み立て方",
+      state: "unlocked",
+      body: "対象IPを固定し、名前解決やping応答に依存せずサービス版を確認する。",
+    },
+    {
+      id: "hyp-service-inventory:4",
+      step: 4,
       title: "操作例",
-      state: "locked",
-      body: "無害な入力を一つずつ変え、返り方の差を記録します。",
-      condition: "「使う道具」を確認すると開けます",
+      state: "unlocked",
+      body: "nmap -sV -Pn 10.13.37.10",
     },
   ],
+  guidance: { ...EASY_GUIDANCE },
   progress: {
     discovered: 3,
-    total: 14,
+    total: 13,
   },
   recentEvents: [
     {
-      id: "event-web",
-      at: "10:24",
-      message: "Webサイトが見えることを確認しました。",
+      id: "event-1",
+      at: "2026-07-31T00:00:00.000Z",
+      message: "スタッフ用の診断画面を確認した。",
     },
     {
-      id: "event-port",
-      at: "10:26",
-      message: "80番の入口が開いていることを確認しました。",
+      id: "event-2",
+      at: "2026-07-31T00:01:00.000Z",
+      message: "匿名で読める引き継ぎ共有を確認した。",
     },
     {
-      id: "event-staff",
-      at: "10:29",
-      message: "staff という場所を発見しました。",
+      id: "event-3",
+      at: "2026-07-31T00:02:00.000Z",
+      message: "整備場のNFS共有内を確認した。",
     },
   ],
   telemetry: {
     status: "live",
-    message: "教材イベントを自動検出しています",
   },
   capabilities: {
-    manualFlagSubmission: true,
+    manualFlagSubmission: false,
   },
+};
+
+const hypothesisHints: Record<string, LabProjection["hints"]> = {
+  "hyp-service-inventory": liveProjection.hints,
+  "hyp-web-input-boundary": [
+    {
+      id: "hyp-web-input-boundary:1",
+      step: 1,
+      title: "確かめること",
+      state: "unlocked",
+      body: "診断対象を入力したとき、結果欄へ何が返るかを見る。",
+    },
+    {
+      id: "hyp-web-input-boundary:2",
+      step: 2,
+      title: "使う道具",
+      state: "unlocked",
+      body: "まずブラウザで通常入力と区切り記号を含む入力の差を比べる。",
+    },
+    {
+      id: "hyp-web-input-boundary:3",
+      step: 3,
+      title: "組み立て方",
+      state: "unlocked",
+      body: "正常な診断対象の後ろへ区切り記号と、結果を確認できる短いコマンドを続ける。",
+    },
+    {
+      id: "hyp-web-input-boundary:4",
+      step: 4,
+      title: "操作例",
+      state: "unlocked",
+      body: "127.0.0.1; id",
+    },
+  ],
+  "hyp-backup-trust": [
+    {
+      id: "hyp-backup-trust:1",
+      step: 1,
+      title: "確かめること",
+      state: "unlocked",
+      body: "handover共有にある引き継ぎ文書とバックアップ一覧を見る。",
+    },
+    {
+      id: "hyp-backup-trust:2",
+      step: 2,
+      title: "使う道具",
+      state: "unlocked",
+      body: "smbclientで共有一覧を確認し、匿名で読める範囲だけ調べる。",
+    },
+    {
+      id: "hyp-backup-trust:3",
+      step: 3,
+      title: "組み立て方",
+      state: "unlocked",
+      body: "対象、共有名、匿名接続の順に指定し、まず一覧だけを確認する。",
+    },
+    {
+      id: "hyp-backup-trust:4",
+      step: 4,
+      title: "操作例",
+      state: "unlocked",
+      body: "smbclient //10.13.37.10/handover -N",
+    },
+  ],
+  "hyp-nfs-ownership": [
+    {
+      id: "hyp-nfs-ownership:1",
+      step: 1,
+      title: "確かめること",
+      state: "unlocked",
+      body: "NFSv4の公開rootと、mount後の所有者・権限・隠しファイルを見る。",
+    },
+    {
+      id: "hyp-nfs-ownership:2",
+      step: 2,
+      title: "使う道具",
+      state: "unlocked",
+      body: "NFSv4を直接mountし、ls -laで所有者と書き込み範囲を観察する。",
+    },
+    {
+      id: "hyp-nfs-ownership:3",
+      step: 3,
+      title: "組み立て方",
+      state: "unlocked",
+      body: "sudo mount -t nfs4 -o vers=4,proto=tcp 10.13.37.10:/ <ローカルの空ディレクトリ>",
+    },
+    {
+      id: "hyp-nfs-ownership:4",
+      step: 4,
+      title: "操作例",
+      state: "unlocked",
+      body: "sudo mount -t nfs4 -o vers=4,proto=tcp 10.13.37.10:/ /mnt/workshop",
+    },
+  ],
 };
 
 function createProjection(scenario: FixtureScenario): LabProjection {
@@ -333,40 +342,42 @@ function createProjection(scenario: FixtureScenario): LabProjection {
   if (scenario === "unavailable") {
     projection.telemetry = {
       status: "unavailable",
-      message: "自動検出を利用できません。flagを手動で提出できます。",
+      message: "自動検出を利用できません。最後の確定状態を表示しています。",
     };
   }
 
   if (scenario === "empty" || scenario === "transition") {
-    projection.heading = "標的との接続を確かめる";
-    projection.lede =
-      "まずKaliと標的ノートが直結されていることを確認します。";
-    projection.objective = "有線接続と target.local を確認する";
-    projection.consultationQuestion =
-      "標的へ届くことを確かめるには、何から見ますか？";
+    projection.revision = 0;
     projection.facts = [];
-    projection.investigations = [
-      {
-        id: "investigation-connect",
-        label: "接続を確認する",
-        summary: "有線接続と標的のアドレスから確かめます。",
-        icon: "network",
-      },
-    ];
+    projection.hypotheses = projection.hypotheses.slice(0, 1);
+    projection.investigations = projection.investigations.slice(0, 1);
     projection.graph = {
       nodes: [
         {
-          id: "connection",
-          label: "接続確認",
-          detail: "ここから探索を始めます",
-          icon: "network",
-          state: "selected",
-          position: { x: 300, y: 220 },
+          id: "map-01",
+          label: "Web",
+          category: "Web",
+          icon: "file",
+          state: "undiscovered",
+        },
+        {
+          id: "map-02",
+          label: "共有",
+          category: "共有",
+          icon: "file",
+          state: "undiscovered",
+        },
+        {
+          id: "map-03",
+          label: "整備",
+          category: "整備",
+          icon: "file",
+          state: "undiscovered",
         },
       ],
       edges: [],
     };
-    projection.progress = { discovered: 0, total: 14 };
+    projection.progress = { discovered: 0, total: 13 };
     projection.recentEvents = [];
   }
 
@@ -376,7 +387,8 @@ function createProjection(scenario: FixtureScenario): LabProjection {
     projection.lede =
       "入口から権限の変化まで、見つけた事実を順に振り返りましょう。";
     projection.objective = "取得した経路の因果を説明する";
-    projection.progress = { discovered: 14, total: 14 };
+    projection.progress = { discovered: 13, total: 13 };
+    projection.completion = { routeId: "web-sudo" };
     projection.hints = projection.hints.map((hint) => ({
       ...hint,
       state: "unlocked",
@@ -397,7 +409,6 @@ function createProjection(scenario: FixtureScenario): LabProjection {
         ["map-11", "timer経路", "定期処理から昇格", "calendar"],
         ["map-12", "SUID経路", "PATH解決から昇格", "terminal"],
         ["map-13", "Debian root", "管理者権限へ到達", "door"],
-        ["map-14", "Windows保管記録", "オフラインの追加flag", "folder"],
       ].map(([id, label, detail, icon]) => ({
         id,
         label,
@@ -428,7 +439,6 @@ function createProjection(scenario: FixtureScenario): LabProjection {
         ["map-10", "map-13"],
         ["map-11", "map-13"],
         ["map-12", "map-13"],
-        ["map-13", "map-14"],
       ].map(([from, to], index) => ({
         id: `success-edge-${index + 1}`,
         from,
@@ -452,13 +462,115 @@ function normalizeScenario(value: string): FixtureScenario {
     : "live";
 }
 
+function automaticHintDepth(
+  guidance: LabProjection["guidance"],
+): number {
+  let depth = guidance.showNextChoices ? 1 : 0;
+  if (guidance.showToolNames) depth = Math.max(depth, 2);
+  if (guidance.showCommandSyntax) depth = Math.max(depth, 3);
+  if (guidance.showCommandExamples) depth = Math.max(depth, 4);
+  return depth;
+}
+
 class FixtureLabClient implements LabClient {
+  private baseProjection: LabProjection;
   private projection: LabProjection;
+  private manualHintDepth = 0;
   private listeners = new Set<(projection: LabProjection) => void>();
   private transitionTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(private readonly scenario: FixtureScenario) {
-    this.projection = createProjection(scenario);
+    this.baseProjection = createProjection(scenario);
+    this.projection = copyProjection(this.baseProjection);
+    this.applyGuidanceView();
+  }
+
+  private applyGuidanceView(): void {
+    const guidance = this.projection.guidance;
+    const fullExplanation = guidance.explanationDepth === "full";
+    const hintDepth = Math.max(
+      this.manualHintDepth,
+      automaticHintDepth(guidance),
+    );
+    const selectedId =
+      this.projection.hypotheses.find((hypothesis) => hypothesis.selected)?.id ??
+      this.baseProjection.hypotheses.find((hypothesis) => hypothesis.selected)
+        ?.id;
+
+    this.projection.lede = fullExplanation
+      ? this.baseProjection.lede
+      : "確定した事実から次を選びます。";
+    this.projection.consultationQuestion = fullExplanation
+      ? this.baseProjection.consultationQuestion
+      : "次は何を確かめますか？";
+    this.projection.facts = this.baseProjection.facts.map((fact) => ({
+      ...fact,
+      ...(fullExplanation ? {} : { detail: undefined }),
+    }));
+    this.projection.hypotheses = this.baseProjection.hypotheses.map(
+      (hypothesis) => ({
+        ...hypothesis,
+        selected: hypothesis.id === selectedId,
+        summary: fullExplanation
+          ? hypothesis.summary
+          : "この仮説を確かめます。",
+      }),
+    );
+    this.projection.investigations = guidance.showNextChoices
+      ? this.baseProjection.investigations.map((investigation) => ({
+          ...investigation,
+          summary: fullExplanation
+            ? investigation.summary
+            : "この方向を確かめます。",
+        }))
+      : [];
+
+    const graph = copyProjection(this.baseProjection).graph;
+    this.projection.graph.nodes =
+      guidance.silhouetteDepth === 1
+        ? graph.nodes
+        : graph.nodes.filter((node) => node.state !== "undiscovered");
+    const visibleNodeIds = new Set(
+      this.projection.graph.nodes.map((node) => node.id),
+    );
+    this.projection.graph.edges = graph.edges.filter(
+      (edge) =>
+        visibleNodeIds.has(edge.from) && visibleNodeIds.has(edge.to),
+    );
+
+    this.projection.hints = this.baseProjection.hints.map((hint, index) => ({
+      ...hint,
+      state:
+        index < hintDepth
+          ? "unlocked"
+          : index === hintDepth
+            ? "available"
+            : "locked",
+      ...(index < hintDepth
+        ? { condition: undefined }
+        : {
+            body: undefined,
+            condition:
+              index === 0
+                ? "必要な時に開けます"
+                : "前の説明を確認すると開けます",
+          }),
+    }));
+    this.projection.telemetry = {
+      status: this.baseProjection.telemetry.status,
+      ...(guidance.explainNoProgress &&
+      this.baseProjection.telemetry.message
+        ? { message: this.baseProjection.telemetry.message }
+        : {}),
+    };
+  }
+
+  private replaceBaseProjection(next: LabProjection): void {
+    const guidance = this.projection.guidance;
+    this.baseProjection = copyProjection(next);
+    this.projection = copyProjection(next);
+    this.projection.guidance = guidance;
+    this.applyGuidanceView();
   }
 
   async getState(): Promise<LabProjection> {
@@ -475,29 +587,25 @@ class FixtureLabClient implements LabClient {
       this.transitionTimer = setTimeout(() => {
         const nextProjection = createProjection("empty");
         nextProjection.revision = this.projection.revision;
-        nextProjection.heading = "Webの入口を発見";
-        nextProjection.lede =
-          "Kali Bridgeが標的の変化を検出し、安全な事実だけを同期しました。";
-        nextProjection.objective = "見つかったWebサイトの構成を確かめる";
-        nextProjection.consultationQuestion =
-          "Webサイトが見えたことから、次は何を調べますか？";
         nextProjection.facts = [copyProjection(liveProjection).facts[0]];
+        nextProjection.hypotheses =
+          copyProjection(liveProjection).hypotheses.slice(0, 2);
         nextProjection.investigations = [
-          copyProjection(liveProjection).investigations[0],
+          ...copyProjection(liveProjection).investigations.slice(0, 2),
         ];
         nextProjection.graph = {
-          nodes: copyProjection(liveProjection).graph.nodes.slice(0, 2),
+          nodes: copyProjection(liveProjection).graph.nodes.slice(0, 4),
           edges: [copyProjection(liveProjection).graph.edges[0]],
         };
-        nextProjection.progress = { discovered: 1, total: 14 };
+        nextProjection.progress = { discovered: 1, total: 13 };
         nextProjection.recentEvents = [
           {
-            id: "event-transition-web",
-            at: "いま",
-            message: "Webサイトへの到達を自動で確認しました。",
+            id: "event-1",
+            at: "2026-07-31T00:00:00.000Z",
+            message: "スタッフ用の診断画面を確認した。",
           },
         ];
-        this.projection = nextProjection;
+        this.replaceBaseProjection(nextProjection);
         this.transitionTimer = undefined;
         this.publish();
       }, 900);
@@ -520,12 +628,25 @@ class FixtureLabClient implements LabClient {
   }
 
   async selectHypothesis(id: string): Promise<LabProjection> {
+    const selected = this.baseProjection.hypotheses.find(
+      (hypothesis) => hypothesis.id === id,
+    );
+    const selectedHints = hypothesisHints[id];
+    if (!selected || !selectedHints) {
+      throw new Error("unknown_fixture_hypothesis");
+    }
+
     this.projection.hypotheses = this.projection.hypotheses.map(
       (hypothesis) => ({
         ...hypothesis,
         selected: hypothesis.id === id,
       }),
     );
+    this.baseProjection.objective = selected.label;
+    this.baseProjection.hints = structuredClone(selectedHints);
+    this.projection.objective = selected.label;
+    this.manualHintDepth = 0;
+    this.applyGuidanceView();
     return this.publish();
   }
 
@@ -544,25 +665,21 @@ class FixtureLabClient implements LabClient {
       throw new Error("hint_prerequisite_not_met");
     }
 
-    this.projection.hints = this.projection.hints.map((hint) =>
-      hint.id === id
-        ? { ...hint, state: "unlocked", condition: undefined }
-        : hint.id === orderedHints[targetIndex + 1]?.id &&
-            hint.state === "locked"
-          ? { ...hint, state: "available" }
-        : hint,
+    this.manualHintDepth = Math.max(
+      this.manualHintDepth,
+      targetIndex + 1,
     );
+    this.applyGuidanceView();
     return this.publish();
   }
 
-  async submitFlag(flag: string): Promise<FlagSubmissionResult> {
-    const accepted = flag.trim().length >= 6;
-    return {
-      accepted,
-      message: accepted
-        ? "提出を受け付けました。状態をもう一度確認します。"
-        : "入力内容を確認できませんでした。flag全体を入力してください。",
-    };
+  async applyGuidance(commandId: string): Promise<LabProjection> {
+    this.projection.guidance = applyGuidanceCommand(
+      this.projection.guidance,
+      commandId,
+    );
+    this.applyGuidanceView();
+    return this.publish();
   }
 }
 

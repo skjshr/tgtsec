@@ -1,7 +1,30 @@
 import { BridgeError } from "./errors.mjs";
 
 const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/;
-const ACTION_TYPES = new Set(["selectHypothesis", "unlockHint"]);
+const ACTION_TYPES = new Set([
+  "selectHypothesis",
+  "unlockHint",
+  "setGuidance",
+]);
+const GUIDANCE_COMMAND_IDS = new Set([
+  "preset.easy",
+  "preset.normal",
+  "preset.hard",
+  "showNextChoices.on",
+  "showNextChoices.off",
+  "showToolNames.on",
+  "showToolNames.off",
+  "showCommandSyntax.on",
+  "showCommandSyntax.off",
+  "showCommandExamples.on",
+  "showCommandExamples.off",
+  "explainNoProgress.on",
+  "explainNoProgress.off",
+  "explanationDepth.brief",
+  "explanationDepth.full",
+  "silhouetteDepth.0",
+  "silhouetteDepth.1",
+]);
 
 function exactKeys(value, expected, label) {
   if (
@@ -43,6 +66,15 @@ export function validateAction(value) {
     );
   }
   if (
+    value.type === "setGuidance" &&
+    !GUIDANCE_COMMAND_IDS.has(value.targetId)
+  ) {
+    throw new BridgeError(
+      "invalid_action",
+      "cloud guidance command is not allowed",
+    );
+  }
+  if (
     typeof value.createdAt !== "string" ||
     !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(
       value.createdAt,
@@ -70,6 +102,9 @@ export function targetPathForAction(action) {
   }
   if (validated.type === "unlockHint") {
     return `/api/session/hints/${encoded}/unlock`;
+  }
+  if (validated.type === "setGuidance") {
+    return `/api/session/guidance/${encoded}/apply`;
   }
   throw new BridgeError("invalid_action", "cloud action type is not allowed");
 }

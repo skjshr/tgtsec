@@ -1,6 +1,11 @@
 node_modules/
 dist/
 coverage/
+build/
+TARGET-BUNDLE.json
+synthetic-credentials.json
+*.flag
+.open-world-target-*/
 *.log
 .DS_Store
 __pycache__/
