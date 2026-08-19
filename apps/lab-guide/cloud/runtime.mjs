@@ -14,6 +14,13 @@ function required(environment, name, minimumLength = 1) {
   return value;
 }
 
+function requiredEither(environment, primaryName, alternateName) {
+  return required(
+    environment,
+    environment[primaryName] ? primaryName : alternateName,
+  );
+}
+
 function optionalMilliseconds(environment, name, fallback) {
   const raw = environment[name];
   if (raw === undefined || raw === "") return fallback;
@@ -23,8 +30,16 @@ function optionalMilliseconds(environment, name, fallback) {
 
 export function createRuntime(environment = process.env) {
   const redis = new Redis({
-    url: required(environment, "UPSTASH_REDIS_REST_URL"),
-    token: required(environment, "UPSTASH_REDIS_REST_TOKEN"),
+    url: requiredEither(
+      environment,
+      "UPSTASH_REDIS_REST_URL",
+      "KV_REST_API_URL",
+    ),
+    token: requiredEither(
+      environment,
+      "UPSTASH_REDIS_REST_TOKEN",
+      "KV_REST_API_TOKEN",
+    ),
   });
   const store = new RedisSessionStore({
     redis,
