@@ -252,3 +252,12 @@ canonical stateとし、同じcanonical stateは常に同じ地図、現在地�
 - chat人格、自由文AI prompt、仮説より先に完全commandを見せること
 - account/profile、復旧コード、leaderboard、admin dashboard、理解確認quiz
 - runtimeで生成画像を背景として読み込み、offline bundleを重くすること
+
+## `/bukai` reference style
+
+- デジタル庁デザインシステムに沿い、フォントは`Noto Sans JP`を第一候補、コードは`Noto Sans Mono`を第一候補としてsystem fallbackを持つ。外部Web fontは読まない。
+- 本文は16px以上、行高1.7、codeは1.5。日本語italic、過度な英大文字、ハッカー風mono本文を使わない。
+- ライトテーマに固定し、白、中性gray、深いblueの一系統で情報階層を作る。本文と背景は4.5:1以上、focusや非テキスト境界は3:1以上を確保する。
+- desktopは左のページ内目次と本文、mobileは目次を本文上に移す。単一主題の弱点だけを境界でまとめ、同寸カード網羅にしない。
+- 長い手順は`details`に収め、summaryは「詳細を見る」ではなく「Web診断で入力境界を確認する」のように内容を説明する。
+- 動きはhover、focus、copy成功のフィードバックだけ。装飾動画、glow、gradient text、fake terminal、Matrix表現を使わない。

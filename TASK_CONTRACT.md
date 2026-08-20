@@ -131,3 +131,37 @@
 - PLAY、OPS、FOCUSは同じ情報順と操作を保ち、色を外しても選択中／発見済み／未発見を区別できる。
 - 主要操作は44px以上、横スクロールなし、keyboard、Escape、focus return、reduced motionを維持する。
 - 新規runtime依存、外部font、背景写真、偽データを追加しない。
+
+## `/bukai` asynchronous reference contract - 2026-08-20
+
+### Goal
+
+Labに接続せず、参加者が攻略中に別タブでいつでも引ける、脆弱性一覧、試すコマンド、CVE有無の静的参考サイトをVercelの`/bukai`へ公開する。
+
+### Design read and dials
+
+- Reading: 技術部会の初学者が攻略中に素早く引く公的ドキュメントサイト。デジタル庁デザインシステムの可読性、文書構造、フォーカス、コントラストを適用する。
+- `DESIGN_VARIANCE: 3`、`MOTION_INTENSITY: 2`、`VISUAL_DENSITY: 6`。装飾より検索と文書階層を優先する。
+
+### Reuse, deletion, rejected alternatives
+
+- Reuse: 既存Vite buildの`public`配信とVercel origin、world definitionに既にあるLab固有コマンドだけを使う。
+- Delete: pairing、live map、telemetry、難易度設定、個人進捗、AI相談を`/bukai`に持ち込まない。
+- Rejected 1: 現行`/lab`の画面に攻略全文を追加。live進行と静的参考が競合し、参照までの操作が増える。
+- Rejected 2: 完全な自動攻略スクリプト。学習を消し、任意コマンド実行の安全境界を越える。
+
+### Content and safety contract
+
+- 対象は許可済みの`10.13.37.10`専用Debian Labだけ。
+- 入口3種とroot経路3種の計6項に、種別、なぜ成立するか、実行する機器、試すコマンド、成功の目印、CVEを載せる。
+- このLabは意図的な設定不備と安全でない実装であり、六項とも既知CVEを使わない。CVEを割り当てず`CVEなし`と明記する。
+- buildごとに生成されるSMB資格情報、flag本文、token、端末出力は載せない。
+- コマンドごとに`[Kali]`または`[標的Debian]`を明記する。
+
+### Observable acceptance
+
+- `npm run build:guide`後の`dist/client/bukai/index.html`、CSS、JSがすべて自前originだけで読み込める。
+- `/bukai`が200で、skip link、明確な`h1`-`h3`構造、ラベル付き検索、説明的な`details/summary`、keyboard focus、360px幅の1カラム表示を持つ。
+- コマンド検索、初期侵入/権限昇格filter、copyがJavaScript無効でも文書の参照を妨げない。
+- Vercel production配備後に`https://exam-server-one.vercel.app/bukai`のHTML、CSS、JS、コンソール、mobile overflowを実測する。
+- `/lab`と`/api/lab`の既存smokeを再実行し、追加routeで退行しない。

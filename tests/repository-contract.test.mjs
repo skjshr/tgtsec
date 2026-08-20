@@ -64,17 +64,48 @@ test("implementation roots exist", () => {
   }
 });
 
-test("Vercel origin exposes only the ExamServer lab namespace", () => {
+test("Vercel origin exposes the lab and static bukai reference namespaces", () => {
   const config = JSON.parse(read("vercel.json"));
 
   assert.equal(config.outputDirectory, "apps/lab-guide/dist/client");
   assert.deepEqual(
     config.rewrites.map(({ source }) => source),
-    ["/api/lab/:path*", "/lab", "/lab/:path*"],
+    ["/api/lab/:path*", "/lab", "/lab/:path*", "/bukai"],
   );
   assert.equal(
     config.redirects[0].destination,
     "https://exam-server-one.vercel.app/lab",
   );
   assert.equal(existsSync(resolve(root, "api/index.mjs")), true);
+});
+
+test("bukai reference is static, source-grounded, and secret-free", () => {
+  for (const path of [
+    "apps/lab-guide/public/bukai/index.html",
+    "apps/lab-guide/public/bukai/styles.css",
+    "apps/lab-guide/public/bukai/app.js",
+  ]) {
+    assert.equal(existsSync(resolve(root, path)), true, `${path} is missing`);
+  }
+
+  const html = read("apps/lab-guide/public/bukai/index.html");
+  for (const required of [
+    "Web診断のOSコマンドインジェクション",
+    "匿名SMB共有と資格情報の再利用",
+    "NFS所有者マッピング不備",
+    "sudo保守helper",
+    "root timer",
+    "SUID helper",
+    "CVEなし",
+    "[Kali]",
+    "[標的Debian]",
+  ]) {
+    assert.match(html, new RegExp(required), `missing bukai content: ${required}`);
+  }
+
+  assert.doesNotMatch(
+    html,
+    /TELEMETRY_BRIDGE_TOKEN|BRIDGE_TARGET_TOKEN|pairingCode|FLAG\{[^}]+\}/,
+  );
+  assert.doesNotMatch(html, /<script[^>]+https?:|<link[^>]+https?:/);
 });

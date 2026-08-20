@@ -42,6 +42,10 @@
     {
       "source": "/lab/:path*",
       "destination": "/:path*"
+    },
+    {
+      "source": "/bukai",
+      "destination": "/bukai/index.html"
     }
   ],
   "redirects": [

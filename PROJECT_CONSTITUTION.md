@@ -27,10 +27,12 @@ IT初心者が、直結したDebian実機を観察し、複数の入口と権限
 11. root取得後はDebian自身のresetを信頼しない。高速復旧は信頼済み外部media、再構築復旧はclean Debianから固定GitHub release/commitとCodexを使う。
 12. Codex CLIはmaintenance中の構築工具としてだけ使い、exerciseへ入る前に認証、session、履歴、checkoutの残留検査を通す。公開repositoryの取得にGitHub loginは要求しない。
 13. 風切モータースの標的サイトは攻略サイトと視覚・情報設計を共有せず、外部通信のない実在業務サイトとして、見えるページと操作を完成させる。
+14. `/bukai`はラボの進行状態に接続しない静的参考文書とし、脆弱性、試すコマンド、CVEの有無を攻略中の任意のタイミングで引けるようにする。
 
 ## Architecture grammar
 
 - `apps/lab-guide` は探索地図、状況相談、セッション投影だけを所有する。
+- `apps/lab-guide/public/bukai` はLab固有の静的攻略リファレンスだけを所有し、session、telemetry、資格情報、flag本文を所有しない。
 - `apps/lab-guide/cloud` は短期ペアリング、セッション状態の単調更新、閲覧者向け配信だけを所有する。アカウント、個人プロフィール、ランキングを所有しない。
 - `labs/open-world-target/world` は架空業務環境、意図的脆弱性、flag配置だけを所有する。
 - `labs/open-world-target/telemetry` は教材イベントの正規化、状態遷移、公開可能な投影だけを所有する。
@@ -56,6 +58,8 @@ IT初心者が、直結したDebian実機を観察し、複数の入口と権限
 - 名前、メール、復旧コードを持つ個人プロフィール
 - 管理画面、ランキング、streak、永続的な個人実績
 - 理解確認クイズ、自由文AI相談、攻略の自動実行
+- `/bukai`から標的への通信、進行検出、コマンド実行
+- 既知CVEを使っていない設定不備へのCVE番号の割り当て
 - 演習であることを標的サイトや攻略画面の本文へ繰り返し表示すること
 
 ## Failure modes
@@ -89,3 +93,5 @@ IT初心者が、直結したDebian実機を観察し、複数の入口と権限
 - 参加者はKali上のFirefoxだけでpairing、現在地確認、次の仮説選択、段階説明、root完了確認まで進められる。
 - 同一の標的進行、難易度、ヒント状態を与えた二つのbrowserは、個人識別なしに同一のカテゴリ、シルエット、現在地、選択肢、説明を表示する。
 - 風切モータースの公開・在庫・整備・店舗・記事・FAQ・問い合わせ・staff導線が外部requestなしで動き、演習用装飾や反復説明を主情報にしない。
+- `https://exam-server-one.vercel.app/bukai`がAPI、pairing、target接続なしで表示でき、六つの意図的な弱点それぞれに種別、観察点、実行端末を明記したコマンド、CVE有無、成功の見分け方を載せる。
+- `/bukai`は生成された資格情報、flag本文、ペアリングtoken、未開放のライブ状態をbundleに含めない。
