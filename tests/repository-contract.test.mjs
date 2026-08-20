@@ -82,6 +82,7 @@ test("Vercel origin exposes the lab and static bukai reference namespaces", () =
 test("bukai reference is static, source-grounded, and secret-free", () => {
   for (const path of [
     "apps/lab-guide/public/bukai/index.html",
+    "apps/lab-guide/public/bukai/favicon.svg",
     "apps/lab-guide/public/bukai/styles.css",
     "apps/lab-guide/public/bukai/app.js",
   ]) {
